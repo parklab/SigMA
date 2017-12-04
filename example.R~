@@ -1,0 +1,11 @@
+genomes_matrix <- make_matrix(directory = 'input', file_type = 'maf')
+str(genomes_matrix)
+print(1)
+genomes <- conv_snv_matrix_to_df(genomes_matrix)
+str(genomes)
+print(2)
+write.table(genomes, 'genomes_example.csv', sep = ',', row.names = F, col.names = T , quote = F)
+
+run(genome_file = 'genomes_example.csv', 
+    output_file = 'output_example.csv',
+    sig_catalog = 'default')

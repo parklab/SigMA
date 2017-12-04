@@ -1,0 +1,86 @@
+#' Calculates the compatibility of a list of genomes
+#' to an input catalog based on likelihood and cosine 
+#' similarity
+#' 
+#' @param genomes a data table or matrix with snv  
+#' spectra in the first ntype columns and genomes in each row 
+#' @param signatures the input catalog, a data table
+#' with signature spectra in each column 
+#' @return A data frame that contains the input genomes
+#' and in addition columns associated to each signature in
+#' in the catalog with likelihood and cosine simil values
+
+
+match_to_catalog <- function(genomes, signatures){
+  eps <- 0.001
+  calc_prob <- function(this_genome){
+    probs <- apply(signatures, 2, 
+	           function(x, pow){ 
+                     prob <- 0
+                     for(i in 1:length(x)){
+                       if(x[[i]] == 0) x[[i]] <- eps
+	               prob <- prob + pow[[i]] * log(x[[i]])
+	             }
+	             return(prob)
+                   },
+                   pow = this_genome)
+
+    probs <- exp(probs - log(sum(exp(probs))))
+    ind_max <- which(max(probs) == probs)[[1]]
+    sig_max <- colnames(signatures)[[ind_max]]
+    max_val <- probs[[ind_max]]
+    return(list(probs = probs, ind_max = ind_max, sig_max = sig_max, max_val = max_val))
+  }
+
+  cosine <- function(x, y){
+    return(x%*%y / sqrt(x%*%x * y%*%y))
+  }
+
+  calc_cos <- function(this_genome){
+    simils <- apply(signatures, 2,
+                    function(x){ cosine(this_genome, x) })
+    ind_max <- which(max(simils) == simils)
+    sig_max <- colnames(signatures)[[ind_max]]
+    max_val <- simils[[ind_max]]
+    return(list(simils = simils, ind_max = ind_max, sig_max = sig_max, max_val = max_val))
+  }
+
+
+  signature_names <- colnames(signatures)
+  genome_matrix <- genomes[, 1:dim(signatures)[[1]]]
+
+  probs_all    <- apply(genome_matrix, 1, 
+                        function(x){calc_prob(x)$probs})
+  max_sigs_all <- apply(genome_matrix, 1, 
+                        function(x){calc_prob(x)$sig_max})
+  max_val_all  <- apply(genome_matrix, 1, 
+                        function(x){calc_prob(x)$max_val})
+
+  simils_all    <- apply(genome_matrix, 1, 
+                        function(x){calc_cos(x)$simils})
+  max_sigs_cos_all <- apply(genome_matrix, 1, 
+                        function(x){calc_cos(x)$sig_max})
+  max_val_cos_all  <- apply(genome_matrix, 1, 
+                        function(x){calc_cos(x)$max_val})
+
+
+  colnames_before <- colnames(genomes)
+  genomes <- as.data.frame(genomes)
+
+  genomes <- cbind(genomes, 
+                   t(probs_all), 
+                   max_sigs_all, 
+                   max_val_all, 
+                   t(simils_all), 
+                   max_sigs_cos_all, 
+                   max_val_cos_all)
+  colnames(genomes) <- c(colnames_before, 
+                         colnames(signatures), 
+                         'max_sig', 
+                         'max_val',  
+                         paste0(colnames(signatures), 'cos'),
+                         'max_sig_cos', 
+                         'max_val_cos')
+
+  return(genomes)
+}
