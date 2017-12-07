@@ -1,8 +1,38 @@
-library(ggplot2)
-
-# write a function that takes two input csv files
-# and two signature names and calculates the sp an sn
-# makes a plot
+#' plot sensitivity vs specificity for different settings:
+#' * by changing number of total SNVs with two options (1) with
+#' a cut off on the likelihood/cosine similarity (2) without
+#' * by changing the cutoff for two options (1) by requiring 
+#' matching to the signature of interest first (2) only using 
+#' the likelihood/cosine similarity values
+#'
+#' @param file1 input file with a single signature whose name
+#' is given by signame1
+#' @param file2 input file with a single signature whose name 
+#' is given by signame2
+#' @param signame1 main signature of interest
+#' @param signame2 signature to test signame1 against
+#' @param dependence can be "total_snvs" or "cut_off", it is 
+#' the parameter to vary to span the specificity and sensitivity
+#' @param snv_ranges bins on total SNVs used if dependence 
+#' is set "to total_snvs"
+#' @param cutoff_low the values lower threshold on cutoff, 
+#' i.e. likelihood or cosine similarity, used if dependence
+#' is set to "cut_off
+#' @param with_matching determines whether cutoff dependent plot 
+#' will have prior matching
+#' @param do_cutoff for the "total_snv" plot TRUE adds additional
+#' cutoff on likelihood or cosine similarity on top of matching
+#' @param cutoff_l if do_cutoff is set to TRUE this parameter is 
+#' used for likelihood method
+#' @param cutoff_c if do_cutoff is set to TRUE this parameter is 
+#' used for cosine method
+#' @param snv_ranges ranges used for plotting  
+#'
+#' @examples
+#' plot_sn_sp('genomes_sig3_mc_output.csv', 
+#'           'genomes_sig5_mc_output.csv', 
+#'           'Signature_3', 
+#'           'Signature_5')
 
 calc_sn_sp_matching <- function(df, signame1, signame2, matching){
   df[, matching] <- as.character(df[, matching])
@@ -94,6 +124,7 @@ plot_sn_sp <- function(file1,
                        cutoff_c = 0.15, 
                        cutoff_l = 0.25)
 {
+  library(ggplot2)
 
   input1 <- read.csv(file1)
   input2 <- read.csv(file2)
