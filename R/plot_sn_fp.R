@@ -23,11 +23,6 @@
 #' will have prior matching
 #' @param do_cutoff for the "total_snv" plot TRUE adds additional
 #' cutoff on likelihood or cosine similarity on top of matching
-#' @param cutoff_l if do_cutoff is set to TRUE this parameter is 
-#' used for likelihood method
-#' @param cutoff_c if do_cutoff is set to TRUE this parameter is 
-#' used for cosine method
-#' @param snv_ranges ranges used for plotting  
 #'
 #' @examples
 #' plot_sn_fp('genomes_sig3_mc_output.csv', 
@@ -43,8 +38,7 @@ plot_sn_fp <- function(file1,
                        dependence = "total_snvs", 
                        snv_ranges = c(5, 15, 25, 35, 45, 55, 
                                       65, 75, 85, 100),
-                       cutoff_low = c(0, 0.002, 0.005, 0.007, 
-                                      0.01, 0.02, 0.05, 0.1, 
+                       cutoff_low = c(0, 0.01, 0.02, 0.05, 0.1, 
                                       0.15, 0.2, 0.25, 0.3, 
                                       0.35, 0.4, 0.45, 0.5, 
                                       0.55, 0.6, 0.65, 0.7, 
@@ -52,9 +46,7 @@ plot_sn_fp <- function(file1,
                                       0.9, 0.92, 0.94, 0.96, 
                                       0.98, 0.99, 0.995, 0.997),
                        with_matching = FALSE,
-                       do_cutoff = FALSE,
-                       cutoff_c = 0.15, 
-                       cutoff_l = 0.25)
+                       do_cutoff = FALSE)
 {
   library(ggplot2)
   color_l_c <- c('#76ACF1', '#0B148B')
@@ -67,18 +59,29 @@ plot_sn_fp <- function(file1,
 
   merged <- rbind(input1, input2)
  
-  if(!do_cutoff){
-    cutoff_c <- 0
-    cutoff_l <- 0
+  if(!do_cutoff){ # if no cut off should be applied set it to 0
+    cutoff_c <- rep(0, length(nsnv_ranges) - 1)
+    cutoff_l <- rep(0, length(nsnv_ranges) - 1)
+  }else{   
+    list_cutoff <- tune_cutoff_vs_nsnv(input1, input2, signame1, signame2, snv_ranges, cutoff_low)
+    cutoff_c <- list_cutoff$cutoff_c
+    cutoff_l <- list_cutoff$cutoff_l
   }
+
+
   if(dependence == "total_snvs"){
+    # calculate sensitivity and false positive rate as a function of NSNV
     
+    # for the likelihood method    
     df_l <- sn_fp_vs_nsnv(merged, signame1, signame2, snv_ranges, 'sig_max_l', cutoff_l)
+    # for the cosine similarity method
     df_c <- sn_fp_vs_nsnv(merged, signame1, signame2, snv_ranges, 'sig_max_c', cutoff_c)   
     df <- rbind(df_l, df_c) 
     
+    # set method to char for plotting
     df$method <- as.character(df$method)
 
+    # plot sensitivity vs FPR 
     plot <- ggplot(df, aes(x = fp, y = sn)) 
     plot <- plot + geom_line(aes(color = method))
     plot <- plot + scale_color_manual(values = color_l_c)
@@ -87,6 +90,7 @@ plot_sn_fp <- function(file1,
     plot <- plot + xlab('FPR') + ylab('Sensitivity')
     plot <- plot + xlim(0, 0.15)
     plot <- plot + ylim(0, 1)
+
     ggsave(plot, 
            file = sprintf('sn_fp_%s_%s_%s_cutoff%d.jpg', 
                            dependence, 
@@ -95,11 +99,50 @@ plot_sn_fp <- function(file1,
                            do_cutoff),
            width = 8,
            height = 4)
+
+    # plot sensitivity as a function of NSNV
+    plot <- ggplot(df, aes(x = (nsnv_low + nsnv_high)/2., y = sn)) 
+    plot <- plot + geom_line(aes(color = method))
+    plot <- plot + scale_color_manual(values = color_l_c)
+    plot <- plot + facet_wrap( ~ truth)
+    plot <- plot + theme_bw()
+    plot <- plot + xlab('# SNV') + ylab('Sensitivity')
+    ggsave(plot, 
+           file = sprintf('sn_nsnv_%s_%s_%s_cutoff%d.jpg', 
+                           dependence, 
+                           signame1, 
+                           signame2, 
+                           do_cutoff),
+           width = 8,
+           height = 4)
+
+
+    # plot specificity as a function of NSNV
+    plot <- ggplot(df, aes(x = (nsnv_low + nsnv_high)/2., y = fp)) 
+    plot <- plot + geom_line(aes(color = method))
+    plot <- plot + scale_color_manual(values = color_l_c)
+    plot <- plot + facet_wrap( ~ truth)
+    plot <- plot + theme_bw()
+    plot <- plot + xlab('# SNV') + ylab('FPR')
+    ggsave(plot, 
+           file = sprintf('fp_nsnv_%s_%s_%s_cutoff%d.jpg', 
+                           dependence, 
+                           signame1, 
+                           signame2, 
+                           do_cutoff),
+           width = 8,
+           height = 4)
+
   }
 
   # no selection is applied on number of SNVs cut off is varied
   if(dependence == "cutoff"){
     if(with_matching){  # first matching is done then cutoff is varied
+      # first calculate the effect of matching on sensitivity and false 
+      # positive rate, these values are applied as overall scales later
+      # when the scan over cutoff values is made
+
+      # for the likelihood method
       scale_df_l <- sn_fp_vs_nsnv(merged, 
                                   signame1, 
                                   signame2, 
@@ -112,6 +155,7 @@ plot_sn_fp <- function(file1,
       scale_fp_l <- scale_df_l$fp[scale_df_l$truth == signame1]
       scale_sn_l <- scale_df_l$sn[scale_df_l$truth == signame1]
 
+      #for the cosine similarity method
       scale_df_c <- sn_fp_vs_nsnv(merged, 
                                   signame1, 
                                   signame2, 
@@ -123,13 +167,19 @@ plot_sn_fp <- function(file1,
       scale_fp_c <- scale_df_c$fp[scale_df_c$truth == signame1]
       scale_sn_c <- scale_df_c$sn[scale_df_c$truth == signame1]
 
+      # calculate relative sensitivity and false positive rate by
+      # changing the cut off 
+   
+      # for the likelihood method
       df_l <- calc_sn_fp_cut(input1$max_l[input1$sig_max_l == signame1], 
                              input2$max_l[input2$sig_max_l == signame1], 
                              cutoff_low)
+      # for the cosine similarity method
       df_c <- calc_sn_fp_cut(input1$max_c[input1$sig_max_c == signame1], 
                              input2$max_c[input2$sig_max_c == signame1], 
                              cutoff_low)
 
+      #apply the scales obtained from just matching
       df_l$sn <- df_l$sn*scale_sn_l
       df_l$fp <- df_l$fp*scale_fp_l
 
@@ -138,14 +188,16 @@ plot_sn_fp <- function(file1,
 
       df_l$method <- 'sig_max_l'
       df_c$method <- 'sig_max_c'
+
     }else{  # no prior matching is applied just cutoff is varied
-      scale_fp_l <- 1
-      scale_sn_l <- 1
-      scale_fp_c <- 1
-      scale_sn_c <- 1
+      # calculate sensitivity and false positive rate by varying 
+      # the cutoff values
+
+      # for likelihood method
       df_l <- calc_sn_fp_cut(input1[, paste0(signame1, '_l')], 
                              input2[, paste0(signame1, '_l')], 
                              cutoff_low)
+      # for cosine similarity method
       df_c <- calc_sn_fp_cut(input1[, paste0(signame1, '_c')], 
                              input2[, paste0(signame1, '_c')], 
                              cutoff_low)
@@ -153,14 +205,16 @@ plot_sn_fp <- function(file1,
       df_l$method <- 'sig_max_l'
       df_c$method <- 'sig_max_c'
     }
+
     df <- rbind(df_l, df_c)
-    
+
+    # set method to be char instead of factor for consistency of colors
     df$method <- as.character(df$method)
 
+    #plot the roc curve
     plot <- ggplot(df, aes(x = fp, y = sn, color = method)) + geom_line()
     plot <- plot + theme_bw() + xlab('FPR') + ylab('Sensitivity')
     plot <- plot + scale_color_manual(values = color_l_c)
-
     if(with_matching) plot <- plot + labs(title = sprintf('Samples matched to %s', signame1)) 
     else plot <- plot + labs(title = 'No prior matching')
 
@@ -220,6 +274,8 @@ calc_sn_fp_cut <- function(vals_true, vals_false, cutoff_low){
 
 sn_fp_vs_nsnv <- function(df, signame1, signame2, snv_ranges, matching, cutoff){
 
+  print(cutoff)
+
   fp_vec1 <- rep(0, length(snv_ranges) - 1)
   fp_vec2 <- rep(0, length(snv_ranges) - 1)
   sn_vec1 <- rep(0, length(snv_ranges) - 1)
@@ -228,7 +284,7 @@ sn_fp_vs_nsnv <- function(df, signame1, signame2, snv_ranges, matching, cutoff){
   for(isnv in 1:(length(snv_ranges) - 1)){
     df_this <- df[df$total_snvs >= snv_ranges[[isnv]] &
                   df$total_snvs < snv_ranges[[isnv + 1]],]
-    sn_fp <- calc_sn_fp_matching(df_this, signame1, signame2, matching, cutoff)
+    sn_fp <- calc_sn_fp_matching(df_this, signame1, signame2, matching, cutoff[[isnv]])
     fp_vec1[[isnv]] <- sn_fp$fp1
     fp_vec2[[isnv]] <- sn_fp$fp2
     sn_vec1[[isnv]] <- sn_fp$sn1
@@ -249,4 +305,41 @@ sn_fp_vs_nsnv <- function(df, signame1, signame2, snv_ranges, matching, cutoff){
                     method = matching)
   df <- rbind(df1, df2)
   return(df)
+}
+
+tune_cutoff <- function(sn_vec, fp_vec, cutoff_low){
+
+  ind_max <- which(max(sn_vec - 5*fp_vec) == (sn_vec - 5*fp_vec))[[1]]
+  return(cutoff_low[[ind_max]])
+}
+
+tune_cutoff_vs_nsnv <- function(input1, input2, signame1, signame2, snv_ranges, cutoff_low){
+  cutoff_l <- rep(0, length(snv_ranges) - 1)
+  cutoff_c <- rep(0, length(snv_ranges) - 1)
+  
+  for(isnv in 1:(length(snv_ranges) - 1)){
+
+    input1_this <- input1[input1$total_snvs >= snv_ranges[[isnv]] & input1$total_snvs < snv_ranges[[isnv + 1]], ]
+    input2_this <- input2[input2$total_snvs >= snv_ranges[[isnv]] & input2$total_snvs < snv_ranges[[isnv + 1]], ]
+
+
+    df_l_1 <- calc_sn_fp_cut(input1_this$max_l[input1_this$sig_max_l == signame1], 
+                             input2_this$max_l[input2_this$sig_max_l == signame1], 
+                             cutoff_low)
+    cutoff_l_1 <- tune_cutoff((sum(input1_this$sig_max_l == signame1)/dim(input1_this)[[1]])*df_l_1$sn, 
+                            (sum(input2_this$sig_max_l == signame1)/dim(input2_this)[[1]])*df_l_1$fp, 
+                            cutoff_low)
+
+    df_c_1 <- calc_sn_fp_cut(input1_this$max_c[input1_this$sig_max_c == signame1], 
+                           input2_this$max_c[input2_this$sig_max_c == signame1], 
+                           cutoff_low)
+
+    cutoff_c_1 <- tune_cutoff((sum(input1_this$sig_max_c == signame1)/dim(input1_this)[[1]])*df_c_1$sn, 
+                            (sum(input2_this$sig_max_c == signame1)/dim(input2_this)[[1]])*df_c_1$fp, 
+                            cutoff_low)
+    
+    cutoff_l[[isnv]] <- cutoff_l_1
+    cutoff_c[[isnv]] <- cutoff_c_1
+  }
+  return(list(cutoff_l = cutoff_l, cutoff_c = cutoff_c))
 }
