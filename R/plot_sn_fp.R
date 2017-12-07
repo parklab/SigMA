@@ -234,6 +234,7 @@ calc_sn_fp_matching <- function(df, signame1, signame2, matching, cutoff){
 
   total1 <- sum(df$truth == signame1)
   total2 <- sum(df$truth == signame2)
+
   tp1 <- sum(df$truth == signame1 &
              df[, matching] == signame1 &
              df[, paste0('max', strsplit(matching, 'sig_max')[[1]][[2]])] >= cutoff)
@@ -262,9 +263,10 @@ calc_sn_fp_cut <- function(vals_true, vals_false, cutoff_low){
   number_neg <- length(vals_false)
   number_pos <- length(vals_true)
   
+  
   for(icut in 1:length(cutoff_low)){
-    falsepos[[icut]] <- sum(vals_false > cutoff_low[[icut]])/number_neg
-    sensitivity[[icut]] <- sum(vals_true > cutoff_low[[icut]])/number_pos
+    if(number_neg != 0) falsepos[[icut]] <- sum(vals_false > cutoff_low[[icut]])/number_neg
+    if(number_pos != 0)sensitivity[[icut]] <- sum(vals_true > cutoff_low[[icut]])/number_pos
   }
   
   return(data.frame(cutoff_low = cutoff_low,
@@ -306,7 +308,7 @@ sn_fp_vs_nsnv <- function(df, signame1, signame2, snv_ranges, matching, cutoff){
 }
 
 tune_cutoff <- function(sn_vec, fp_vec, cutoff_low){
-
+  ind_max <- which(max(sn_vec - 5*fp_vec) == (sn_vec - 5*fp_vec))[[1]]
   ind_max <- which(max(sn_vec - 5*fp_vec) == (sn_vec - 5*fp_vec))[[1]]
   return(cutoff_low[[ind_max]])
 }
@@ -316,25 +318,36 @@ tune_cutoff_vs_nsnv <- function(input1, input2, signame1, signame2, snv_ranges, 
   cutoff_c <- rep(0, length(snv_ranges) - 1)
   
   for(isnv in 1:(length(snv_ranges) - 1)){
-
     input1_this <- input1[input1$total_snvs >= snv_ranges[[isnv]] & input1$total_snvs < snv_ranges[[isnv + 1]], ]
     input2_this <- input2[input2$total_snvs >= snv_ranges[[isnv]] & input2$total_snvs < snv_ranges[[isnv + 1]], ]
+    
+    vals_pos_l <- input1_this$max_l[input1_this$sig_max_l == signame1]
+    vals_neg_l <- input2_this$max_l[input2_this$sig_max_l == signame1]
 
+    vals_pos_c <- input1_this$max_c[input1_this$sig_max_c == signame1]
+    vals_neg_c <- input2_this$max_c[input2_this$sig_max_c == signame1]
 
-    df_l_1 <- calc_sn_fp_cut(input1_this$max_l[input1_this$sig_max_l == signame1], 
-                             input2_this$max_l[input2_this$sig_max_l == signame1], 
+    scale_sn_l <- (sum(input1_this$sig_max_l == signame1)/dim(input1_this)[[1]])
+    scale_fp_l <- (sum(input2_this$sig_max_l == signame1)/dim(input2_this)[[1]])
+
+    scale_sn_c <- (sum(input1_this$sig_max_c == signame1)/dim(input1_this)[[1]])
+    scale_fp_c <- (sum(input2_this$sig_max_c == signame1)/dim(input2_this)[[1]])
+
+    df_l_1 <- calc_sn_fp_cut(vals_pos_l, 
+                             vals_neg_l, 
                              cutoff_low)
-    cutoff_l_1 <- tune_cutoff((sum(input1_this$sig_max_l == signame1)/dim(input1_this)[[1]])*df_l_1$sn, 
-                            (sum(input2_this$sig_max_l == signame1)/dim(input2_this)[[1]])*df_l_1$fp, 
-                            cutoff_low)
+    
+    cutoff_l_1 <- tune_cutoff(scale_sn_l*df_l_1$sn, 
+                              scale_fp_l*df_l_1$fp, 
+                              cutoff_low)
 
-    df_c_1 <- calc_sn_fp_cut(input1_this$max_c[input1_this$sig_max_c == signame1], 
-                           input2_this$max_c[input2_this$sig_max_c == signame1], 
-                           cutoff_low)
+    df_c_1 <- calc_sn_fp_cut(vals_pos_c, 
+                             vals_neg_c,
+                             cutoff_low)
 
-    cutoff_c_1 <- tune_cutoff((sum(input1_this$sig_max_c == signame1)/dim(input1_this)[[1]])*df_c_1$sn, 
-                            (sum(input2_this$sig_max_c == signame1)/dim(input2_this)[[1]])*df_c_1$fp, 
-                            cutoff_low)
+    cutoff_c_1 <- tune_cutoff(scale_sn_c*df_c_1$sn, 
+                              scale_fp_c*df_c_1$fp, 
+                              cutoff_low)
     
     cutoff_l[[isnv]] <- cutoff_l_1
     cutoff_c[[isnv]] <- cutoff_c_1
