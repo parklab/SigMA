@@ -274,8 +274,6 @@ calc_sn_fp_cut <- function(vals_true, vals_false, cutoff_low){
 
 sn_fp_vs_nsnv <- function(df, signame1, signame2, snv_ranges, matching, cutoff){
 
-  print(cutoff)
-
   fp_vec1 <- rep(0, length(snv_ranges) - 1)
   fp_vec2 <- rep(0, length(snv_ranges) - 1)
   sn_vec1 <- rep(0, length(snv_ranges) - 1)
