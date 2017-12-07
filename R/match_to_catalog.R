@@ -75,7 +75,7 @@ match_to_catalog <- function(genomes, signatures){
                    max_sigs_cos_all, 
                    max_val_cos_all)
   colnames(genomes) <- c(colnames_before, 
-                         paste0(colnames(signatures), 'l')
+                         paste0(colnames(signatures), 'l'),
                          'sig_max_l', 
                          'max_l',  
                          paste0(colnames(signatures), 'c'),
