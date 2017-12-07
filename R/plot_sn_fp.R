@@ -35,82 +35,6 @@
 #'           'Signature_3', 
 #'           'Signature_5')
 
-calc_sn_fp_matching <- function(df, signame1, signame2, matching, cutoff){
-  df[, matching] <- as.character(df[, matching])
-  df$truth <- as.character(df$truth)
-
-  total1 <- sum(df$truth == signame1)
-  total2 <- sum(df$truth == signame2)
-  tp1 <- sum(df$truth == signame1 &
-             df[, matching] == signame1 &
-             df[, paste0('max', strsplit(matching, 'sig_max')[[1]][[2]])] >= cutoff)
-  tp2 <- sum(df$truth == signame2 &
-             df[, matching] == signame2 &
-             df[, paste0('max', strsplit(matching, 'sig_max')[[1]][[2]])] >= cutoff)
-  fp1 <- sum(df$truth == signame2 &
-             df[, matching] == signame1 &
-             df[, paste0('max', strsplit(matching, 'sig_max')[[1]][[2]])] >= cutoff)
-  fp2 <- sum(df$truth == signame1 &
-             df[, matching] == signame2 &
-             df[, paste0('max', strsplit(matching, 'sig_max')[[1]][[2]])] >= cutoff)
-   
-
-  sn1 <- tp1/total1
-  fp1 <- fp1/total2
-  sn2 <- tp2/total2
-  fp2 <- fp2/total1
-  return(list(fp1 = fp1, sn1 = sn1, fp2 = fp2, sn2 = sn2))
-}
-
-calc_sn_fp_cut <- function(vals_true, vals_false, cutoff_low){
-  falsepos <- rep(0, length(cutoff_low))
-  sensitivity <- rep(0, length(cutoff_low))
-  
-  number_neg <- length(vals_false)
-  number_pos <- length(vals_true)
-  
-  for(icut in 1:length(cutoff_low)){
-    falsepos[[icut]] <- sum(vals_false > cutoff_low[[icut]])/number_neg
-    sensitivity[[icut]] <- sum(vals_true > cutoff_low[[icut]])/number_pos
-  }
-  
-  return(data.frame(cutoff_low = cutoff_low,
-                    sn = sensitivity,
-                    fp = falsepos))
-}
-
-sn_fp_vs_nsnv <- function(df, signame1, signame2, snv_ranges, matching, cutoff){
-
-  fp_vec1 <- rep(0, length(snv_ranges) - 1)
-  fp_vec2 <- rep(0, length(snv_ranges) - 1)
-  sn_vec1 <- rep(0, length(snv_ranges) - 1)
-  sn_vec2 <- rep(0, length(snv_ranges) - 1)
-  
-  for(isnv in 1:(length(snv_ranges) - 1)){
-    df_this <- df[df$total_snvs >= snv_ranges[[isnv]] &
-                  df$total_snvs < snv_ranges[[isnv + 1]],]
-    sn_fp <- calc_sn_fp_matching(df_this, signame1, signame2, matching, cutoff)
-    fp_vec1[[isnv]] <- sn_fp$fp1
-    fp_vec2[[isnv]] <- sn_fp$fp2
-    sn_vec1[[isnv]] <- sn_fp$sn1
-    sn_vec2[[isnv]] <- sn_fp$sn2
-  }
-
-  df1 <- data.frame(fp = fp_vec1, 
-                    sn = sn_vec1, 
-                    nsnv_low = snv_ranges[1:(length(snv_ranges) - 1)],
-                    nsnv_high = snv_ranges[2:length(snv_ranges)],
-                    truth = signame1,
-                    method = matching)
-  df2 <- data.frame(fp = fp_vec2, 
-                    sn = sn_vec2, 
-                    nsnv_low = snv_ranges[1:(length(snv_ranges) - 1)],
-                    nsnv_high = snv_ranges[2:length(snv_ranges)],
-                    truth = signame2,
-                    method = matching)
-  df <- rbind(df1, df2)
-  return(df)
-}
 
 plot_sn_fp <- function(file1, 
                        file2, 
@@ -248,4 +172,81 @@ plot_sn_fp <- function(file1,
            height = 4, 
            width = 5)
   }
+}
+
+calc_sn_fp_matching <- function(df, signame1, signame2, matching, cutoff){
+  df[, matching] <- as.character(df[, matching])
+  df$truth <- as.character(df$truth)
+
+  total1 <- sum(df$truth == signame1)
+  total2 <- sum(df$truth == signame2)
+  tp1 <- sum(df$truth == signame1 &
+             df[, matching] == signame1 &
+             df[, paste0('max', strsplit(matching, 'sig_max')[[1]][[2]])] >= cutoff)
+  tp2 <- sum(df$truth == signame2 &
+             df[, matching] == signame2 &
+             df[, paste0('max', strsplit(matching, 'sig_max')[[1]][[2]])] >= cutoff)
+  fp1 <- sum(df$truth == signame2 &
+             df[, matching] == signame1 &
+             df[, paste0('max', strsplit(matching, 'sig_max')[[1]][[2]])] >= cutoff)
+  fp2 <- sum(df$truth == signame1 &
+             df[, matching] == signame2 &
+             df[, paste0('max', strsplit(matching, 'sig_max')[[1]][[2]])] >= cutoff)
+   
+
+  sn1 <- tp1/total1
+  fp1 <- fp1/total2
+  sn2 <- tp2/total2
+  fp2 <- fp2/total1
+  return(list(fp1 = fp1, sn1 = sn1, fp2 = fp2, sn2 = sn2))
+}
+
+calc_sn_fp_cut <- function(vals_true, vals_false, cutoff_low){
+  falsepos <- rep(0, length(cutoff_low))
+  sensitivity <- rep(0, length(cutoff_low))
+  
+  number_neg <- length(vals_false)
+  number_pos <- length(vals_true)
+  
+  for(icut in 1:length(cutoff_low)){
+    falsepos[[icut]] <- sum(vals_false > cutoff_low[[icut]])/number_neg
+    sensitivity[[icut]] <- sum(vals_true > cutoff_low[[icut]])/number_pos
+  }
+  
+  return(data.frame(cutoff_low = cutoff_low,
+                    sn = sensitivity,
+                    fp = falsepos))
+}
+
+sn_fp_vs_nsnv <- function(df, signame1, signame2, snv_ranges, matching, cutoff){
+
+  fp_vec1 <- rep(0, length(snv_ranges) - 1)
+  fp_vec2 <- rep(0, length(snv_ranges) - 1)
+  sn_vec1 <- rep(0, length(snv_ranges) - 1)
+  sn_vec2 <- rep(0, length(snv_ranges) - 1)
+  
+  for(isnv in 1:(length(snv_ranges) - 1)){
+    df_this <- df[df$total_snvs >= snv_ranges[[isnv]] &
+                  df$total_snvs < snv_ranges[[isnv + 1]],]
+    sn_fp <- calc_sn_fp_matching(df_this, signame1, signame2, matching, cutoff)
+    fp_vec1[[isnv]] <- sn_fp$fp1
+    fp_vec2[[isnv]] <- sn_fp$fp2
+    sn_vec1[[isnv]] <- sn_fp$sn1
+    sn_vec2[[isnv]] <- sn_fp$sn2
+  }
+
+  df1 <- data.frame(fp = fp_vec1, 
+                    sn = sn_vec1, 
+                    nsnv_low = snv_ranges[1:(length(snv_ranges) - 1)],
+                    nsnv_high = snv_ranges[2:length(snv_ranges)],
+                    truth = signame1,
+                    method = matching)
+  df2 <- data.frame(fp = fp_vec2, 
+                    sn = sn_vec2, 
+                    nsnv_low = snv_ranges[1:(length(snv_ranges) - 1)],
+                    nsnv_high = snv_ranges[2:length(snv_ranges)],
+                    truth = signame2,
+                    method = matching)
+  df <- rbind(df1, df2)
+  return(df)
 }
