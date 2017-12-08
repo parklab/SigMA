@@ -10,23 +10,41 @@
 #' and in addition columns associated to each signature in
 #' in the catalog with likelihood and cosine simil values
 
-
-match_to_catalog <- function(genomes, signatures){
-  eps <- 0.001
-  calc_prob <- function(this_genome){
+match_to_catalog <- function(genomes, signatures, ntype = 96){
+  calc_prob <- function(this_genome, signatures){
+    eps <- 0.00001
     probs <- apply(signatures, 2, 
 	           function(x, pow){ 
                      prob <- 0
                      for(i in 1:length(x)){
                        if(x[[i]] == 0) x[[i]] <- eps
-	               prob <- prob + pow[[i]] * log(x[[i]])
+	               if(pow[[i]] > 0){
+                         prob <- prob + pow[[i]] * log(x[[i]]) 
+                       }
 	             }
 	             return(prob)
                    },
                    pow = this_genome)
 
-    probs <- exp(probs - log(sum(exp(probs))))
+    mean_probs <- mean(probs)
+    q1_probs <- mean(probs[probs < mean(probs)])
+    q3_probs <- mean(probs[probs > mean(probs)])
+    q7_probs <- mean(probs[probs > q3_probs])
+    max_probs <- max(probs)
+
+    inds_keep <- which(probs >= q3_probs)
+    inds_rm <- which(probs < q3_probs)
+    
+    probs[inds_keep] <- exp(probs[inds_keep] - max_probs)
+    probs[inds_rm] <- 0
+
+#    norm <- sum(probs)
+#    print('norm')
+#    print(norm)
+#    probs <- probs/norm
+
     ind_max <- which(max(probs) == probs)[[1]]
+
     sig_max <- colnames(signatures)[[ind_max]]
     max_val <- probs[[ind_max]]
     return(list(probs = probs, ind_max = ind_max, sig_max = sig_max, max_val = max_val))
@@ -36,7 +54,7 @@ match_to_catalog <- function(genomes, signatures){
     return(x%*%y / sqrt(x%*%x * y%*%y))
   }
 
-  calc_cos <- function(this_genome){
+  calc_cos <- function(this_genome, signatures){
     simils <- apply(signatures, 2,
                     function(x){ cosine(this_genome, x) })
     ind_max <- which(max(simils) == simils)
@@ -45,42 +63,33 @@ match_to_catalog <- function(genomes, signatures){
     return(list(simils = simils, ind_max = ind_max, sig_max = sig_max, max_val = max_val))
   }
 
-
+  print(1)
   signature_names <- colnames(signatures)
   genome_matrix <- genomes[, 1:dim(signatures)[[1]]]
-
+  
+  print(2)
   probs_all    <- apply(genome_matrix, 1, 
-                        function(x){calc_prob(x)$probs})
+                        function(x, y){calc_prob(x, y)$probs}, y = signatures)
   max_sigs_all <- apply(genome_matrix, 1, 
-                        function(x){calc_prob(x)$sig_max})
+                        function(x, y){calc_prob(x, y)$sig_max}, y = signatures)
   max_val_all  <- apply(genome_matrix, 1, 
-                        function(x){calc_prob(x)$max_val})
+                        function(x, y){calc_prob(x, y)$max_val}, y = signatures)
 
+  print(3)
   simils_all    <- apply(genome_matrix, 1, 
-                        function(x){calc_cos(x)$simils})
+                        function(x, y){calc_cos(x, y)$simils}, y = signatures)
   max_sigs_cos_all <- apply(genome_matrix, 1, 
-                        function(x){calc_cos(x)$sig_max})
+                        function(x, y){calc_cos(x, y)$sig_max}, y = signatures)
   max_val_cos_all  <- apply(genome_matrix, 1, 
-                        function(x){calc_cos(x)$max_val})
+                        function(x, y){calc_cos(x, y)$max_val}, y = signatures)
 
-
+  print(4)
   colnames_before <- colnames(genomes)
   genomes <- as.data.frame(genomes)
 
-  genomes <- cbind(genomes, 
-                   t(probs_all), 
-                   max_sigs_all, 
-                   max_val_all, 
-                   t(simils_all), 
-                   max_sigs_cos_all, 
-                   max_val_cos_all)
-  colnames(genomes) <- c(colnames_before, 
-                         paste0(colnames(signatures), 'l'),
-                         'sig_max_l', 
-                         'max_l',  
-                         paste0(colnames(signatures), 'c'),
-                         'sig_max_c', 
-                         'max_c')
+  genomes <- cbind(genomes, t(probs_all), max_sigs_all, max_val_all, t(simils_all), max_sigs_cos_all, max_val_cos_all)
+  colnames(genomes) <- c(colnames_before, paste0(colnames(signatures), '_l'), 'sig_max_l', 'max_l', 
+                      paste0(colnames(signatures), '_c'), 'sig_max_c', 'max_c')
 
   return(genomes)
 }
