@@ -6,10 +6,13 @@
 #' @param matching 'l' for likelihood and 'c' for cosine similarity
 #' @param snv_ranges bins on total number of SNVs used for annotating 
 #  the heat map
+#' @param file_name the name of the file where the plot will be saved 
 
 plot_heatmap <- function(inputfile, 
                          matching = 'l',
-                         snv_ranges = c(5, 25, 45, 65, 85, 105, 500, 1000)){
+                         snv_ranges = c(5, 25, 45, 65, 
+                                        85, 105, 500, 1000)
+                         file_name = "heatmap_test.jpg"){
   library(pheatmap)
 
   df <- read.csv(inputfile)
@@ -62,7 +65,7 @@ plot_heatmap <- function(inputfile,
   print(mat)
 
   #plot the heat map
-  jpeg('heatmap_test.jpg', width = 1000, height = 1000)
+  jpeg(file_name, width = 1000, height = 1000)
   pheatmap(mat, 
            annotation = groups, 
            annotation_colors = anno_colors, 
