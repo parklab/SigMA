@@ -45,7 +45,8 @@ plot_sn_fp <- function(file1,
                                       0.9, 0.92, 0.94, 0.96, 
                                       0.98, 0.99, 0.995, 0.997),
                        with_matching = FALSE,
-                       do_cutoff = FALSE)
+                       do_cutoff = FALSE,
+                       max_allowed_fp = 0.2)
 {
   library(ggplot2)
   color_l_c <- c('#76ACF1', '#0B148B')
@@ -62,7 +63,7 @@ plot_sn_fp <- function(file1,
     cutoff_c <- rep(0, length(snv_ranges) - 1)
     cutoff_l <- rep(0, length(snv_ranges) - 1)
   }else{   
-    list_cutoff <- tune_cutoff_vs_nsnv(input1, input2, signame1, signame2, snv_ranges, cutoff_low)
+    list_cutoff <- tune_cutoff_vs_nsnv(input1, input2, signame1, signame2, snv_ranges, cutoff_low, with_matching, max_allowed_fp)
     cutoff_c <- list_cutoff$cutoff_c
     cutoff_l <- list_cutoff$cutoff_l
   }
@@ -72,9 +73,9 @@ plot_sn_fp <- function(file1,
     # calculate sensitivity and false positive rate as a function of NSNV
     
     # for the likelihood method    
-    df_l <- sn_fp_vs_nsnv(merged, signame1, signame2, snv_ranges, 'sig_max_l', cutoff_l)
+    df_l <- sn_fp_vs_nsnv(merged, signame1, signame2, snv_ranges, 'sig_max_l', cutoff_l, with_matching)
     # for the cosine similarity method
-    df_c <- sn_fp_vs_nsnv(merged, signame1, signame2, snv_ranges, 'sig_max_c', cutoff_c)   
+    df_c <- sn_fp_vs_nsnv(merged, signame1, signame2, snv_ranges, 'sig_max_c', cutoff_c, with_matching)   
     df <- rbind(df_l, df_c) 
     
     # set method to char for plotting
@@ -143,7 +144,8 @@ plot_sn_fp <- function(file1,
                                   signame2, 
                                   c(min(merged$total_snvs), max(merged$total_snvs)), 
                                   'sig_max_l',
-                                  cutoff = 0)
+                                  cutoff = 0,
+                                  with_matching)
 
       scale_df_l$truth <- as.character(scale_df_l$truth)
 
@@ -156,7 +158,8 @@ plot_sn_fp <- function(file1,
                                   signame2, 
                                   c(min(merged$total_snvs), max(merged$total_snvs)), 
                                   'sig_max_c',
-                                  cutoff = 0)
+                                  cutoff = 0, 
+                                  with_matching)
 
       scale_df_c$truth <- as.character(scale_df_c$truth)
       scale_fp_c <- scale_df_c$fp[scale_df_c$truth == signame1]
@@ -269,7 +272,9 @@ calc_sn_fp_cut <- function(vals_true, vals_false, cutoff_low){
                     fp = falsepos))
 }
 
-sn_fp_vs_nsnv <- function(df, signame1, signame2, snv_ranges, matching, cutoff){
+
+
+sn_fp_vs_nsnv <- function(df, signame1, signame2, snv_ranges, matching, cutoff, with_matching){
 
   fp_vec1 <- rep(0, length(snv_ranges) - 1)
   fp_vec2 <- rep(0, length(snv_ranges) - 1)
@@ -279,11 +284,32 @@ sn_fp_vs_nsnv <- function(df, signame1, signame2, snv_ranges, matching, cutoff){
   for(isnv in 1:(length(snv_ranges) - 1)){
     df_this <- df[df$total_snvs >= snv_ranges[[isnv]] &
                   df$total_snvs < snv_ranges[[isnv + 1]],]
-    sn_fp <- calc_sn_fp_matching(df_this, signame1, signame2, matching, cutoff[[isnv]])
-    fp_vec1[[isnv]] <- sn_fp$fp1
-    fp_vec2[[isnv]] <- sn_fp$fp2
-    sn_vec1[[isnv]] <- sn_fp$sn1
-    sn_vec2[[isnv]] <- sn_fp$sn2
+    if(with_matching){
+      sn_fp <- calc_sn_fp_matching(df_this, 
+                                   signame1, 
+                                   signame2, 
+                                   matching, 
+                                   cutoff[[isnv]])
+      fp_vec1[[isnv]] <- sn_fp$fp1
+      fp_vec2[[isnv]] <- sn_fp$fp2
+      sn_vec1[[isnv]] <- sn_fp$sn1
+      sn_vec2[[isnv]] <- sn_fp$sn2
+    }
+    else{
+      df_sig1 <- calc_sn_fp_cut(df[df$truth == signame1, paste0(signame1, '_l')],
+                                df[df$truth == signame2, paste0(signame1, '_l')],
+                                cutoff[[isnv]])
+
+      df_sig2 <- calc_sn_fp_cut(df[df$truth == signame2, paste0(signame2, '_l')],
+                                df[df$truth == signame1, paste0(signame2, '_l')],
+                                cutoff[[isnv]])
+
+      fp_vec1[[isnv]] <- df_sig1$fp
+      fp_vec2[[isnv]] <- df_sig2$fp
+      sn_vec1[[isnv]] <- df_sig1$sn
+      sn_vec2[[isnv]] <- df_sig2$sn
+    }
+     
   }
 
   df1 <- data.frame(fp = fp_vec1, 
@@ -302,13 +328,12 @@ sn_fp_vs_nsnv <- function(df, signame1, signame2, snv_ranges, matching, cutoff){
   return(df)
 }
 
-tune_cutoff <- function(sn_vec, fp_vec, cutoff_low){
-  ind_max <- which(max(sn_vec - 5*fp_vec) == (sn_vec - 5*fp_vec))[[1]]
-  ind_max <- which(max(sn_vec - 5*fp_vec) == (sn_vec - 5*fp_vec))[[1]]
+tune_cutoff <- function(sn_vec, fp_vec, cutoff_low, max_allowed_fp){
+  ind_max <- which((max(sn_vec - 2 * fp_vec) == (sn_vec - 2 * fp_vec)) & fp_vec < max_allowed_fp)[[1]]
   return(cutoff_low[[ind_max]])
 }
 
-tune_cutoff_vs_nsnv <- function(input1, input2, signame1, signame2, snv_ranges, cutoff_low){
+tune_cutoff_vs_nsnv <- function(input1, input2, signame1, signame2, snv_ranges, cutoff_low, with_matching, max_allowed_fp){
   cutoff_l <- rep(0, length(snv_ranges) - 1)
   cutoff_c <- rep(0, length(snv_ranges) - 1)
   
@@ -316,17 +341,32 @@ tune_cutoff_vs_nsnv <- function(input1, input2, signame1, signame2, snv_ranges, 
     input1_this <- input1[input1$total_snvs >= snv_ranges[[isnv]] & input1$total_snvs < snv_ranges[[isnv + 1]], ]
     input2_this <- input2[input2$total_snvs >= snv_ranges[[isnv]] & input2$total_snvs < snv_ranges[[isnv + 1]], ]
     
-    vals_pos_l <- input1_this$max_l[input1_this$sig_max_l == signame1]
-    vals_neg_l <- input2_this$max_l[input2_this$sig_max_l == signame1]
+    if(with_matching){
+      vals_pos_l <- input1_this$max_l[input1_this$sig_max_l == signame1]
+      vals_neg_l <- input2_this$max_l[input2_this$sig_max_l == signame1]
 
-    vals_pos_c <- input1_this$max_c[input1_this$sig_max_c == signame1]
-    vals_neg_c <- input2_this$max_c[input2_this$sig_max_c == signame1]
+      vals_pos_c <- input1_this$max_c[input1_this$sig_max_c == signame1]
+      vals_neg_c <- input2_this$max_c[input2_this$sig_max_c == signame1]
 
-    scale_sn_l <- (sum(input1_this$sig_max_l == signame1)/dim(input1_this)[[1]])
-    scale_fp_l <- (sum(input2_this$sig_max_l == signame1)/dim(input2_this)[[1]])
+      scale_sn_l <- (sum(input1_this$sig_max_l == signame1)/dim(input1_this)[[1]])
+      scale_fp_l <- (sum(input2_this$sig_max_l == signame1)/dim(input2_this)[[1]])
 
-    scale_sn_c <- (sum(input1_this$sig_max_c == signame1)/dim(input1_this)[[1]])
-    scale_fp_c <- (sum(input2_this$sig_max_c == signame1)/dim(input2_this)[[1]])
+      scale_sn_c <- (sum(input1_this$sig_max_c == signame1)/dim(input1_this)[[1]])
+      scale_fp_c <- (sum(input2_this$sig_max_c == signame1)/dim(input2_this)[[1]])
+
+    }else{
+
+      scale_sn_l <- 1
+      scale_fp_l <- 1
+      scale_sn_c <- 1
+      scale_fp_c <- 1
+  
+      vals_pos_l <- input1_this[, paste0(signame1, '_l')]
+      vals_neg_l <- input2_this[, paste0(signame1, '_l')]
+
+      vals_pos_c <- input1_this[, paste0(signame1, '_c')]
+      vals_neg_c <- input2_this[, paste0(signame1, '_c')]  
+    }
 
     df_l_1 <- calc_sn_fp_cut(vals_pos_l, 
                              vals_neg_l, 
@@ -334,22 +374,29 @@ tune_cutoff_vs_nsnv <- function(input1, input2, signame1, signame2, snv_ranges, 
     
     cutoff_l_1 <- tune_cutoff(scale_sn_l*df_l_1$sn, 
                               scale_fp_l*df_l_1$fp, 
-                              cutoff_low)
-
+                              cutoff_low,
+                              max_allowed_fp)
     df_c_1 <- calc_sn_fp_cut(vals_pos_c, 
                              vals_neg_c,
                              cutoff_low)
-
+    
     cutoff_c_1 <- tune_cutoff(scale_sn_c*df_c_1$sn, 
                               scale_fp_c*df_c_1$fp, 
-                              cutoff_low)
-    
+                              cutoff_low, 
+                              max_allowed_fp)
+
     cutoff_l[[isnv]] <- cutoff_l_1
     cutoff_c[[isnv]] <- cutoff_c_1
   }
-  print(cutoff_l)
-  print(cutoff_c)
-
+  
+  write.table(data.frame(cutoff_l = cutoff_l, 
+                         cutoff_c = cutoff_c, 
+                         snv_ranges = snv_ranges),
+              'tuned_cuts_vs_nsnvs.csv',
+              row.names = F,
+              col.names = T, 
+              quote = F, 
+              sep = ',')
   return(list(cutoff_l = cutoff_l, cutoff_c = cutoff_c))
   
 }
