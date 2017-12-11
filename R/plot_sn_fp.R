@@ -36,8 +36,7 @@ plot_sn_fp <- function(file1,
                        signame1, 
                        signame2, 
                        dependence = "total_snvs", 
-                       snv_ranges = c(5, 15, 25, 35, 45, 55, 
-                                      65, 75, 85, 100),
+                       snv_ranges = c(5, 25, 45, 65, 85, 100),
                        cutoff_low = c(0, 0.01, 0.02, 0.05, 0.1, 
                                       0.15, 0.2, 0.25, 0.3, 
                                       0.35, 0.4, 0.45, 0.5, 
@@ -60,8 +59,8 @@ plot_sn_fp <- function(file1,
   merged <- rbind(input1, input2)
  
   if(!do_cutoff){ # if no cut off should be applied set it to 0
-    cutoff_c <- rep(0, length(nsnv_ranges) - 1)
-    cutoff_l <- rep(0, length(nsnv_ranges) - 1)
+    cutoff_c <- rep(0, length(snv_ranges) - 1)
+    cutoff_l <- rep(0, length(snv_ranges) - 1)
   }else{   
     list_cutoff <- tune_cutoff_vs_nsnv(input1, input2, signame1, signame2, snv_ranges, cutoff_low)
     cutoff_c <- list_cutoff$cutoff_c
@@ -82,13 +81,11 @@ plot_sn_fp <- function(file1,
     df$method <- as.character(df$method)
 
     # plot sensitivity vs FPR 
-    plot <- ggplot(df, aes(x = fp, y = sn)) 
+    plot <- ggplot(df[df$truth == signame1,], aes(x = fp, y = sn)) 
     plot <- plot + geom_line(aes(color = method))
     plot <- plot + scale_color_manual(values = color_l_c)
-    plot <- plot + facet_wrap( ~ truth)
     plot <- plot + theme_bw()
     plot <- plot + xlab('FPR') + ylab('Sensitivity')
-    plot <- plot + xlim(0, 0.15)
     plot <- plot + ylim(0, 1)
 
     ggsave(plot, 
@@ -97,14 +94,13 @@ plot_sn_fp <- function(file1,
                            signame1, 
                            signame2, 
                            do_cutoff),
-           width = 8,
+           width = 5,
            height = 4)
 
     # plot sensitivity as a function of NSNV
-    plot <- ggplot(df, aes(x = (nsnv_low + nsnv_high)/2., y = sn)) 
+    plot <- ggplot(df[df$truth == signame1,], aes(x = (nsnv_low + nsnv_high)/2., y = sn)) 
     plot <- plot + geom_line(aes(color = method))
     plot <- plot + scale_color_manual(values = color_l_c)
-    plot <- plot + facet_wrap( ~ truth)
     plot <- plot + theme_bw()
     plot <- plot + xlab('# SNV') + ylab('Sensitivity')
     ggsave(plot, 
@@ -113,15 +109,14 @@ plot_sn_fp <- function(file1,
                            signame1, 
                            signame2, 
                            do_cutoff),
-           width = 8,
+           width = 5,
            height = 4)
 
 
     # plot specificity as a function of NSNV
-    plot <- ggplot(df, aes(x = (nsnv_low + nsnv_high)/2., y = fp)) 
+    plot <- ggplot(df[df$truth == signame1,], aes(x = (nsnv_low + nsnv_high)/2., y = fp)) 
     plot <- plot + geom_line(aes(color = method))
     plot <- plot + scale_color_manual(values = color_l_c)
-    plot <- plot + facet_wrap( ~ truth)
     plot <- plot + theme_bw()
     plot <- plot + xlab('# SNV') + ylab('FPR')
     ggsave(plot, 
@@ -130,7 +125,7 @@ plot_sn_fp <- function(file1,
                            signame1, 
                            signame2, 
                            do_cutoff),
-           width = 8,
+           width = 5,
            height = 4)
 
   }
@@ -352,5 +347,9 @@ tune_cutoff_vs_nsnv <- function(input1, input2, signame1, signame2, snv_ranges, 
     cutoff_l[[isnv]] <- cutoff_l_1
     cutoff_c[[isnv]] <- cutoff_c_1
   }
+  print(cutoff_l)
+  print(cutoff_c)
+
   return(list(cutoff_l = cutoff_l, cutoff_c = cutoff_c))
+  
 }
