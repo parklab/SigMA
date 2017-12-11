@@ -69,7 +69,6 @@ run <- function(genome_file,
       signatures_cosmic <- read.csv(signatures_cosmic_file)
       signatures_cosmic <- signatures_cosmic[, grep('Signature', colnames(signatures_cosmic))]
     }
-    str(signatures_pcawg)
  
     matched_inds <- match(colnames(signatures_pcawg), colnames(signatures_cosmic))
     matched_inds <- matched_inds[!is.na(matched_inds)]
@@ -87,8 +86,6 @@ run <- function(genome_file,
   }
  
   genomes <- read.csv(genome_file)
-  str(signatures)
-
   output <- match_to_catalog(genomes, signatures)
   
 

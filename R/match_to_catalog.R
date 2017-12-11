@@ -38,11 +38,6 @@ match_to_catalog <- function(genomes, signatures, ntype = 96){
     probs[inds_keep] <- exp(probs[inds_keep] - max_probs)
     probs[inds_rm] <- 0
 
-#    norm <- sum(probs)
-#    print('norm')
-#    print(norm)
-#    probs <- probs/norm
-
     ind_max <- which(max(probs) == probs)[[1]]
 
     sig_max <- colnames(signatures)[[ind_max]]
@@ -63,11 +58,9 @@ match_to_catalog <- function(genomes, signatures, ntype = 96){
     return(list(simils = simils, ind_max = ind_max, sig_max = sig_max, max_val = max_val))
   }
 
-  print(1)
   signature_names <- colnames(signatures)
   genome_matrix <- genomes[, 1:dim(signatures)[[1]]]
   
-  print(2)
   probs_all    <- apply(genome_matrix, 1, 
                         function(x, y){calc_prob(x, y)$probs}, y = signatures)
   max_sigs_all <- apply(genome_matrix, 1, 
