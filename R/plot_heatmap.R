@@ -11,7 +11,7 @@
 plot_heatmap <- function(inputfile, 
                          matching = 'l',
                          snv_ranges = c(5, 25, 45, 65, 
-                                        85, 105, 500, 1000)
+                                        85, 105, 500, 1000),
                          file_name = "heatmap_test.jpg"){
   library(pheatmap)
 
