@@ -185,6 +185,9 @@ conv_snv_matrix_to_df <- function(genomes_matrix){
                                   nstrand = 1){
   #get vcf obj using genomic ranges
   vcf <- VariantAnnotation::readVcf(vcf_file)
+  if(dim(vcf)[[1]] == 0)
+    return(rep(0, length(types)))
+
   gr <- GenomicRanges::granges(vcf)  
 
   #get ref and alt
@@ -211,12 +214,12 @@ conv_snv_matrix_to_df <- function(genomes_matrix){
                     sep = "\t", 
                     header = TRUE, 
                     stringsAsFactors = TRUE)
-  str(maf)
+
+  if(dim(maf)[[1]] == 0) return(rep(0, 96))
+
   maf <- maf[maf$Variant_Type == "SNP",]
   maf$Tumor_Seq_Allele2[maf$Tumor_Seq_Allele2 == "TRUE"] <- "T"
   maf <-  maf[maf$Chromosome != "MT",]
-
-  if(dim(maf)[[1]] == 0) return(rep(0, 96))
 
   gr <- with(maf, GenomicRanges::GRanges(Chromosome, 
                                          IRanges::IRanges(Start_Position, End_Position)))
