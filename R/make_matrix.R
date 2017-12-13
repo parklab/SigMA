@@ -21,13 +21,7 @@
 #'             ncontext = 5,
 #'             nstrand = 2)
 
-make_matrix <- function(directory, file_type = 'vcf', ref_genome = BSgenome.Hsapiens.UCSC.hg19, ncontext = 3, nstrand = 1){
-  library(VariantAnnotation)
-  library(GenomicRanges)
-  library(BSgenome)
-
-  library(BSgenome.Hsapiens.UCSC.hg19)
-
+make_matrix <- function(directory, file_type = 'vcf', ref_genome = BSgenome.Hsapiens.UCSC.hg19::BSgenome.Hsapiens.UCSC.hg19, ncontext = 3, nstrand = 1){
   file_list <- list.files(directory)
   file_list <- paste0(directory, '/', file_list)
  
@@ -161,14 +155,14 @@ conv_snv_matrix_to_df <- function(genomes_matrix){
                                  ncontext = 3, 
                                  nstrand = 1){
   #get a range of ncontext around snv
-  gr_context <- resize(gr, ncontext, fix = 'center')
+  gr_context <- GenomicRanges::resize(gr, ncontext, fix = 'center')
 
   #read the context around snv from the reference
-  seq_start <- start(gr_context)
-  seq_end <- end(gr_context)
+  seq_start <- GenomicRanges::start(gr_context)
+  seq_end <- GenomicRanges::end(gr_context)
   
-  chrom_nums <- paste0('chr',as.vector(seqnames(gr_context)))
-  context_seq <- getSeq(ref_genome, 
+  chrom_nums <- paste0('chr',as.vector(GenomicRanges::seqnames(gr_context)))
+  context_seq <- VariantAnnotation::getSeq(ref_genome, 
                         names = chrom_nums, 
                         start = seq_start, 
                         end = seq_end, 
@@ -190,12 +184,12 @@ conv_snv_matrix_to_df <- function(genomes_matrix){
                                   ncontext = 3, 
                                   nstrand = 1){
   #get vcf obj using genomic ranges
-  vcf <- readVcf(vcf_file)
-  gr <- granges(vcf)  
+  vcf <- VariantAnnotation::readVcf(vcf_file)
+  gr <- GenomicRanges::granges(vcf)  
 
   #get ref and alt
-  ref_vector <- as.character(ref(vcf))
-  alt_vector <- as.character(unlist(alt(vcf)))
+  ref_vector <- as.character(VariantAnnotation::ref(vcf))
+  alt_vector <- as.character(unlist(VariantAnnotation::alt(vcf)))
  
   count_vector <- .make_vector_from_gr(gr, 
                                        ref_vector, 
@@ -224,7 +218,8 @@ conv_snv_matrix_to_df <- function(genomes_matrix){
 
   if(dim(maf)[[1]] == 0) return(rep(0, 96))
 
-  gr <- with(maf, GRanges(Chromosome, IRanges(Start_Position, End_Position)))
+  gr <- with(maf, GenomicRanges::GRanges(Chromosome, 
+                                         GenomicRanges::IRanges(Start_Position, End_Position)))
   
   ref_vector <- maf$Reference_Allele
   alt_vector <- maf$Tumor_Seq_Allele2
@@ -241,12 +236,13 @@ conv_snv_matrix_to_df <- function(genomes_matrix){
 
 ##given a list of vcf files returns a matrix
 .make_matrix_from_vcf_list <- function(vcf_files, 
-                                       ref_genome = BSgenome.Hsapiens.UCSC.hg19, 
+                                       ref_genome, 
                                        ncontext = 3, 
                                        nstrand = 1){
   matrix_snvs <- matrix(0, 6*4^(ncontext - 1)*nstrand, length(vcf_files))
   types <- .make_type(ncontext, nstrand)
   for(ifile in 1:length(vcf_files)){
+    print(vcf_files[[ifile]])
     count_vector <- .make_vector_from_vcf(vcf_files[[ifile]], 
                                           ref_genome, 
                                           types, 
@@ -260,7 +256,7 @@ conv_snv_matrix_to_df <- function(genomes_matrix){
 }
 
 .make_matrix_from_maf_list <- function(maf_files, 
-                                       ref_genome = BSgenome.Hsapiens.UCSC.hg19, 
+                                       ref_genome, 
                                        ncontext = 3, 
                                        nstrand = 1){
   matrix_snvs <- matrix(0, 6*4^(ncontext - 1)*nstrand, length(maf_files))

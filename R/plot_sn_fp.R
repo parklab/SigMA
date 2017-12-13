@@ -82,14 +82,14 @@ plot_sn_fp <- function(file1,
     df$method <- as.character(df$method)
 
     # plot sensitivity vs FPR 
-    plot <- ggplot(df[df$truth == signame1,], aes(x = fp, y = sn)) 
-    plot <- plot + geom_line(aes(color = method))
-    plot <- plot + scale_color_manual(values = color_l_c)
-    plot <- plot + theme_bw()
-    plot <- plot + xlab('FPR') + ylab('Sensitivity')
-    plot <- plot + ylim(0, 1)
+    plot <- ggplot2::ggplot(df[df$truth == signame1,], aes(x = fp, y = sn)) 
+    plot <- plot + ggplot2::geom_line(aes(color = method))
+    plot <- plot + ggplot2::scale_color_manual(values = color_l_c)
+    plot <- plot + ggplot2::theme_bw()
+    plot <- plot + ggplot2::xlab('FPR') + ggplot2::ylab('Sensitivity')
+    plot <- plot + ggplot2::ylim(0, 1)
 
-    ggsave(plot, 
+    ggplot2::ggsave(plot, 
            file = sprintf('sn_fp_%s_%s_%s_cutoff%d.jpg', 
                            dependence, 
                            signame1, 
@@ -99,12 +99,12 @@ plot_sn_fp <- function(file1,
            height = 4)
 
     # plot sensitivity as a function of NSNV
-    plot <- ggplot(df[df$truth == signame1,], aes(x = (nsnv_low + nsnv_high)/2., y = sn)) 
-    plot <- plot + geom_line(aes(color = method))
-    plot <- plot + scale_color_manual(values = color_l_c)
-    plot <- plot + theme_bw()
-    plot <- plot + xlab('# SNV') + ylab('Sensitivity')
-    ggsave(plot, 
+    plot <- ggplot2::ggplot(df[df$truth == signame1,], aes(x = (nsnv_low + nsnv_high)/2., y = sn)) 
+    plot <- plot + ggplot2::geom_line(aes(color = method))
+    plot <- plot + ggplot2::scale_color_manual(values = color_l_c)
+    plot <- plot + ggplot2::theme_bw()
+    plot <- plot + ggplot2::xlab('# SNV') + ggplot2::ylab('Sensitivity')
+    ggplot2::ggsave(plot, 
            file = sprintf('sn_nsnv_%s_%s_%s_cutoff%d.jpg', 
                            dependence, 
                            signame1, 
@@ -210,13 +210,13 @@ plot_sn_fp <- function(file1,
     df$method <- as.character(df$method)
 
     #plot the roc curve
-    plot <- ggplot(df, aes(x = fp, y = sn, color = method)) + geom_line()
-    plot <- plot + theme_bw() + xlab('FPR') + ylab('Sensitivity')
-    plot <- plot + scale_color_manual(values = color_l_c)
-    if(with_matching) plot <- plot + labs(title = sprintf('Samples matched to %s', signame1)) 
-    else plot <- plot + labs(title = 'No prior matching')
+    plot <- ggplot2::ggplot(df, aes(x = fp, y = sn, color = method)) + ggplot2::geom_line()
+    plot <- plot + ggplot2::theme_bw() + ggplot2::xlab('FPR') + ggplot2::ylab('Sensitivity')
+    plot <- plot + ggplot2::scale_color_manual(values = color_l_c)
+    if(with_matching) plot <- plot + ggplot2::labs(title = sprintf('Samples matched to %s', signame1)) 
+    else plot <- plot + ggplot2::labs(title = 'No prior matching')
 
-    ggsave(plot, 
+    ggplot2::ggsave(plot, 
            file = sprintf('sensitivity_falsepos_vs_cutoff_%s_%s_with_matching%d.jpg', 
                           signame1, 
                           signame2, 
@@ -391,7 +391,7 @@ tune_cutoff_vs_nsnv <- function(input1, input2, signame1, signame2, snv_ranges, 
   
   write.table(data.frame(cutoff_l = cutoff_l, 
                          cutoff_c = cutoff_c, 
-                         snv_ranges = snv_ranges),
+                         snv_low = snv_ranges[1:(length(snv_ranges) - 1)]),
               'tuned_cuts_vs_nsnvs.csv',
               row.names = F,
               col.names = T, 
