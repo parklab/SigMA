@@ -219,7 +219,7 @@ conv_snv_matrix_to_df <- function(genomes_matrix){
   if(dim(maf)[[1]] == 0) return(rep(0, 96))
 
   gr <- with(maf, GenomicRanges::GRanges(Chromosome, 
-                                         GenomicRanges::IRanges(Start_Position, End_Position)))
+                                         IRanges::IRanges(Start_Position, End_Position)))
   
   ref_vector <- maf$Reference_Allele
   alt_vector <- maf$Tumor_Seq_Allele2

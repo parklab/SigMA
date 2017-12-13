@@ -13,4 +13,5 @@ Imports:
     BSgenome.Hsapiens.UCSC.hg19,
     GenomicRanges,
     ggplot2,
+    IRanges,
     VariantAnnotation
