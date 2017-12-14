@@ -30,9 +30,7 @@ run <- function(genome_file,
                 rm_sigs = NULL,
                 use_weight = F){
 
-  print(3.1)
   genomes <- read.csv(genome_file)
-  print(3.2)
 
   signatures_cosmic_file <- system.file("extdata", 
                                         "sorted_cosmic_signatures.csv", 
@@ -89,11 +87,8 @@ run <- function(genome_file,
     signatures <- read.csv(custom_sig_file)
   }
 
-  print(3.3)
 
   output <- match_to_catalog(genomes, signatures, use_weight = use_weight)
-
-  print(3.4)  
 
   write.table(output, output_file, sep = ',', row.names = F, col.names = T, quote = F)
   return(output)

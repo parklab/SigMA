@@ -13,14 +13,12 @@ plot_heatmap <- function(inputfile,
                          snv_ranges = c(5, 25, 45, 65, 
                                         85, 105, 500, 1000),
                          file_name = "heatmap_test.jpg"){
-  print(4.1)
 
   df <- read.csv(inputfile)
   df$total_snvs <- rowSums(df[,1:96])
   df <- df[df$total_snvs >= snv_ranges[[1]] & df$total_snvs < snv_ranges[[length(snv_ranges)]],]
   df <- na.omit(df)
 
-  print(4.2)
   #get the columns with likelihood (or cosine similarity) info
   signames <- colnames(df)[grep('Signature_', colnames(df))]
   # choose likelihood or cosine similarity
@@ -63,7 +61,6 @@ plot_heatmap <- function(inputfile,
   mat <- as.data.frame(t(as.matrix(df_for_map)))
   colnames(mat) <- 1:dim(groups)[[1]]
 
-  print(4.3)
   #plot the heat map
   jpeg(file_name, width = 1000, height = 1000)
   pheatmap::pheatmap(mat, 

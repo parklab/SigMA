@@ -245,7 +245,6 @@ conv_snv_matrix_to_df <- function(genomes_matrix){
   matrix_snvs <- matrix(0, 6*4^(ncontext - 1)*nstrand, length(vcf_files))
   types <- .make_type(ncontext, nstrand)
   for(ifile in 1:length(vcf_files)){
-    print(vcf_files[[ifile]])
     count_vector <- .make_vector_from_vcf(vcf_files[[ifile]], 
                                           ref_genome, 
                                           types, 
