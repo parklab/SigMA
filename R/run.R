@@ -27,15 +27,19 @@ run <- function(genome_file,
                 output_file = 'output.csv',
                 sig_catalog = 'default', 
                 custom_sig_file = NULL,
-                rm_sigs = NULL){
+                rm_sigs = NULL,
+                use_weight = F){
 
+  print(3.1)
   genomes <- read.csv(genome_file)
+  print(3.2)
+
   signatures_cosmic_file <- system.file("extdata", 
                                         "sorted_cosmic_signatures.csv", 
-                                        package = "LowRStat")
+                                        package = "SOddIUM")
   signatures_pcawg_file <- system.file("extdata", 
                                        "sorted_PCAWG_signature_patterns_beta2.csv", 
-                                       package = "LowRStat")
+                                       package = "SOddIUM")
 
 
   # set signature catalog to 'cosmic' or 'pcawg' if only one is provided
@@ -84,10 +88,12 @@ run <- function(genome_file,
   if(length(grep("custom", sig_catalog) > 0)){
     signatures <- read.csv(custom_sig_file)
   }
- 
-  genomes <- read.csv(genome_file)
-  output <- match_to_catalog(genomes, signatures)
-  
+
+  print(3.3)
+
+  output <- match_to_catalog(genomes, signatures, use_weight = use_weight)
+
+  print(3.4)  
 
   write.table(output, output_file, sep = ',', row.names = F, col.names = T, quote = F)
   return(output)

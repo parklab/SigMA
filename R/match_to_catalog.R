@@ -10,7 +10,21 @@
 #' and in addition columns associated to each signature in
 #' in the catalog with likelihood and cosine simil values
 
-match_to_catalog <- function(genomes, signatures, ntype = 96){
+match_to_catalog <- function(genomes, signatures, ntype = 96, use_weight = F){
+
+  # if the dataset is bc this part is using weights for each signature to
+  # pick the most distinct context for calculating the probabilities
+  if(use_weight){
+    ind_bc <- grep('Signature_', colnames(weights_560_bc_cooccur_PCAWG_sig))
+    signatures <- signatures[, colnames(weights_560_bc_cooccur_PCAWG_sig)[ind_bc]]
+    weights <- weights_560_bc_cooccur_PCAWG_sig[, ind_bc]
+    signatures <- signatures * weights 
+  }else{
+    weights <- matrix(1, dim(weights_560_bc_cooccur_PCAWG_sig)[[1]],
+                      dim(weights_560_bc_cooccur_PCAWG_sig)[[2]])
+    colnames(weights) <- colnames(weights_560_bc_cooccur_PCAWG_sig)
+  }  
+
   calc_prob <- function(this_genome, signatures){
     eps <- 0.00001
 
@@ -36,9 +50,7 @@ match_to_catalog <- function(genomes, signatures, ntype = 96){
 
 
     mean_probs <- mean(probs)
-    q1_probs <- mean(probs[probs < mean(probs)])
     q3_probs <- mean(probs[probs > mean(probs)])
-    q7_probs <- mean(probs[probs > q3_probs])
     max_probs <- max(probs)
 
     inds_keep <- which(probs >= q3_probs)
