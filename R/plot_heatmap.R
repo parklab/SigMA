@@ -13,7 +13,6 @@ plot_heatmap <- function(inputfile,
                          snv_ranges = c(5, 25, 45, 65, 
                                         85, 105, 500, 1000),
                          file_name = "heatmap_test.jpg"){
-  library(pheatmap)
 
   df <- read.csv(inputfile)
   df$total_snvs <- rowSums(df[,1:96])
@@ -66,9 +65,9 @@ plot_heatmap <- function(inputfile,
 
   #plot the heat map
   jpeg(file_name, width = 1000, height = 1000)
-  pheatmap(mat, 
-           annotation = groups, 
-           annotation_colors = anno_colors, 
-           show_colnames = F)
+  pheatmap::pheatmap(mat, 
+                    annotation = groups, 
+                    annotation_colors = anno_colors, 
+                    show_colnames = F)
   dev.off()
 }

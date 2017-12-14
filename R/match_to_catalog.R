@@ -13,6 +13,14 @@
 match_to_catalog <- function(genomes, signatures, ntype = 96){
   calc_prob <- function(this_genome, signatures){
     eps <- 0.00001
+
+    if(sum(this_genome) == 0){
+      return(list(probs = rep(0, dim(signatures)[[2]]), 
+                  ind_max = NA, 
+                  sig_max = NA, 
+                  max_val = NA))
+    }
+
     probs <- apply(signatures, 2, 
 	           function(x, pow){ 
                      prob <- 0
@@ -25,6 +33,7 @@ match_to_catalog <- function(genomes, signatures, ntype = 96){
 	             return(prob)
                    },
                    pow = this_genome)
+
 
     mean_probs <- mean(probs)
     q1_probs <- mean(probs[probs < mean(probs)])
@@ -50,6 +59,13 @@ match_to_catalog <- function(genomes, signatures, ntype = 96){
   }
 
   calc_cos <- function(this_genome, signatures){
+    if(sum(this_genome) == 0){
+      return(list(simils = rep(0, dim(signatures)[[2]]), 
+                  ind_max = NA, 
+                  sig_max = NA, 
+                  max_val = NA))
+    }
+
     simils <- apply(signatures, 2,
                     function(x){ cosine(this_genome, x) })
     ind_max <- which(max(simils) == simils)
@@ -68,7 +84,6 @@ match_to_catalog <- function(genomes, signatures, ntype = 96){
   max_val_all  <- apply(genome_matrix, 1, 
                         function(x, y){calc_prob(x, y)$max_val}, y = signatures)
 
-  print(3)
   simils_all    <- apply(genome_matrix, 1, 
                         function(x, y){calc_cos(x, y)$simils}, y = signatures)
   max_sigs_cos_all <- apply(genome_matrix, 1, 
@@ -76,7 +91,6 @@ match_to_catalog <- function(genomes, signatures, ntype = 96){
   max_val_cos_all  <- apply(genome_matrix, 1, 
                         function(x, y){calc_cos(x, y)$max_val}, y = signatures)
 
-  print(4)
   colnames_before <- colnames(genomes)
   genomes <- as.data.frame(genomes)
 
