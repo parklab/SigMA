@@ -1,8 +1,8 @@
-Package: LowRStat
-Title: What the Package Does (one line, title case)
+Package: SOddIUM
+Title: Signature Odds in Unique Mutational Spectra
 Version: 0.0.0.9000
-Authors@R: person("First", "Last", email = "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
+Authors@R: person("Doga", "Gulhan", email = "dcgulhan@gmail.com", role = c("aut", "cre"))
+Description: Mutational signature analysis for a single genome with low counts of SNVs. When the mutation counts are low and number of cases to be considered in the signature analysis is low the standard methods such as NMF does not perform well. This method calculates the likelihood of signatures with few mutations. It is aimed in detection rather than decomposition of the spectra into many signature with their relative amplitudes, because with low counts this question is no longer realistic to ask.
 Depends: R (>= 3.4.0)
 License: What license is it under?
 Encoding: UTF-8

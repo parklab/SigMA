@@ -61,7 +61,6 @@ plot_heatmap <- function(inputfile,
   mat <- as.data.frame(t(as.matrix(df_for_map)))
   colnames(mat) <- 1:dim(groups)[[1]]
 
-  print(mat)
 
   #plot the heat map
   jpeg(file_name, width = 1000, height = 1000)
