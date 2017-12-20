@@ -4,14 +4,23 @@
 #' 
 #' @param directory pointer to the directory where input vcf 
 #' maf files reside
-#' @param file_type 'maf' or 'vcf'
+#' @param file_type 'maf', 'vcf' or 'custom'
 #' @param ref_genome name of the BSgenome currently set by default to
 #' BSgenome.Hsapiens.UCSC.hg19
 #' @param ncontext number of bases in the nucleotide sequence which 
 #' makes up the spectrum
-#' @param nstrand number of strands to be considered, 1 contracts to a single 
-#' strand which for ncontext = 3 gives the commonly used 96 dimensions
-
+#' @param nstrand number of strands to be considered, 1 contracts to 
+#' a single strand which for ncontext = 3 gives the commonly used 
+#' 96 dimensions
+#' @param chrom_colname used only for custom files a character 
+#' string defining the colname which holds the chromosome number
+#' @param pos_colname used only for custom files a character 
+#' string defining the colname which holds the position information
+#' @param alt_colname used only for custom files a character 
+#' string defining the colname which holds the alt allele
+#' @param ref_colname used only for custom files a character 
+#' string defining the colname which holds the ref allele
+#'
 #' @examples
 #' by default runs on vcf input and produces 96 dimensional spectra 
 #' make_matrix(directory = 'input')
@@ -21,12 +30,34 @@
 #'             ncontext = 5,
 #'             nstrand = 2)
 
-make_matrix <- function(directory, file_type = 'vcf', ref_genome = BSgenome.Hsapiens.UCSC.hg19::BSgenome.Hsapiens.UCSC.hg19, ncontext = 3, nstrand = 1){
+make_matrix <- function(directory, 
+                        file_type = 'vcf',
+                        ref_genome = BSgenome.Hsapiens.UCSC.hg19::BSgenome.Hsapiens.UCSC.hg19, 
+                        ncontext = 3, 
+                        nstrand = 1, 
+                        chrom_colname = NULL, 
+                        pos_colname = NULL, 
+                        ref_colname = NULL, 
+                        alt_colname = NULL){
   file_list <- list.files(directory)
   file_list <- paste0(directory, '/', file_list)
  
-  if(file_type == "vcf") .make_matrix_from_vcf_list(file_list, ref_genome, ncontext, nstrand)
-  else if(file_type == "maf") .make_matrix_from_maf_list(file_list, ref_genome, ncontext, nstrand)
+  if(file_type == "vcf") .make_matrix_from_vcf_list(file_list,  
+                                                    ref_genome, 
+                                                    ncontext, 
+                                                    nstrand)
+  else if(file_type == "maf") .make_matrix_from_maf_list(file_list, 
+                                                         ref_genome, 
+                                                         ncontext, 
+                                                         nstrand)
+  else if(file_type == "custom") .make_matrix_from_custom_list(file_list,
+                                                               ref_genome,
+                                                               ncontext,
+                                                               nstrand,
+                                                               chrom_colname,
+                                                               pos_colname,
+                                                               ref_colname,
+                                                               alt_colname)
   else stop('file_type should either be maf or vcf')
 }
 
@@ -221,6 +252,7 @@ conv_snv_matrix_to_df <- function(genomes_matrix){
   maf$Tumor_Seq_Allele2[maf$Tumor_Seq_Allele2 == "TRUE"] <- "T"
   maf <-  maf[maf$Chromosome != "MT",]
 
+
   gr <- with(maf, GenomicRanges::GRanges(Chromosome, 
                                          IRanges::IRanges(Start_Position, End_Position)))
   
@@ -234,6 +266,40 @@ conv_snv_matrix_to_df <- function(genomes_matrix){
                                        types, 
                                        ncontext, 
                                        nstrand)
+  return(count_vector)
+}
+
+.make_vector_from_custom <- function(custom_file, 
+                                  ref_genome, 
+                                  types, 
+                                  ncontext = 3, 
+                                  nstrand = 1,
+                                  chrom_colname,
+                                  pos_colname,
+                                  ref_colname,
+                                  alt_colname){
+  custom <- read.delim(custom_file, 
+                    sep = "\t", 
+                    header = TRUE, 
+                    stringsAsFactors = TRUE)
+
+  if(dim(custom)[[1]] == 0) return(rep(0, 96))
+  print(1)
+  gr <- GenomicRanges::GRanges(unlist(custom[chrom_colname]), 
+                               IRanges::IRanges(as.numeric(unlist(custom[pos_colname])), 
+                                                as.numeric(unlist(custom[pos_colname]))))
+  print(2)
+  ref_vector <- unlist(custom[ref_colname])
+  alt_vector <- unlist(custom[alt_colname])
+  print(3)
+  count_vector <- .make_vector_from_gr(gr, 
+                                       ref_vector, 
+                                       alt_vector, 
+                                       ref_genome, 
+                                       types, 
+                                       ncontext, 
+                                       nstrand)
+  print(4)
   return(count_vector)
 }
 
@@ -270,6 +336,36 @@ conv_snv_matrix_to_df <- function(genomes_matrix){
   }  
   rownames(matrix_snvs) <- types
   colnames(matrix_snvs) <- maf_files
+
+  return(matrix_snvs)
+}
+
+.make_matrix_from_custom_list <- function(custom_files, 
+                                          ref_genome, 
+                                          ncontext = 3, 
+                                          nstrand = 1, 
+                                          chrom_colname = chrom_colname,
+                                          pos_colname = pos_colname,
+                                          ref_colname = ref_colname,
+                                          alt_colname = alt_colname){
+
+  matrix_snvs <- matrix(0, 6*4^(ncontext - 1)*nstrand, length(custom_files))
+
+  types <- .make_type(ncontext, nstrand)
+  for(ifile in 1:length(custom_files)){
+    count_vector <- .make_vector_from_custom(custom_files[[ifile]], 
+                                          ref_genome, 
+                                          types, 
+                                          ncontext, 
+                                          nstrand,
+                                          chrom_colname,
+                                          pos_colname,
+                                          ref_colname,
+                                          alt_colname)   
+    matrix_snvs[, ifile] <- count_vector
+  }  
+  rownames(matrix_snvs) <- types
+  colnames(matrix_snvs) <- custom_files
 
   return(matrix_snvs)
 }
