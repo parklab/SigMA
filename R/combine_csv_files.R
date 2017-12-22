@@ -11,10 +11,13 @@
 #' @param add_info set to F by default this boolean should
 #' be set to T if the info_file is desired to be combined
 
-combine_csv_files <- function(directory, info_file, add_info = F){
+combine_csv_files <- function(directory, info_file, add_info = F, file_min = 1, file_max = 100){
   files <- list.files(directory, pattern = '*.csv')
-
-  if(add_info) info <- read.csv(info_file)
+  files <- files[file_min:file_max]
+  if(add_info){
+     info <- read.csv(info_file)
+     info <- info[, grep('Sig|tumor|tumour', colnames(info))]
+  }
 
   if(exists('merged_df')) rm(merged_df)
 
@@ -22,17 +25,18 @@ combine_csv_files <- function(directory, info_file, add_info = F){
     df <- read.csv(sprintf('%s/%s', directory, file))
 
     tumor <- unlist(strsplit(file, split = '.csv'))
+    print(tumor)
     if(add_info) info_this <- info[as.character(info$tumor) == tumor,]
-
     df$code <- paste0(tumor, 1:dim(df)[[1]])
     df <- cbind(df, info_this)
-   
     if(exists('merged_df')) merged_df <- rbind(df, merged_df)
     else merged_df <- df    
   }
 
+  print('write')
+  str
   write.table(merged_df, 
-              sprintf('merged_%s.csv', directory), 
+              file = sprintf('merged_%s_file_%d_%d.csv', directory, file_min, file_max), 
               sep = ',', 
               row.names = F,
               quote = F)
