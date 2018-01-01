@@ -49,7 +49,7 @@ tune_downsampled <- function(directory,
                                snv_ranges[[isnv]], 
                                snv_ranges[[isnv + 1]])
     output_file = sprintf('output_plot_sn_fp_useweight_%d_maxfp_%d.csv', 
-                          use_weight,
+                          as.integer(use_weight),
                           as.integer(round(max_allowed_fp * 100, digit = 0)))
 
     #create directories for the primary and secondary outputs
@@ -63,7 +63,7 @@ tune_downsampled <- function(directory,
     combine_csv_files(directory = directory, 
                       info_file = info_file, 
                       add_info = add_info, 
-                      use_weight = F, 
+                      use_weight = use_weight, 
                       signame_info = 'Sig3', 
                       snv_min = snv_ranges[[isnv]], 
                       snv_max = snv_ranges[[isnv + 1]],
