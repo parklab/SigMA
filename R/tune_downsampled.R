@@ -35,8 +35,6 @@ tune_downsampled <- function(directory,
                                             420, 440, 460, 480, 500),
                              max_allowed_fp = 1.
                                ){
-  source('run.R')
-  source('plot_sn_fp.R')
 
   nsnv_ranges <- length(snv_ranges) - 1
 
