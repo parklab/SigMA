@@ -52,6 +52,8 @@ plot_sn_fp <- function(file1,
                        output_file = 'test_sn_fp_output.csv',
                        output_dir = '.')
 {
+  print('snv ranges')
+  print(snv_ranges)
 
   library(ggplot2)
   color_l_c <- c('#76ACF1', '#0B148B')
@@ -80,7 +82,8 @@ plot_sn_fp <- function(file1,
                                        with_matching = with_matching,  
                                        max_allowed_fp = max_allowed_fp, 
                                        output_dir = output_dir, 
-                                       output_file = output_file)
+                                       output_file = output_file,
+                                       plot_dir = plot_dir)
     cutoff_c <- list_cutoff$cutoff_c
     cutoff_l <- list_cutoff$cutoff_l
   }
@@ -101,58 +104,58 @@ plot_sn_fp <- function(file1,
     if(write_output) write.table(df, sprintf('%s/%s_%s', output_dir, dependence, output_file), row.names = F, quote = F, sep = ',')
 
     # plot sensitivity vs FPR 
-    plot <- ggplot(df[df$truth == signame1,], aes(x = fp, y = sn)) 
-    plot <- plot + geom_line(aes(color = method))
-    plot <- plot + scale_color_manual(values = color_l_c)
-    plot <- plot + theme_bw()
-    plot <- plot + xlab('FPR') + ylab('Sensitivity')
-    plot <- plot + ylim(0, 1)
+    plot <- ggplot2::ggplot(df[df$truth == signame1,], aes(x = fp, y = sn)) 
+    plot <- plot + ggplot2::geom_line(aes(color = method))
+    plot <- plot + ggplot2::scale_color_manual(values = color_l_c)
+    plot <- plot + ggplot2::theme_bw()
+    plot <- plot + ggplot2::xlab('FPR') + ggplot2::ylab('Sensitivity')
+    plot <- plot + ggplot2::ylim(0, 1)
 
-    ggsave(plot, 
-           file = sprintf('%s/sn_fp_%s_%s_%s_%s_cutoff%d.jpg', 
-                           plot_dir, 
-                           dependence,
-                           output_file,  
-                           signame1, 
-                           signame2, 
-                           do_cutoff),
-           width = 5,
-           height = 4)
+    ggplot2::ggsave(plot, 
+                    file = sprintf('%s/sn_fp_%s_%s_%s_%s_cutoff%d.jpg', 
+                                   plot_dir, 
+                                   dependence,
+                                   output_file,  
+                                   signame1, 
+                                   signame2, 
+                                   do_cutoff),
+                    width = 5,
+                    height = 4)
     
     # plot sensitivity as a function of NSNV
-    plot <- ggplot(df[df$truth == signame1,], aes(x = (nsnv_low + nsnv_high)/2., y = sn))
-    plot <- plot + geom_line(aes(color = method))
-    plot <- plot + scale_color_manual(values = color_l_c)
-    plot <- plot + theme_bw()
-    plot <- plot + xlab('# SNV') + ylab('Sensitivity')
-    ggsave(plot, 
-           file = sprintf('%s/sn_nsnv_%s_%s_%s_%s_cutoff%d.jpg',
-                           plot_dir, 
-                           dependence,
-                           output_file, 
-                           signame1, 
-                           signame2, 
-                           do_cutoff),
-           width = 5,
-           height = 4)
+    plot <- ggplot2::ggplot(df[df$truth == signame1,], aes(x = (nsnv_low + nsnv_high)/2., y = sn))
+    plot <- plot + ggplot2::geom_line(aes(color = method))
+    plot <- plot + ggplot2::scale_color_manual(values = color_l_c)
+    plot <- plot + ggplot2::theme_bw()
+    plot <- plot + ggplot2::xlab('# SNV') + ggplot2::ylab('Sensitivity')
+    ggplot2::ggsave(plot, 
+                   file = sprintf('%s/sn_nsnv_%s_%s_%s_%s_cutoff%d.jpg',
+                                 plot_dir, 
+                                 dependence,
+                                 output_file, 
+                                 signame1, 
+                                 signame2, 
+                                 do_cutoff),
+                   width = 5,
+                   height = 4)
 
 
     # plot specificity as a function of NSNV
-    plot <- ggplot(df[df$truth == signame1,], aes(x = (nsnv_low + nsnv_high)/2., y = fp)) 
-    plot <- plot + geom_line(aes(color = method))
-    plot <- plot + scale_color_manual(values = color_l_c)
-    plot <- plot + theme_bw()
-    plot <- plot + xlab('# SNV') + ylab('FPR')
-    ggsave(plot, 
-           file = sprintf('%s/fp_nsnv_%s_%s_%s_%s_cutoff%d.jpg', 
-                           plot_dir,
-                           dependence, 
-                           output_file,
-                           signame1, 
-                           signame2, 
-                           do_cutoff),
-           width = 5,
-           height = 4)
+    plot <- ggplot2::ggplot(df[df$truth == signame1,], aes(x = (nsnv_low + nsnv_high)/2., y = fp)) 
+    plot <- plot + ggplot2::geom_line(aes(color = method))
+    plot <- plot + ggplot2::scale_color_manual(values = color_l_c)
+    plot <- plot + ggplot2::theme_bw()
+    plot <- plot + ggplot2::xlab('# SNV') + ggplot2::ylab('FPR')
+    ggplot2::ggsave(plot, 
+                    file = sprintf('%s/fp_nsnv_%s_%s_%s_%s_cutoff%d.jpg', 
+                                   plot_dir,
+                                   dependence, 
+                                   output_file,
+                                   signame1, 
+                                   signame2, 
+                                   do_cutoff),
+                    width = 5,
+                    height = 4)
 
   }
 
@@ -237,21 +240,21 @@ plot_sn_fp <- function(file1,
     if(write_output) write.table(df, sprintf('%s/%s_%s', output_dir, dependence, output_file), row.names = F, quote = F, sep = ',')
 
     #plot the roc curve
-    plot <- ggplot(df, aes(x = fp, y = sn, color = method)) + geom_line()
-    plot <- plot + theme_bw() + xlab('FPR') + ylab('Sensitivity')
-    plot <- plot + scale_color_manual(values = color_l_c)
-    if(with_matching) plot <- plot + labs(title = sprintf('Samples matched to %s', signame1)) 
-    else plot <- plot + labs(title = 'No prior matching')
+    plot <- ggplot2::ggplot(df, aes(x = fp, y = sn, color = method)) + ggplot2::geom_line()
+    plot <- plot + ggplot2::theme_bw() + ggplot2::xlab('FPR') + ggplot2::ylab('Sensitivity')
+    plot <- plot + ggplot2::scale_color_manual(values = color_l_c)
+    if(with_matching) plot <- plot + ggplot2::labs(title = sprintf('Samples matched to %s', signame1)) 
+    else plot <- plot + ggplot2::labs(title = 'No prior matching')
 
-    ggsave(plot, 
-           file = sprintf('%s/sensitivity_falsepos_vs_cutoff_%s_%s_%s_with_matching%d.jpg', 
-                          plot_dir,
-                          output_file, 
-                          signame1, 
-                          signame2, 
-                          with_matching), 
-           height = 4, 
-           width = 5)
+    ggplot2::ggsave(plot, 
+                    file = sprintf('%s/sensitivity_falsepos_vs_cutoff_%s_%s_%s_with_matching%d.jpg', 
+                                   plot_dir,
+                                   output_file, 
+                                   signame1, 
+                                   signame2, 
+                                   with_matching), 
+                    height = 4, 
+                    width = 5)
   }
 }
 
@@ -283,7 +286,9 @@ calc_sn_fp_matching <- function(df, signame1, signame2, matching, cutoff){
   return(list(fp1 = fp1, sn1 = sn1, fp2 = fp2, sn2 = sn2))
 }
 
-calc_sn_fp_cut <- function(vals_true, vals_false, cutoff_low){
+calc_sn_fp_cut <- function(vals_true, 
+                           vals_false, 
+                           cutoff_low){
   falsepos <- rep(0, length(cutoff_low))
   sensitivity <- rep(0, length(cutoff_low))
   
@@ -303,7 +308,13 @@ calc_sn_fp_cut <- function(vals_true, vals_false, cutoff_low){
 
 
 
-sn_fp_vs_nsnv <- function(df, signame1, signame2, snv_ranges, matching, cutoff, with_matching){
+sn_fp_vs_nsnv <- function(df, 
+                          signame1, 
+                          signame2, 
+                          snv_ranges, 
+                          matching, 
+                          cutoff, 
+                          with_matching){
 
   fp_vec1 <- rep(0, length(snv_ranges) - 1)
   fp_vec2 <- rep(0, length(snv_ranges) - 1)
@@ -364,13 +375,23 @@ tune_cutoff <- function(sn_vec, fp_vec, cutoff_low, max_allowed_fp){
   fp_vec <- fp_vec[indices_keep]
 
   cutoff_low <- cutoff_low[indices_keep]    
-
   ind_max <- which(max(sn_vec - 2 * fp_vec) == (sn_vec - 2 * fp_vec))[[1]]
 
   return(cutoff_low[[ind_max]])
 }
 
-tune_cutoff_vs_nsnv <- function(input1, input2, signame1, signame2, snv_ranges, cutoff_low, with_matching, max_allowed_fp, output_dir, output_file){
+tune_cutoff_vs_nsnv <- function(input1, 
+                                input2, 
+                                signame1, 
+                                signame2, 
+                                snv_ranges,  
+                                cutoff_low, 
+                                with_matching, 
+                                max_allowed_fp, 
+                                output_dir, 
+                                output_file, 
+                                plot_dir){
+
   cutoff_l <- rep(0, length(snv_ranges) - 1)
   cutoff_c <- rep(0, length(snv_ranges) - 1)
   
@@ -418,16 +439,34 @@ tune_cutoff_vs_nsnv <- function(input1, input2, signame1, signame2, snv_ranges, 
     df_c_1 <- calc_sn_fp_cut(vals_pos_c, 
                              vals_neg_c,
                              cutoff_low)
-    
-    cutoff_c_1 <- tune_cutoff(scale_sn_c*df_c_1$sn, 
-                              scale_fp_c*df_c_1$fp, 
-                              cutoff_low, 
-                              max_allowed_fp = max_allowed_fp)
+
+    df_l_1$method <- 'l'
+    df_l_1$sn <- df_l_1$sn * scale_sn_l
+    df_l_1$fp <- df_l_1$fp * scale_fp_l
+
+    df_c_1$method <- 'c'
+    df_c_1$sn <- df_c_1$sn * scale_sn_c
+    df_c_1$fp <- df_c_1$fp * scale_fp_c
+   
+     
+    df_1 <- rbind(df_l_1, df_c_1)    
+    plot <- ggplot2::ggplot(df_1, aes(x = fp, y = sn)) 
+    plot <- plot + ggplot2::geom_line(aes(color = method))
+    plot <- plot + ggplot2::theme_bw()
+    ggsave(plot, file = sprintf('%s/tune_%d_%d.pdf', 
+                                 plot_dir, 
+                                 min(snv_ranges), 
+                                 max(snv_ranges)))
+
+    cutoff_c_1 <- ggplot2::tune_cutoff(scale_sn_c*df_c_1$sn, 
+                                       scale_fp_c*df_c_1$fp, 
+                                       cutoff_low, 
+                                       max_allowed_fp = max_allowed_fp)
 
     cutoff_l[[isnv]] <- cutoff_l_1
     cutoff_c[[isnv]] <- cutoff_c_1
   }
-  
+
   write.table(data.frame(cutoff_l = cutoff_l, 
                          cutoff_c = cutoff_c, 
                          snv_low = snv_ranges[1:(length(snv_ranges) - 1)]),
