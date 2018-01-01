@@ -449,12 +449,12 @@ tune_cutoff_vs_nsnv <- function(input1,
     plot <- ggplot2::ggplot(df_1, ggplot2::aes(x = fp, y = sn)) 
     plot <- plot + ggplot2::geom_line(ggplot2::aes(color = method))
     plot <- plot + ggplot2::theme_bw()
-    ggsave(plot, file = sprintf('%s/tune_%d_%d.pdf', 
-                                 plot_dir, 
-                                 min(snv_ranges), 
-                                 max(snv_ranges)))
+    ggplot2::ggsave(plot, file = sprintf('%s/tune_%d_%d.pdf', 
+                                         plot_dir, 
+                                         min(snv_ranges), 
+                                         max(snv_ranges)))
 
-    cutoff_c_1 <- ggplot2::tune_cutoff(scale_sn_c*df_c_1$sn, 
+    cutoff_c_1 <- tune_cutoff(scale_sn_c*df_c_1$sn, 
                                        scale_fp_c*df_c_1$fp, 
                                        cutoff_low, 
                                        max_allowed_fp = max_allowed_fp)
