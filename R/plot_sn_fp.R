@@ -100,8 +100,8 @@ plot_sn_fp <- function(file1,
     if(write_output) write.table(df, sprintf('%s/%s_%s', output_dir, dependence, output_file), row.names = F, quote = F, sep = ',')
 
     # plot sensitivity vs FPR 
-    plot <- ggplot2::ggplot(df[df$truth == signame1,], aes(x = fp, y = sn)) 
-    plot <- plot + ggplot2::geom_line(aes(color = method))
+    plot <- ggplot2::ggplot(df[df$truth == signame1,], ggplot2::aes(x = fp, y = sn)) 
+    plot <- plot + ggplot2::geom_line(ggplot2::aes(color = method))
     plot <- plot + ggplot2::scale_color_manual(values = color_l_c)
     plot <- plot + ggplot2::theme_bw()
     plot <- plot + ggplot2::xlab('FPR') + ggplot2::ylab('Sensitivity')
@@ -119,8 +119,8 @@ plot_sn_fp <- function(file1,
                     height = 4)
     
     # plot sensitivity as a function of NSNV
-    plot <- ggplot2::ggplot(df[df$truth == signame1,], aes(x = (nsnv_low + nsnv_high)/2., y = sn))
-    plot <- plot + ggplot2::geom_line(aes(color = method))
+    plot <- ggplot2::ggplot(df[df$truth == signame1,], ggplot2::aes(x = (nsnv_low + nsnv_high)/2., y = sn))
+    plot <- plot + ggplot2::geom_line(ggplot2::aes(color = method))
     plot <- plot + ggplot2::scale_color_manual(values = color_l_c)
     plot <- plot + ggplot2::theme_bw()
     plot <- plot + ggplot2::xlab('# SNV') + ggplot2::ylab('Sensitivity')
@@ -137,8 +137,8 @@ plot_sn_fp <- function(file1,
 
 
     # plot specificity as a function of NSNV
-    plot <- ggplot2::ggplot(df[df$truth == signame1,], aes(x = (nsnv_low + nsnv_high)/2., y = fp)) 
-    plot <- plot + ggplot2::geom_line(aes(color = method))
+    plot <- ggplot2::ggplot(df[df$truth == signame1,], ggplot2::aes(x = (nsnv_low + nsnv_high)/2., y = fp)) 
+    plot <- plot + ggplot2::geom_line(ggplot2:aes(color = method))
     plot <- plot + ggplot2::scale_color_manual(values = color_l_c)
     plot <- plot + ggplot2::theme_bw()
     plot <- plot + ggplot2::xlab('# SNV') + ggplot2::ylab('FPR')
@@ -236,7 +236,7 @@ plot_sn_fp <- function(file1,
     if(write_output) write.table(df, sprintf('%s/%s_%s', output_dir, dependence, output_file), row.names = F, quote = F, sep = ',')
 
     #plot the roc curve
-    plot <- ggplot2::ggplot(df, aes(x = fp, y = sn, color = method)) + ggplot2::geom_line()
+    plot <- ggplot2::ggplot(df, ggplot2::aes(x = fp, y = sn, color = method)) + ggplot2::geom_line()
     plot <- plot + ggplot2::theme_bw() + ggplot2::xlab('FPR') + ggplot2::ylab('Sensitivity')
     plot <- plot + ggplot2::scale_color_manual(values = color_l_c)
     if(with_matching) plot <- plot + ggplot2::labs(title = sprintf('Samples matched to %s', signame1)) 
@@ -446,8 +446,8 @@ tune_cutoff_vs_nsnv <- function(input1,
    
      
     df_1 <- rbind(df_l_1, df_c_1)    
-    plot <- ggplot2::ggplot(df_1, aes(x = fp, y = sn)) 
-    plot <- plot + ggplot2::geom_line(aes(color = method))
+    plot <- ggplot2::ggplot(df_1, ggplot2::aes(x = fp, y = sn)) 
+    plot <- plot + ggplot2::geom_line(ggplot2::aes(color = method))
     plot <- plot + ggplot2::theme_bw()
     ggsave(plot, file = sprintf('%s/tune_%d_%d.pdf', 
                                  plot_dir, 
