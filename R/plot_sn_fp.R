@@ -25,7 +25,7 @@
 #' cutoff on likelihood or cosine similarity on top of matching
 #'
 #' @examples
-#' plot_sn_fp('genomes_sig3_mc_output.csv', 
+#' plot_sn_fp('genomes_sig3_mc_output.csv 
 #'           'genomes_sig5_mc_output.csv', 
 #'           'Signature_3', 
 #'           'Signature_5')
@@ -46,14 +46,24 @@ plot_sn_fp <- function(file1,
                                       0.98, 0.99, 0.995, 0.997),
                        with_matching = FALSE,
                        do_cutoff = FALSE,
-                       max_allowed_fp = 0.2)
+                       max_allowed_fp = 0.5, 
+                       plot_dir = '.',
+                       write_output = F,
+                       output_file = 'test_sn_fp_output.csv',
+                       output_dir = '.')
 {
+  print('snv ranges')
+  print(snv_ranges)
+
   library(ggplot2)
   color_l_c <- c('#76ACF1', '#0B148B')
 
   input1 <- read.csv(file1)
   input2 <- read.csv(file2)
   
+  if(sum(colnames(input1) == 'total_snvs') == 0) input1$total_snvs <- rowSums(input1[, 1:96])
+  if(sum(colnames(input2) == 'total_snvs') == 0) input2$total_snvs <- rowSums(input2[, 1:96])
+ 
   input1$truth <- signame1
   input2$truth <- signame2
 
@@ -63,7 +73,16 @@ plot_sn_fp <- function(file1,
     cutoff_c <- rep(0, length(snv_ranges) - 1)
     cutoff_l <- rep(0, length(snv_ranges) - 1)
   }else{   
-    list_cutoff <- tune_cutoff_vs_nsnv(input1, input2, signame1, signame2, snv_ranges, cutoff_low, with_matching, max_allowed_fp)
+    list_cutoff <- tune_cutoff_vs_nsnv(input1 = input1, 
+                                       input2 = input2, 
+                                       signame1 = signame1, 
+                                       signame2 = signame2, 
+                                       snv_ranges = snv_ranges, 
+                                       cutoff_low = cutoff_low, 
+                                       with_matching = with_matching,  
+                                       max_allowed_fp = max_allowed_fp, 
+                                       output_dir = output_dir, 
+                                       output_file = output_file)
     cutoff_c <- list_cutoff$cutoff_c
     cutoff_l <- list_cutoff$cutoff_l
   }
@@ -80,33 +99,39 @@ plot_sn_fp <- function(file1,
     
     # set method to char for plotting
     df$method <- as.character(df$method)
+    
+    if(write_output) write.table(df, sprintf('%s/%s_%s', output_dir, dependence, output_file), row.names = F, quote = F, sep = ',')
 
     # plot sensitivity vs FPR 
-    plot <- ggplot2::ggplot(df[df$truth == signame1,], aes(x = fp, y = sn)) 
-    plot <- plot + ggplot2::geom_line(aes(color = method))
-    plot <- plot + ggplot2::scale_color_manual(values = color_l_c)
-    plot <- plot + ggplot2::theme_bw()
-    plot <- plot + ggplot2::xlab('FPR') + ggplot2::ylab('Sensitivity')
-    plot <- plot + ggplot2::ylim(0, 1)
+    plot <- ggplot(df[df$truth == signame1,], aes(x = fp, y = sn)) 
+    plot <- plot + geom_line(aes(color = method))
+    plot <- plot + scale_color_manual(values = color_l_c)
+    plot <- plot + theme_bw()
+    plot <- plot + xlab('FPR') + ylab('Sensitivity')
+    plot <- plot + ylim(0, 1)
 
-    ggplot2::ggsave(plot, 
-           file = sprintf('sn_fp_%s_%s_%s_cutoff%d.jpg', 
-                           dependence, 
+    ggsave(plot, 
+           file = sprintf('%s/sn_fp_%s_%s_%s_%s_cutoff%d.jpg', 
+                           plot_dir, 
+                           dependence,
+                           output_file,  
                            signame1, 
                            signame2, 
                            do_cutoff),
            width = 5,
            height = 4)
-
+    
     # plot sensitivity as a function of NSNV
-    plot <- ggplot2::ggplot(df[df$truth == signame1,], aes(x = (nsnv_low + nsnv_high)/2., y = sn)) 
-    plot <- plot + ggplot2::geom_line(aes(color = method))
-    plot <- plot + ggplot2::scale_color_manual(values = color_l_c)
-    plot <- plot + ggplot2::theme_bw()
-    plot <- plot + ggplot2::xlab('# SNV') + ggplot2::ylab('Sensitivity')
-    ggplot2::ggsave(plot, 
-           file = sprintf('sn_nsnv_%s_%s_%s_cutoff%d.jpg', 
-                           dependence, 
+    plot <- ggplot(df[df$truth == signame1,], aes(x = (nsnv_low + nsnv_high)/2., y = sn))
+    plot <- plot + geom_line(aes(color = method))
+    plot <- plot + scale_color_manual(values = color_l_c)
+    plot <- plot + theme_bw()
+    plot <- plot + xlab('# SNV') + ylab('Sensitivity')
+    ggsave(plot, 
+           file = sprintf('%s/sn_nsnv_%s_%s_%s_%s_cutoff%d.jpg',
+                           plot_dir, 
+                           dependence,
+                           output_file, 
                            signame1, 
                            signame2, 
                            do_cutoff),
@@ -121,8 +146,10 @@ plot_sn_fp <- function(file1,
     plot <- plot + theme_bw()
     plot <- plot + xlab('# SNV') + ylab('FPR')
     ggsave(plot, 
-           file = sprintf('fp_nsnv_%s_%s_%s_cutoff%d.jpg', 
+           file = sprintf('%s/fp_nsnv_%s_%s_%s_%s_cutoff%d.jpg', 
+                           plot_dir,
                            dependence, 
+                           output_file,
                            signame1, 
                            signame2, 
                            do_cutoff),
@@ -209,15 +236,19 @@ plot_sn_fp <- function(file1,
     # set method to be char instead of factor for consistency of colors
     df$method <- as.character(df$method)
 
-    #plot the roc curve
-    plot <- ggplot2::ggplot(df, aes(x = fp, y = sn, color = method)) + ggplot2::geom_line()
-    plot <- plot + ggplot2::theme_bw() + ggplot2::xlab('FPR') + ggplot2::ylab('Sensitivity')
-    plot <- plot + ggplot2::scale_color_manual(values = color_l_c)
-    if(with_matching) plot <- plot + ggplot2::labs(title = sprintf('Samples matched to %s', signame1)) 
-    else plot <- plot + ggplot2::labs(title = 'No prior matching')
+    if(write_output) write.table(df, sprintf('%s/%s_%s', output_dir, dependence, output_file), row.names = F, quote = F, sep = ',')
 
-    ggplot2::ggsave(plot, 
-           file = sprintf('sensitivity_falsepos_vs_cutoff_%s_%s_with_matching%d.jpg', 
+    #plot the roc curve
+    plot <- ggplot(df, aes(x = fp, y = sn, color = method)) + geom_line()
+    plot <- plot + theme_bw() + xlab('FPR') + ylab('Sensitivity')
+    plot <- plot + scale_color_manual(values = color_l_c)
+    if(with_matching) plot <- plot + labs(title = sprintf('Samples matched to %s', signame1)) 
+    else plot <- plot + labs(title = 'No prior matching')
+
+    ggsave(plot, 
+           file = sprintf('%s/sensitivity_falsepos_vs_cutoff_%s_%s_%s_with_matching%d.jpg', 
+                          plot_dir,
+                          output_file, 
                           signame1, 
                           signame2, 
                           with_matching), 
@@ -329,18 +360,30 @@ sn_fp_vs_nsnv <- function(df, signame1, signame2, snv_ranges, matching, cutoff, 
 }
 
 tune_cutoff <- function(sn_vec, fp_vec, cutoff_low, max_allowed_fp){
-  ind_max <- which((max(sn_vec - 2 * fp_vec) == (sn_vec - 2 * fp_vec)) & fp_vec < max_allowed_fp)[[1]]
+  indices_keep <- which(fp_vec <= max_allowed_fp)
+  print(sn_vec)
+  print(fp_vec)
+  print(max_allowed_fp)
+
+  sn_vec <- sn_vec[indices_keep]
+  fp_vec <- fp_vec[indices_keep]
+
+  cutoff_low <- cutoff_low[indices_keep]    
+
+  ind_max <- which(max(sn_vec - 2 * fp_vec) == (sn_vec - 2 * fp_vec))[[1]]
+
   return(cutoff_low[[ind_max]])
 }
 
-tune_cutoff_vs_nsnv <- function(input1, input2, signame1, signame2, snv_ranges, cutoff_low, with_matching, max_allowed_fp){
+tune_cutoff_vs_nsnv <- function(input1, input2, signame1, signame2, snv_ranges, cutoff_low, with_matching, max_allowed_fp, output_dir, output_file){
   cutoff_l <- rep(0, length(snv_ranges) - 1)
   cutoff_c <- rep(0, length(snv_ranges) - 1)
   
   for(isnv in 1:(length(snv_ranges) - 1)){
     input1_this <- input1[input1$total_snvs >= snv_ranges[[isnv]] & input1$total_snvs < snv_ranges[[isnv + 1]], ]
     input2_this <- input2[input2$total_snvs >= snv_ranges[[isnv]] & input2$total_snvs < snv_ranges[[isnv + 1]], ]
-    
+
+   
     if(with_matching){
       vals_pos_l <- input1_this$max_l[input1_this$sig_max_l == signame1]
       vals_neg_l <- input2_this$max_l[input2_this$sig_max_l == signame1]
@@ -360,12 +403,13 @@ tune_cutoff_vs_nsnv <- function(input1, input2, signame1, signame2, snv_ranges, 
       scale_fp_l <- 1
       scale_sn_c <- 1
       scale_fp_c <- 1
-  
+      
       vals_pos_l <- input1_this[, paste0(signame1, '_l')]
       vals_neg_l <- input2_this[, paste0(signame1, '_l')]
-
+          
       vals_pos_c <- input1_this[, paste0(signame1, '_c')]
       vals_neg_c <- input2_this[, paste0(signame1, '_c')]  
+      
     }
 
     df_l_1 <- calc_sn_fp_cut(vals_pos_l, 
@@ -375,7 +419,7 @@ tune_cutoff_vs_nsnv <- function(input1, input2, signame1, signame2, snv_ranges, 
     cutoff_l_1 <- tune_cutoff(scale_sn_l*df_l_1$sn, 
                               scale_fp_l*df_l_1$fp, 
                               cutoff_low,
-                              max_allowed_fp)
+                              max_allowed_fp = max_allowed_fp)
     df_c_1 <- calc_sn_fp_cut(vals_pos_c, 
                              vals_neg_c,
                              cutoff_low)
@@ -383,7 +427,7 @@ tune_cutoff_vs_nsnv <- function(input1, input2, signame1, signame2, snv_ranges, 
     cutoff_c_1 <- tune_cutoff(scale_sn_c*df_c_1$sn, 
                               scale_fp_c*df_c_1$fp, 
                               cutoff_low, 
-                              max_allowed_fp)
+                              max_allowed_fp = max_allowed_fp)
 
     cutoff_l[[isnv]] <- cutoff_l_1
     cutoff_c[[isnv]] <- cutoff_c_1
@@ -392,7 +436,7 @@ tune_cutoff_vs_nsnv <- function(input1, input2, signame1, signame2, snv_ranges, 
   write.table(data.frame(cutoff_l = cutoff_l, 
                          cutoff_c = cutoff_c, 
                          snv_low = snv_ranges[1:(length(snv_ranges) - 1)]),
-              'tuned_cuts_vs_nsnvs.csv',
+              sprintf('%s/tuned_cuts_vs_nsnvs_%s', output_dir, output_file),
               row.names = F,
               col.names = T, 
               quote = F, 
