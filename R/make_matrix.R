@@ -284,14 +284,11 @@ conv_snv_matrix_to_df <- function(genomes_matrix){
                     stringsAsFactors = TRUE)
 
   if(dim(custom)[[1]] == 0) return(rep(0, 96))
-  print(1)
   gr <- GenomicRanges::GRanges(unlist(custom[chrom_colname]), 
                                IRanges::IRanges(as.numeric(unlist(custom[pos_colname])), 
                                                 as.numeric(unlist(custom[pos_colname]))))
-  print(2)
   ref_vector <- unlist(custom[ref_colname])
   alt_vector <- unlist(custom[alt_colname])
-  print(3)
   count_vector <- .make_vector_from_gr(gr, 
                                        ref_vector, 
                                        alt_vector, 
@@ -299,7 +296,6 @@ conv_snv_matrix_to_df <- function(genomes_matrix){
                                        types, 
                                        ncontext, 
                                        nstrand)
-  print(4)
   return(count_vector)
 }
 

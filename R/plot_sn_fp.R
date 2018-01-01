@@ -52,8 +52,6 @@ plot_sn_fp <- function(file1,
                        output_file = 'test_sn_fp_output.csv',
                        output_dir = '.')
 {
-  print('snv ranges')
-  print(snv_ranges)
 
   library(ggplot2)
   color_l_c <- c('#76ACF1', '#0B148B')
@@ -361,9 +359,6 @@ sn_fp_vs_nsnv <- function(df, signame1, signame2, snv_ranges, matching, cutoff, 
 
 tune_cutoff <- function(sn_vec, fp_vec, cutoff_low, max_allowed_fp){
   indices_keep <- which(fp_vec <= max_allowed_fp)
-  print(sn_vec)
-  print(fp_vec)
-  print(max_allowed_fp)
 
   sn_vec <- sn_vec[indices_keep]
   fp_vec <- fp_vec[indices_keep]
