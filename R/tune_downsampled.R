@@ -40,10 +40,12 @@ tune_downsampled <- function(directory,
 
   for(isnv in 1:nsnv_ranges){
     #define outputs directories and files for plot_sn_fp function
-    directory_plot = sprintf('downsampled_560bc/%d_%d/plots/', 
+    directory_plot = sprintf('%s/%d_%d/plots/', 
+                             directory,
                              snv_ranges[[isnv]], 
                              snv_ranges[[isnv + 1]])
-    directory_output = sprintf('downsampled_560bc/%d_%d/output_sn_fp/', 
+    directory_output = sprintf('%s/%d_%d/output_sn_fp/', 
+                               directory,
                                snv_ranges[[isnv]], 
                                snv_ranges[[isnv + 1]])
     output_file = sprintf('output_plot_sn_fp_useweight_%d_maxfp_%d.csv', 
