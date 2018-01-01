@@ -52,10 +52,6 @@ plot_sn_fp <- function(file1,
                        output_file = 'test_sn_fp_output.csv',
                        output_dir = '.')
 {
-  print('snv ranges')
-  print(snv_ranges)
-
-  library(ggplot2)
   color_l_c <- c('#76ACF1', '#0B148B')
 
   input1 <- read.csv(file1)
