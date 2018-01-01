@@ -89,7 +89,6 @@ tune_downsampled <- function(directory,
 }
 
 combine_csv_files <- function(directory, info_file, add_info = F, use_weight = F, signame_info = 'Sig3', snv_min = 0, snv_max = 500, directory_plot, directory_output, output_file, max_allowed_fp){
-  load('sysdata.rda')
   
   if(add_info){
      info <- read.csv(info_file)
