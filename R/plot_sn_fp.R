@@ -37,13 +37,17 @@ plot_sn_fp <- function(file1,
                        signame2, 
                        dependence = "total_snvs", 
                        snv_ranges = c(5, 25, 45, 65, 85, 100),
-                       cutoff_low = c(0, 0.01, 0.02, 0.05, 0.1, 
-                                      0.15, 0.2, 0.25, 0.3, 
-                                      0.35, 0.4, 0.45, 0.5, 
-                                      0.55, 0.6, 0.65, 0.7, 
-                                      0.75, 0.8, 0.85, 0.875, 
+                       cutoff_low = c(0, 0.01, 0.02, 0.04, 0.6, 0.8, 0.1, 
+                                      0.12, 0.14, 0.16, 0.18, 0.2,
+                                      0.22, 0.24, 0.26, 0.28, 0.3, 
+                                      0.32, 0.34, 0.36, 0.38, 0.4, 
+                                      0.42, 0.44, 0.46, 0.48, 0.5, 
+                                      0.52, 0.54, 0.56, 0.58, 0.6, 
+                                      0.62, 0.64, 0.66, 0.68, 0.7,
+                                      0.72, 0.74, 0.76, 0.78, 0.8,
+                                      0.82, 0.84, 0.86, 0.88, 0.9, 
                                       0.9, 0.92, 0.94, 0.96, 
-                                      0.98, 0.99, 0.995, 0.997),
+                                      0.98, 0.99, 0.999),
                        with_matching = FALSE,
                        do_cutoff = FALSE,
                        max_allowed_fp = 0.5, 
@@ -82,6 +86,7 @@ plot_sn_fp <- function(file1,
                                        plot_dir = plot_dir)
     cutoff_c <- list_cutoff$cutoff_c
     cutoff_l <- list_cutoff$cutoff_l
+
   }
 
 
@@ -89,16 +94,15 @@ plot_sn_fp <- function(file1,
     # calculate sensitivity and false positive rate as a function of NSNV
     
     # for the likelihood method    
-    df_l <- sn_fp_vs_nsnv(merged, signame1, signame2, snv_ranges, 'sig_max_l', cutoff_l, with_matching)
+    df_l <- sn_fp_vs_nsnv(merged, signame1, signame2, snv_ranges, 'l', cutoff_l, with_matching)
     # for the cosine similarity method
-    df_c <- sn_fp_vs_nsnv(merged, signame1, signame2, snv_ranges, 'sig_max_c', cutoff_c, with_matching)   
+    df_c <- sn_fp_vs_nsnv(merged, signame1, signame2, snv_ranges, 'c', cutoff_c, with_matching)   
     df <- rbind(df_l, df_c) 
-    
+            
     # set method to char for plotting
     df$method <- as.character(df$method)
     
     if(write_output) write.table(df, sprintf('%s/%s_%s', output_dir, dependence, output_file), row.names = F, quote = F, sep = ',')
-
     # plot sensitivity vs FPR 
     plot <- ggplot2::ggplot(df[df$truth == signame1,], ggplot2::aes(x = fp, y = sn)) 
     plot <- plot + ggplot2::geom_line(ggplot2::aes(color = method))
@@ -117,7 +121,6 @@ plot_sn_fp <- function(file1,
                                    do_cutoff),
                     width = 5,
                     height = 4)
-    
     # plot sensitivity as a function of NSNV
     plot <- ggplot2::ggplot(df[df$truth == signame1,], ggplot2::aes(x = (nsnv_low + nsnv_high)/2., y = sn))
     plot <- plot + ggplot2::geom_line(ggplot2::aes(color = method))
@@ -135,10 +138,9 @@ plot_sn_fp <- function(file1,
                    width = 5,
                    height = 4)
 
-
     # plot specificity as a function of NSNV
     plot <- ggplot2::ggplot(df[df$truth == signame1,], ggplot2::aes(x = (nsnv_low + nsnv_high)/2., y = fp)) 
-    plot <- plot + ggplot2::geom_line(ggplot2:aes(color = method))
+    plot <- plot + ggplot2::geom_line(ggplot2::aes(color = method))
     plot <- plot + ggplot2::scale_color_manual(values = color_l_c)
     plot <- plot + ggplot2::theme_bw()
     plot <- plot + ggplot2::xlab('# SNV') + ggplot2::ylab('FPR')
@@ -167,7 +169,7 @@ plot_sn_fp <- function(file1,
                                   signame1, 
                                   signame2, 
                                   c(min(merged$total_snvs), max(merged$total_snvs)), 
-                                  'sig_max_l',
+                                  'l',
                                   cutoff = 0,
                                   with_matching)
 
@@ -181,7 +183,7 @@ plot_sn_fp <- function(file1,
                                   signame1, 
                                   signame2, 
                                   c(min(merged$total_snvs), max(merged$total_snvs)), 
-                                  'sig_max_c',
+                                  'c',
                                   cutoff = 0, 
                                   with_matching)
 
@@ -208,8 +210,8 @@ plot_sn_fp <- function(file1,
       df_c$sn <- df_c$sn*scale_sn_c
       df_c$fp <- df_c$fp*scale_fp_c
 
-      df_l$method <- 'sig_max_l'
-      df_c$method <- 'sig_max_c'
+      df_l$method <- 'l'
+      df_c$method <- 'c'
 
     }else{  # no prior matching is applied just cutoff is varied
       # calculate sensitivity and false positive rate by varying 
@@ -224,8 +226,8 @@ plot_sn_fp <- function(file1,
                              input2[, paste0(signame1, '_c')], 
                              cutoff_low)
 
-      df_l$method <- 'sig_max_l'
-      df_c$method <- 'sig_max_c'
+      df_l$method <- 'l'
+      df_c$method <- 'c'
     }
 
     df <- rbind(df_l, df_c)
@@ -255,24 +257,24 @@ plot_sn_fp <- function(file1,
 }
 
 calc_sn_fp_matching <- function(df, signame1, signame2, matching, cutoff){
-  df[, matching] <- as.character(df[, matching])
+  df[, paste0('sig_max_', matching)] <- as.character(df[, paste0('sig_max_', matching)])
   df$truth <- as.character(df$truth)
 
   total1 <- sum(df$truth == signame1)
   total2 <- sum(df$truth == signame2)
 
   tp1 <- sum(df$truth == signame1 &
-             df[, matching] == signame1 &
-             df[, paste0('max', strsplit(matching, 'sig_max')[[1]][[2]])] >= cutoff)
+             df[, paste0('sig_max_', matching)] == signame1 &
+             df[, paste0('max_', matching)] >= cutoff)
   tp2 <- sum(df$truth == signame2 &
-             df[, matching] == signame2 &
-             df[, paste0('max', strsplit(matching, 'sig_max')[[1]][[2]])] >= cutoff)
+             df[, paste0('sig_max_', matching)] == signame2 &
+             df[, paste0('max_', matching)] >= cutoff)
   fp1 <- sum(df$truth == signame2 &
-             df[, matching] == signame1 &
-             df[, paste0('max', strsplit(matching, 'sig_max')[[1]][[2]])] >= cutoff)
+             df[, paste0('sig_max_', matching)] == signame1 &
+             df[, paste0('max_', matching)] >= cutoff)
   fp2 <- sum(df$truth == signame1 &
-             df[, matching] == signame2 &
-             df[, paste0('max', strsplit(matching, 'sig_max')[[1]][[2]])] >= cutoff)
+             df[, paste0('sig_max_', matching)] == signame2 &
+             df[, paste0('max_', matching)] >= cutoff)
    
 
   sn1 <- tp1/total1
@@ -294,7 +296,7 @@ calc_sn_fp_cut <- function(vals_true,
   
   for(icut in 1:length(cutoff_low)){
     if(number_neg != 0) falsepos[[icut]] <- sum(vals_false > cutoff_low[[icut]])/number_neg
-    if(number_pos != 0)sensitivity[[icut]] <- sum(vals_true > cutoff_low[[icut]])/number_pos
+    if(number_pos != 0) sensitivity[[icut]] <- sum(vals_true > cutoff_low[[icut]])/number_pos
   }
   
   return(data.frame(cutoff_low = cutoff_low,
@@ -332,18 +334,13 @@ sn_fp_vs_nsnv <- function(df,
       sn_vec2[[isnv]] <- sn_fp$sn2
     }
     else{
-      df_sig1 <- calc_sn_fp_cut(df[df$truth == signame1, paste0(signame1, '_l')],
-                                df[df$truth == signame2, paste0(signame1, '_l')],
+      df_sig1 <- calc_sn_fp_cut(df[df$truth == signame1, paste0(signame1, '_', matching)],
+                                df[df$truth == signame2, paste0(signame1, '_', matching)],
                                 cutoff[[isnv]])
 
-      df_sig2 <- calc_sn_fp_cut(df[df$truth == signame2, paste0(signame2, '_l')],
-                                df[df$truth == signame1, paste0(signame2, '_l')],
-                                cutoff[[isnv]])
 
       fp_vec1[[isnv]] <- df_sig1$fp
-      fp_vec2[[isnv]] <- df_sig2$fp
       sn_vec1[[isnv]] <- df_sig1$sn
-      sn_vec2[[isnv]] <- df_sig2$sn
     }
      
   }
@@ -354,14 +351,7 @@ sn_fp_vs_nsnv <- function(df,
                     nsnv_high = snv_ranges[2:length(snv_ranges)],
                     truth = signame1,
                     method = matching)
-  df2 <- data.frame(fp = fp_vec2, 
-                    sn = sn_vec2, 
-                    nsnv_low = snv_ranges[1:(length(snv_ranges) - 1)],
-                    nsnv_high = snv_ranges[2:length(snv_ranges)],
-                    truth = signame2,
-                    method = matching)
-  df <- rbind(df1, df2)
-  return(df)
+  return(df1)
 }
 
 tune_cutoff <- function(sn_vec, fp_vec, cutoff_low, max_allowed_fp){
@@ -371,7 +361,7 @@ tune_cutoff <- function(sn_vec, fp_vec, cutoff_low, max_allowed_fp){
   fp_vec <- fp_vec[indices_keep]
 
   cutoff_low <- cutoff_low[indices_keep]    
-  ind_max <- which(max(sn_vec - 2 * fp_vec) == (sn_vec - 2 * fp_vec))[[1]]
+  ind_max <- which(max(sn_vec - fp_vec) == (sn_vec - fp_vec))[[1]]
 
   return(cutoff_low[[ind_max]])
 }
@@ -423,19 +413,15 @@ tune_cutoff_vs_nsnv <- function(input1,
       vals_neg_c <- input2_this[, paste0(signame1, '_c')]  
       
     }
+   
 
     df_l_1 <- calc_sn_fp_cut(vals_pos_l, 
                              vals_neg_l, 
                              cutoff_low)
     
-    cutoff_l_1 <- tune_cutoff(scale_sn_l*df_l_1$sn, 
-                              scale_fp_l*df_l_1$fp, 
-                              cutoff_low,
-                              max_allowed_fp = max_allowed_fp)
     df_c_1 <- calc_sn_fp_cut(vals_pos_c, 
                              vals_neg_c,
                              cutoff_low)
-
     df_l_1$method <- 'l'
     df_l_1$sn <- df_l_1$sn * scale_sn_l
     df_l_1$fp <- df_l_1$fp * scale_fp_l
@@ -443,24 +429,38 @@ tune_cutoff_vs_nsnv <- function(input1,
     df_c_1$method <- 'c'
     df_c_1$sn <- df_c_1$sn * scale_sn_c
     df_c_1$fp <- df_c_1$fp * scale_fp_c
-   
+
+    cutoff_l_1 <- tune_cutoff(df_l_1$sn, 
+                              df_l_1$fp, 
+                              cutoff_low,
+                              max_allowed_fp = max_allowed_fp)
+
+
+    cutoff_c_1 <- tune_cutoff(df_c_1$sn, 
+                              df_c_1$fp, 
+                              cutoff_low, 
+                              max_allowed_fp = max_allowed_fp)
+
+    cutoff_l[[isnv]] <- cutoff_l_1
+    cutoff_c[[isnv]] <- cutoff_c_1
+ 
      
     df_1 <- rbind(df_l_1, df_c_1)    
+
     plot <- ggplot2::ggplot(df_1, ggplot2::aes(x = fp, y = sn)) 
     plot <- plot + ggplot2::geom_line(ggplot2::aes(color = method))
     plot <- plot + ggplot2::theme_bw()
+
+
     ggplot2::ggsave(plot, file = sprintf('%s/tune_%d_%d.pdf', 
                                          plot_dir, 
                                          min(snv_ranges), 
                                          max(snv_ranges)))
-
-    cutoff_c_1 <- tune_cutoff(scale_sn_c*df_c_1$sn, 
-                                       scale_fp_c*df_c_1$fp, 
-                                       cutoff_low, 
-                                       max_allowed_fp = max_allowed_fp)
-
-    cutoff_l[[isnv]] <- cutoff_l_1
-    cutoff_c[[isnv]] <- cutoff_c_1
+    write.table(df_1, 
+                sprintf('%s/cutoff_dependence_%s', output_dir, output_file),
+                row.names = F,
+                quote = F,
+                sep = ",")
   }
 
   write.table(data.frame(cutoff_l = cutoff_l, 
