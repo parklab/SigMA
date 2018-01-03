@@ -53,12 +53,13 @@ match_to_catalog <- function(genomes, signatures, ntype = 96, use_weight = F){
     q3_probs <- mean(probs[probs > mean(probs)])
     max_probs <- max(probs)
 
-    inds_keep <- which(probs >= q3_probs)
-    inds_rm <- which(probs < q3_probs)
+    inds_keep <- which(probs >= mean_probs)
+    inds_rm <- which(probs < mean_probs)
     
     probs[inds_keep] <- exp(probs[inds_keep] - max_probs)
     probs[inds_rm] <- 0
-
+    probs[inds_keep] <- probs[inds_keep]/sum(probs[inds_keep])
+   
     ind_max <- which(max(probs) == probs)[[1]]
 
     sig_max <- colnames(signatures)[[ind_max]]
