@@ -150,14 +150,16 @@ combine_csv_files <- function(directory, info_file, add_info = F, use_weight = F
                      snv_min, 
                      snv_max))
 
-  file_pos = sprintf('%s/%d_%d/output_pos/merged_pos.csv', 
+  file_pos = sprintf('%s/%d_%d/output_pos/merged_pos_useweight_%d.csv', 
                      directory, 
                      snv_min, 
-                     snv_max)
-  file_neg = sprintf('%s/%d_%d/output_neg/merged_neg.csv', 
+                     snv_max,
+                     use_weight)
+  file_neg = sprintf('%s/%d_%d/output_neg/merged_neg_useweight_%d.csv', 
                      directory, 
                      snv_min, 
-                     snv_max)
+                     snv_max,
+                     use_weight)
 
   write.table(merged_df_pos, 
               file = file_pos, 
