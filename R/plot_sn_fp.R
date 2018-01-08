@@ -47,33 +47,34 @@ plot_sn_fp <- function(file1,
                                       0.72, 0.74, 0.76, 0.78, 0.8,
                                       0.82, 0.84, 0.86, 0.88, 0.9, 
                                       0.9, 0.92, 0.94, 0.96, 
-                                      0.98, 0.99, 0.999),
+                                      0.98, 0.99, 0.999, 0.99999, 
+                                      0.9999999, 0.99999999, 0.99999999999,
+                                      0.9999999999999, 0.999999999999999),
                        with_matching = FALSE,
                        do_cutoff = FALSE,
                        max_allowed_fp = 0.5, 
                        plot_dir = '.',
                        write_output = F,
                        output_file = 'test_sn_fp_output.csv',
-                       output_dir = '.')
+                       output_dir = '.',
+                       cutoff_file = NULL)
 {
   color_l_c <- c('#76ACF1', '#0B148B')
-
   input1 <- read.csv(file1)
   input2 <- read.csv(file2)
   
   if(sum(colnames(input1) == 'total_snvs') == 0) input1$total_snvs <- rowSums(input1[, 1:96])
   if(sum(colnames(input2) == 'total_snvs') == 0) input2$total_snvs <- rowSums(input2[, 1:96])
- 
   input1$truth <- signame1
   input2$truth <- signame2
-
   merged <- rbind(input1, input2)
- 
+
   if(!do_cutoff){ # if no cut off should be applied set it to 0
     cutoff_c <- rep(0, length(snv_ranges) - 1)
     cutoff_l <- rep(0, length(snv_ranges) - 1)
   }else{   
-    list_cutoff <- tune_cutoff_vs_nsnv(input1 = input1, 
+    if(is.null(cutoff_file)){
+      list_cutoff <- tune_cutoff_vs_nsnv(input1 = input1, 
                                        input2 = input2, 
                                        signame1 = signame1, 
                                        signame2 = signame2, 
@@ -84,9 +85,11 @@ plot_sn_fp <- function(file1,
                                        output_dir = output_dir, 
                                        output_file = output_file,
                                        plot_dir = plot_dir)
+    }else{
+      list_cutoff <- read.csv(cutoff_file)
+    }
     cutoff_c <- list_cutoff$cutoff_c
     cutoff_l <- list_cutoff$cutoff_l
-
   }
 
 
@@ -334,8 +337,8 @@ sn_fp_vs_nsnv <- function(df,
       sn_vec2[[isnv]] <- sn_fp$sn2
     }
     else{
-      df_sig1 <- calc_sn_fp_cut(df[df$truth == signame1, paste0(signame1, '_', matching)],
-                                df[df$truth == signame2, paste0(signame1, '_', matching)],
+      df_sig1 <- calc_sn_fp_cut(df_this[df_this$truth == signame1, paste0(signame1, '_', matching)],
+                                df_this[df_this$truth == signame2, paste0(signame1, '_', matching)],
                                 cutoff[[isnv]])
 
 
@@ -450,12 +453,14 @@ tune_cutoff_vs_nsnv <- function(input1,
     plot <- ggplot2::ggplot(df_1, ggplot2::aes(x = fp, y = sn)) 
     plot <- plot + ggplot2::geom_line(ggplot2::aes(color = method))
     plot <- plot + ggplot2::theme_bw()
+#    plot <- plot + ggplot2::scale_color_manual(values = color_l_c)
 
 
-    ggplot2::ggsave(plot, file = sprintf('%s/tune_%d_%d.pdf', 
+    ggplot2::ggsave(plot, file = sprintf('%s/tune_%d_%d_%s.pdf', 
                                          plot_dir, 
                                          min(snv_ranges), 
-                                         max(snv_ranges)))
+                                         max(snv_ranges),
+                                         output_file))
     write.table(df_1, 
                 sprintf('%s/cutoff_dependence_%s', output_dir, output_file),
                 row.names = F,
