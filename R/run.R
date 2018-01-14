@@ -10,8 +10,6 @@
 #' existing cosmic signatures, e.g. Signature 7a, 7b, etc, but
 #' the new signatures introduced by PCAWG catalog are not used
 #' @param custom_sig_file a file with signature distributions
-#' @param rm_sigs an array with signature names that the user
-#' would like to remove in the decomposition
 #'
 #' @examples
 #' run(genome_file = 'input_genomes.csv', 
@@ -24,72 +22,129 @@
 #'     rm_sigs = 'Signature_40')
 
 run <- function(genome_file, 
-                output_file = 'output.csv',
+                output_file = NULL,
+                method = 'all',
                 sig_catalog = 'default', 
-                custom_sig_file = NULL,
-                rm_sigs = NULL,
-                use_weight = F){
+                custom_sig_df = NULL,
+                custom_tune_file = NULL,
+                use_weight = F, 
+                do_assign = T){
+
+  if(method == 'weighted_catalog'){
+    methods <- c('weighted_catalog')
+    sig_catalogs <- c('cosmic')
+    signames <- c('Signature_3')
+    use_weight_vec <- c(T)
+  }
+  else if(method == 'median_catalog'){
+    methods <- c('median_catalog')
+    sig_catalogs <- c('custom')
+    signames <- c('Signature_3_c1')
+    use_weight_vec <- c(F)
+  }
+  else if(method == 'cosine_simil'){
+    methods <- c('cosine_simil')
+    sig_catalogs <- c('cosmic')
+    signames <- c('Signature_3')
+    use_weight_vec <- c(F)
+  }
+  else if(method == 'all'){
+    methods <- c('median_catalog', 'weighted_catalog', 'cosine_simil')
+    sig_catalogs <- c('custom', 'cosmic', 'cosmic')
+    signames <- c('Signature_3_c1', 'Signature_3', 'Signature_3')
+    use_weight_vec <- c(F, T, F)
+  }
+  else if(method == 'custom'){
+    methods <- c('custom')
+    if(is.null(sig_catalog))
+      sig_catalogs <- c('custom')
+    else
+      sig_catalogs <- c(sig_catalog)
+    use_weight_vec <- c(use_weight)
+  }
+  else
+    stop('method can be all, median_catalog, weighted_catalog, 
+         cosine_simil or custom')
+
 
   genomes <- read.csv(genome_file)
 
-  signatures_cosmic_file <- system.file("extdata", 
-                                        "sorted_cosmic_signatures.csv", 
-                                        package = "SOddIUM")
-  signatures_pcawg_file <- system.file("extdata", 
-                                       "sorted_PCAWG_signature_patterns_beta2.csv", 
-                                       package = "SOddIUM")
+  for(imethod in 1:length(methods)){
+    sig_catalog <- sig_catalogs[[imethod]]
+    method <- methods[[imethod]]
+    use_weight <- use_weight_vec[[imethod]]
 
-
-  # set signature catalog to 'cosmic' or 'pcawg' if only one is provided
-  # if both 'cosmic' and 'pcawg' is set then take the union of the two
-  # catalogs use 'pcawg' when available
-  if(length(grep("pcawg", sig_catalog)) > 0){
-    signatures_pcawg <- read.csv(signatures_pcawg_file)
-    signatures_pcawg <- signatures_pcawg[, grep('Signature', colnames(signatures_pcawg))]
-    signatures <- signatures_pcawg
-  }
-  if(length(grep("cosmic", sig_catalog)) > 0){
-    signatures_cosmic <- read.csv(signatures_cosmic_file)
-    signatures_cosmic <- signatures_cosmic[, grep('Signature', colnames(signatures_cosmic))]
-    if(!exists('signatures')) signatures <- signatures_cosmic
-    else{
-      matched_inds <- match(colnames(signatures_pcawg), colnames(signatures_cosmic))
-      matched_inds <- matched_inds[!is.na(matched_inds)]
-      signatures_cosmic <- signatures_cosmic[, -matched_inds]
-      signatures <- cbind(signatures_pcawg, signatures_cosmic)
+    if(method == 'median_catalog')
+      custom_sig_df <- median_catalog_720bc
+    if(method == 'custom'){
+      if(is.null(custom_sig_df)) 
+        stop('custom signature data frame is empty')
+      else custom_sig_df <- custom_sig_df
     }
-  }
+    if(sig_catalog == "cosmic")
+      signatures <- cosmic_catalog
 
-  # if sig_catalog has 'default' it overwrites other options the intersection of
-  # two catalogs rather than the union is used
-  if(length(grep("default", sig_catalog)) > 0){
-    if(!exists('signatures_pcawg')){
-      signatures_pcawg <- read.csv(signatures_pcawg_file)
-      signatures_pcawg <- signatures_pcawg[, grep('Signature', colnames(signatures_pcawg))]
+    # custom overwrites all the options above and uses the 
+    # user defined input file 
+    if(sig_catalog == "custom"){
+      signatures <- custom_sig_df
     }
-    if(!exists('signtures_cosmic')){
-      signatures_cosmic <- read.csv(signatures_cosmic_file)
-      signatures_cosmic <- signatures_cosmic[, grep('Signature', colnames(signatures_cosmic))]
+
+    # set the tune based on the method, the tunes are read from
+    # sysdata.Rda file if one of the default methods are used if
+    # method is custom then a file needs to be provided
+    if(method == 'median_catalog')
+      tune_df <- tune_median_catalog
+    else if(method == 'weighted_catalog')
+      tune_df <- tune_weighted_catalog
+    else if(method == 'cosine_simil')
+      tune_df <- tune_cosine_simil
+    else if(method == 'custom'){
+      if(is.null(custom_tune_file)) 
+        stop('method set to custom but tune is not provided
+              set do_assign to F to run without a tune')
+      tune_df <- read.csv(custom_tune_file)
     }
- 
-    matched_inds <- match(colnames(signatures_pcawg), colnames(signatures_cosmic))
-    matched_inds <- matched_inds[!is.na(matched_inds)]
-    signatures_cosmic <- signatures_cosmic[, matched_inds]
-    sub_signatures <- c('Signature_7a', 'Signature_7b', 'Signature_17a', 'Signature_17b',
-                        'Signature_10a', 'Signature_10b')
-    signatures <- cbind(signatures_cosmic, signatures_pcawg[, sub_signatures])
-    # signatures_arti <- signatures_pcawg[, grep('Signature_R', colnames(signatures_pcawg))]
-    # signatures <- cbind(signatures, signatures_arti)
+    output <- match_to_catalog(genomes, 
+                               signatures,  
+                               use_weight = use_weight, 
+                               method = method)
+
+    # write the output per method 
+    output_comb <- cbind(genomes, output)
+    if(!is.null(output_file))
+      write.table(output_comb, 
+                  output_file, 
+                  sep = ',', 
+                  row.names = F, 
+                  col.names = T, 
+                  quote = F)
+    rm(output_comb)
+
+    # calculates the pass/fail boolean based on the tune
+    if(do_assign){
+      assignments <- assignment(output_file,
+                                method = method, 
+                                tune = tune_df, 
+                                signame = signames[[imethod]])
+    }
+
+    output <- cbind(output, assignments)
+
+    if(!exists('merged_output')) merged_output <- output
+    else merged_output <- cbind(merged_output, output)
+
   }
 
-  # custom overwrites all the options above and uses the user defined input file 
-  if(length(grep("custom", sig_catalog) > 0)){
-    signatures <- read.csv(custom_sig_file)
-  }
+  if(!is.null(output_file)) 
+    write.table(merged_output,
+                sprintf(gsub(output_file, 
+                             pattern = '.csv',  
+                             replace = '_merged.csv')),
+                row.names = F,
+                col.names = T,
+                quote = F,
+                sep = ',')
+  return(merged_output)
 
-
-  output <- match_to_catalog(genomes, signatures, use_weight = use_weight)
-
-  write.table(output, output_file, sep = ',', row.names = F, col.names = T, quote = F)
-  return(output)
 }

@@ -6,15 +6,20 @@
 #' spectra in the first ntype columns and genomes in each row 
 #' @param signatures the input catalog, a data table
 #' with signature spectra in each column 
+#' @param method can be 'median_catalog', 'weighted_catalog'
+#' 'cosine_simil'. 'median_catalog' uses a custom signature
+#' catalog formed by clustering genome SNV spectra and 
+#' using it as a probability distribution. The 'median_catalog'
+#' method can be used with any custom signatures data frame 
+#' if the user intends to provide their own signature table.
+#'
 #' @return A data frame that contains the input genomes
 #' and in addition columns associated to each signature in
 #' in the catalog with likelihood and cosine simil values
 
-match_to_catalog <- function(genomes, signatures, ntype = 96, use_weight = F){
+match_to_catalog <- function(genomes, signatures, method = 'median_catalog'){
 
-  # if the dataset is bc this part is using weights for each signature to
-  # pick the most distinct context for calculating the probabilities
-  if(use_weight){
+  if(method == 'weighted_catalog'){
     ind_bc <- grep('Signature_', colnames(weights_560_bc_cooccur_PCAWG_sig))
     signatures <- signatures[, colnames(weights_560_bc_cooccur_PCAWG_sig)[ind_bc]]
     weights <- weights_560_bc_cooccur_PCAWG_sig[, ind_bc]
@@ -27,14 +32,6 @@ match_to_catalog <- function(genomes, signatures, ntype = 96, use_weight = F){
 
   calc_prob <- function(this_genome, signatures){
     eps <- 0.00001
-
-    if(sum(this_genome) == 0){
-      return(list(probs = rep(0, dim(signatures)[[2]]), 
-                  ind_max = NA, 
-                  sig_max = NA, 
-                  max_val = NA))
-    }
-
     probs <- apply(signatures, 2, 
 	           function(x, pow){ 
                      prob <- 0
@@ -48,18 +45,18 @@ match_to_catalog <- function(genomes, signatures, ntype = 96, use_weight = F){
                    },
                    pow = this_genome)
 
-
     mean_probs <- mean(probs)
-    q3_probs <- mean(probs[probs > mean(probs)])
+    q1_probs <- mean(probs[probs < mean(probs)])
     max_probs <- max(probs)
 
-    inds_keep <- which(probs >= mean_probs)
-    inds_rm <- which(probs < mean_probs)
+    inds_keep <- which(probs >= q1_probs)
+    inds_rm <- which(probs < q1_probs)
     
     probs[inds_keep] <- exp(probs[inds_keep] - max_probs)
-    probs[inds_rm] <- 0
     probs[inds_keep] <- probs[inds_keep]/sum(probs[inds_keep])
-   
+
+    probs[inds_rm] <- 0
+
     ind_max <- which(max(probs) == probs)[[1]]
 
     sig_max <- colnames(signatures)[[ind_max]]
@@ -72,13 +69,6 @@ match_to_catalog <- function(genomes, signatures, ntype = 96, use_weight = F){
   }
 
   calc_cos <- function(this_genome, signatures){
-    if(sum(this_genome) == 0){
-      return(list(simils = rep(0, dim(signatures)[[2]]), 
-                  ind_max = NA, 
-                  sig_max = NA, 
-                  max_val = NA))
-    }
-
     simils <- apply(signatures, 2,
                     function(x){ cosine(this_genome, x) })
     ind_max <- which(max(simils) == simils)
@@ -90,26 +80,44 @@ match_to_catalog <- function(genomes, signatures, ntype = 96, use_weight = F){
   signature_names <- colnames(signatures)
   genome_matrix <- genomes[, 1:dim(signatures)[[1]]]
   
-  probs_all    <- apply(genome_matrix, 1, 
-                        function(x, y){calc_prob(x, y)$probs}, y = signatures)
-  max_sigs_all <- apply(genome_matrix, 1, 
-                        function(x, y){calc_prob(x, y)$sig_max}, y = signatures)
-  max_val_all  <- apply(genome_matrix, 1, 
-                        function(x, y){calc_prob(x, y)$max_val}, y = signatures)
+  if(method == 'weighted_catalog' | method == 'median_catalog'){
+    probs_all    <- apply(genome_matrix, 1, 
+                          function(x, y){calc_prob(x, y)$probs}, y = signatures)
+    max_sigs_all <- apply(genome_matrix, 1, 
+                          function(x, y){calc_prob(x, y)$sig_max}, y = signatures)
+    max_val_all  <- apply(genome_matrix, 1, 
+                          function(x, y){calc_prob(x, y)$max_val}, y = signatures)
+  }
+  if(method == 'cosine_simil'){
+    simils_all    <- apply(genome_matrix, 1, 
+                          function(x, y){calc_cos(x, y)$simils}, y = signatures)
+    max_sigs_cos_all <- apply(genome_matrix, 1, 
+                          function(x, y){calc_cos(x, y)$sig_max}, y = signatures)
+    max_val_cos_all  <- apply(genome_matrix, 1, 
+                          function(x, y){calc_cos(x, y)$max_val}, y = signatures) 
+  }
+  
 
-  simils_all    <- apply(genome_matrix, 1, 
-                        function(x, y){calc_cos(x, y)$simils}, y = signatures)
-  max_sigs_cos_all <- apply(genome_matrix, 1, 
-                        function(x, y){calc_cos(x, y)$sig_max}, y = signatures)
-  max_val_cos_all  <- apply(genome_matrix, 1, 
-                        function(x, y){calc_cos(x, y)$max_val}, y = signatures)
+  if(method == 'weighted_catalog' | method == 'median_catalog'){
+    output <- cbind(t(probs_all), 
+                    max_sigs_all, 
+                    max_val_all)
+    if(method == 'weighted_catalog') mname = 'wl'
+    if(method == 'median_catalog') mname = 'ml'
+    colnames(output) <- c(paste0(colnames(signatures), '_', mname), 
+                          paste0('sig_max_', mname),
+                          paste0('max_', mname))
+  }
 
-  colnames_before <- colnames(genomes)
-  genomes <- as.data.frame(genomes)
+  if(method == 'cosine_simil'){ 
+    output <- cbind(t(simils_all),
+                    max_sigs_cos_all,
+                    max_val_cos_all)
+    
+    colnames(output) <- c(paste0(colnames(signatures), '_c'), 
+                          'sig_max_c',
+                          'max_c')
+  }
 
-  genomes <- cbind(genomes, t(probs_all), max_sigs_all, max_val_all, t(simils_all), max_sigs_cos_all, max_val_cos_all)
-  colnames(genomes) <- c(colnames_before, paste0(colnames(signatures), '_l'), 'sig_max_l', 'max_l', 
-                      paste0(colnames(signatures), '_c'), 'sig_max_c', 'max_c')
-
-  return(genomes)
+  return(output)
 }
