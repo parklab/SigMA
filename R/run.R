@@ -10,6 +10,10 @@
 #' existing cosmic signatures, e.g. Signature 7a, 7b, etc, but
 #' the new signatures introduced by PCAWG catalog are not used
 #' @param custom_sig_file a file with signature distributions
+#' @param do_assign produces a boolean of whether the tumor 
+#' passes the test based on the measures obtained from the 
+#' methods
+#' used 
 #'
 #' @examples
 #' run(genome_file = 'input_genomes.csv', 
@@ -127,9 +131,9 @@ run <- function(genome_file,
                                 method = method, 
                                 tune = tune_df, 
                                 signame = signames[[imethod]])
+      output <- cbind(output, assignments)
     }
 
-    output <- cbind(output, assignments)
 
     if(!exists('merged_output')) merged_output <- output
     else merged_output <- cbind(merged_output, output)
