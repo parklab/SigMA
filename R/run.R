@@ -28,7 +28,7 @@ run <- function(genome_file,
                 custom_sig_df = NULL,
                 custom_tune_file = NULL,
                 use_weight = F, 
-                do_assign = T){
+                do_assign = F){
 
   if(method == 'weighted_catalog'){
     methods <- c('weighted_catalog')
