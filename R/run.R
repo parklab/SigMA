@@ -107,7 +107,7 @@ run <- function(genome_file,
     }
     output <- match_to_catalog(genomes, 
                                signatures,  
-                               use_weight = use_weight, 
+#                               use_weight = use_weight, 
                                method = method)
 
     # write the output per method 
@@ -135,6 +135,8 @@ run <- function(genome_file,
     else merged_output <- cbind(merged_output, output)
 
   }
+
+  merged_output <- cbind(genomes, merged_output)
 
   if(!is.null(output_file)) 
     write.table(merged_output,
