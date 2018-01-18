@@ -32,7 +32,14 @@ run <- function(genome_file,
                 custom_sig_df = NULL,
                 custom_tune_file = NULL,
                 use_weight = F, 
-                do_assign = F){
+                do_assign = F,
+                exome = F){
+  
+  genomes <- read.csv(genome_file)
+  if(sum(rowSums(genomes[, 1:96]) == 0) > 0){
+    print('Removing rows with 0 mutations')
+    genomes <- genomes[which(rowSums(genomes[, 1:96]) > 0), ]
+  }
 
   if(method == 'weighted_catalog'){
     methods <- c('weighted_catalog')
@@ -71,15 +78,15 @@ run <- function(genome_file,
          cosine_simil or custom')
 
 
-  genomes <- read.csv(genome_file)
-
   for(imethod in 1:length(methods)){
     sig_catalog <- sig_catalogs[[imethod]]
     method <- methods[[imethod]]
     use_weight <- use_weight_vec[[imethod]]
 
-    if(method == 'median_catalog')
-      custom_sig_df <- median_catalog_720bc
+    if(method == 'median_catalog'){
+      if(exome) custom_sig_df <- median_catalog_for_exome
+      else custom_sig_df <- median_catalog_720bc
+    }
     if(method == 'custom'){
       if(is.null(custom_sig_df)) 
         stop('custom signature data frame is empty')
@@ -118,7 +125,10 @@ run <- function(genome_file,
     output_comb <- cbind(genomes, output)
     if(!is.null(output_file))
       write.table(output_comb, 
-                  output_file, 
+                  sprintf('%s.csv',
+                          gsub(output_file, 
+                               pattern = '.csv',
+                               replace = paste0(method, '.csv'))), 
                   sep = ',', 
                   row.names = F, 
                   col.names = T, 
@@ -127,7 +137,10 @@ run <- function(genome_file,
 
     # calculates the pass/fail boolean based on the tune
     if(do_assign){
-      assignments <- assignment(output_file,
+      assignments <- assignment(sprintf('%s.csv',
+                                        gsub(output_file,
+                                             pattern = '.csv',
+                                             replace = paste0(method, '.csv'))),
                                 method = method, 
                                 tune = tune_df, 
                                 signame = signames[[imethod]])
@@ -142,11 +155,16 @@ run <- function(genome_file,
 
   merged_output <- cbind(genomes, merged_output)
 
+#  merged_output_w_zero <- matrix(NA,  
+#                                 dim(genomes)[[1]], 
+#                                 dim(merged_output)[[2]])
+
+#  merged_output_w_zero[inds_nonzero, ] <- merged_output
+#  rm(merged_output)
+
   if(!is.null(output_file)) 
     write.table(merged_output,
-                sprintf(gsub(output_file, 
-                             pattern = '.csv',  
-                             replace = '_merged.csv')),
+                output_file, 
                 row.names = F,
                 col.names = T,
                 quote = F,
