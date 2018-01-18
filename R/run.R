@@ -120,11 +120,6 @@ run <- function(genome_file,
                                signatures,  
                                method = method)
 
-    if(exome & method == 'median_catalog'){      
-      output$Signature_3_c1_ml <- output$Signature_3_c1_ml
-                                  + output$Signature_3_c2_ml
-      output <- output[, -which(colnames(output) == 'Signature_3_c2_ml')]
-    }
 
     # calculates the pass/fail boolean based on the tune
     if(do_assign){
@@ -146,12 +141,6 @@ run <- function(genome_file,
 
   merged_output <- cbind(genomes, merged_output)
 
-#  merged_output_w_zero <- matrix(NA,  
-#                                 dim(genomes)[[1]], 
-#                                 dim(merged_output)[[2]])
-
-#  merged_output_w_zero[inds_nonzero, ] <- merged_output
-#  rm(merged_output)
 
   if(!is.null(output_file)) 
     write.table(merged_output,
