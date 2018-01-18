@@ -118,22 +118,13 @@ run <- function(genome_file,
     }
     output <- match_to_catalog(genomes, 
                                signatures,  
-#                               use_weight = use_weight, 
                                method = method)
 
-    # write the output per method 
-    output_comb <- cbind(genomes, output)
-    if(!is.null(output_file))
-      write.table(output_comb, 
-                  sprintf('%s.csv',
-                          gsub(output_file, 
-                               pattern = '.csv',
-                               replace = paste0(method, '.csv'))), 
-                  sep = ',', 
-                  row.names = F, 
-                  col.names = T, 
-                  quote = F)
-    rm(output_comb)
+    if(exome & method == 'median_catalog'){      
+      output$Signature_3_c1_ml <- output$Signature_3_c1_ml
+                                  + output$Signature_3_c2_ml
+      output <- output[, -which(colnames(output) == 'Signature_3_c2_ml')]
+    }
 
     # calculates the pass/fail boolean based on the tune
     if(do_assign){

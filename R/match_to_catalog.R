@@ -99,9 +99,10 @@ match_to_catalog <- function(genomes, signatures, method = 'median_catalog'){
   
 
   if(method == 'weighted_catalog' | method == 'median_catalog'){
-    output <- cbind(t(probs_all), 
-                    max_sigs_all, 
-                    max_val_all)
+    output <- data.frame(t(probs_all),
+                         sig_max = max_sigs_all,
+                         max = max_val_all)
+
     if(method == 'weighted_catalog') mname = 'wl'
     if(method == 'median_catalog') mname = 'ml'
     colnames(output) <- c(paste0(colnames(signatures), '_', mname), 
@@ -110,14 +111,10 @@ match_to_catalog <- function(genomes, signatures, method = 'median_catalog'){
   }
 
   if(method == 'cosine_simil'){ 
-    output <- cbind(t(simils_all),
-                    max_sigs_cos_all,
-                    max_val_cos_all)
-    
-    colnames(output) <- c(paste0(colnames(signatures), '_c'), 
-                          'sig_max_c',
-                          'max_c')
+    output <- data.frame(t(simils_all), 
+                         sig_max_c = max_sigs_cos_all,
+                         max_c = max_val_cos_all)
+    colnames(output)[1:dim(simils_all)[[1]]] <- paste0(colnames(signatures), '_c')
   }
-
   return(output)
 }
