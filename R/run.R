@@ -59,7 +59,13 @@ run <- function(genome_file,
     signames <- c('Signature_3')
     use_weight_vec <- c(F)
   }
-  else if(method == 'all'){
+  else if(method == 'all' & exome){
+    methods <- c('median_catalog', 'weighted_catalog', 'cosine_simil', 'decompose')
+    sig_catalogs <- c('custom', 'cosmic', 'cosmic', 'cosmic_breast')
+    signames <- c('Signature_3_c1', 'Signature_3', 'Signature_3', 'Signature_3')
+    use_weight_vec <- c(F, T, F, F)
+  }
+  else if(method == 'all' & !exome){
     methods <- c('median_catalog', 'weighted_catalog', 'cosine_simil')
     sig_catalogs <- c('custom', 'cosmic', 'cosmic')
     signames <- c('Signature_3_c1', 'Signature_3', 'Signature_3')
@@ -94,6 +100,8 @@ run <- function(genome_file,
     }
     if(sig_catalog == "cosmic")
       signatures <- cosmic_catalog
+    if(sig_catalog == "cosmic_breast")
+      signatures <- cosmic_catalog_breast
 
     # custom overwrites all the options above and uses the 
     # user defined input file 
@@ -120,9 +128,25 @@ run <- function(genome_file,
                                signatures,  
                                method = method)
 
+    print(dim(output))
 
     # calculates the pass/fail boolean based on the tune
     if(do_assign){
+      if(!is.null(output_file)){
+        output_comb <- cbind(genomes, output)
+        write.table(output_comb, 
+                     sprintf('%s.csv',
+                             gsub(output_file, 
+                                  pattern = '.csv',
+                                  replace = paste0(method, '.csv'))), 
+                     sep = ',', 
+                     row.names = F, 
+                     col.names = T, 
+                     quote = F)
+        rm(output_comb)
+      }else 
+        stop('give an output file name')
+
       assignments <- assignment(sprintf('%s.csv',
                                         gsub(output_file,
                                              pattern = '.csv',
