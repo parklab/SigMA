@@ -128,7 +128,6 @@ run <- function(genome_file,
                                signatures,  
                                method = method)
 
-    print(dim(output))
 
     # calculates the pass/fail boolean based on the tune
     if(do_assign){
