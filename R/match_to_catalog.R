@@ -20,7 +20,6 @@
 match_to_catalog <- function(genomes, signatures, method = 'median_catalog'){
   nsig <- dim(signatures)[[2]]
   ntype <- dim(signatures)[[1]]
-  print(method)
 
   calc_prob <- function(this_genome, signatures, normalize = T, success = NULL){
     eps <- 0.00001
@@ -244,6 +243,5 @@ match_to_catalog <- function(genomes, signatures, method = 'median_catalog'){
     colnames(output)[1:dim(simils_all)[[1]]] <- paste0(colnames(signatures), '_c')
   }
 
-  print('end')
   return(output)
 }
