@@ -255,8 +255,6 @@ match_to_catalog <- function(genomes, signatures, method = 'median_catalog'){
     colnames(output)[(5 + nsig):(4 + 2 * nsig)] <- paste0(colnames(signatures), '_wout_c')
     colnames(output)[(5 + 2 * nsig):(4 + 3 * nsig)] <- paste0(colnames(signatures), '_l_rat')
     colnames(output)[(5 + 3 * nsig):(4 + 3 * nsig + nsig * (nsig - 1) / 2)] <- paste0(signames_pair, '_l')
-    print(length((5 + 3 * nsig + nsig * (nsig - 1) / 2):(4 + 3 * nsig + nsig * (nsig - 1))))
-    print(length((5 + 3 * nsig):(4 + 3 * nsig + nsig * (nsig - 1) / 2)))
     colnames(output)[(5 + 3 * nsig + nsig * (nsig - 1) / 2):(4 + 3 * nsig + nsig * (nsig - 1))] <- paste0(signames_pair, '_c')
   }
 
