@@ -33,14 +33,15 @@ run <- function(genome_file,
                 custom_tune_file = NULL,
                 use_weight = F, 
                 do_assign = F,
-                exome = F){
+                exome = F,
+                gbm = F){
   
   genomes <- read.csv(genome_file)
+
   if(sum(rowSums(genomes[, 1:96]) == 0) > 0){
     print('Removing rows with 0 mutations')
     genomes <- genomes[which(rowSums(genomes[, 1:96]) > 0), ]
   }
-
   if(method == 'weighted_catalog'){
     methods <- c('weighted_catalog')
     sig_catalogs <- c('cosmic')
@@ -59,11 +60,29 @@ run <- function(genome_file,
     signames <- c('Signature_3')
     use_weight_vec <- c(F)
   }
-  else if(method == 'all' & exome){
-    methods <- c('median_catalog', 'weighted_catalog', 'cosine_simil', 'decompose')
+  else if(method == 'gbm'){
+    methods <- c('gbm')
+    sig_catalogs <- c('none')
+    signames <- c('Signature_3')
+    use_weight_vec <- c(F)
+  }
+  else if(method == 'all'){
+    methods <- c('median_catalog', 'weighted_catalog', 'cosine_simil')
     sig_catalogs <- c('custom', 'cosmic', 'cosmic', 'cosmic_breast')
     signames <- c('Signature_3_c1', 'Signature_3', 'Signature_3', 'Signature_3')
-    use_weight_vec <- c(F, T, F, F)
+    use_weight_vec <- c(F, T, F)
+    if(exome){
+      methods <- c(methods, 'decompose')
+      sig_catalogs <- c(sig_catalogs, 'cosmic_breast')
+      signames <- c(signames, 'Signature_3')
+      use_weight_vec <- c(use_weight_vec, F)
+    }
+    if(gbm){
+      methods <- c(methods, 'gbm')
+      sig_catalogs <- c(sig_catalogs, 'none')
+      signames <- c(signames, 'Signature_3')
+      use_weight_vec <- c(use_weight_vec, F)
+    }
   }
   else if(method == 'all' & !exome){
     methods <- c('median_catalog', 'weighted_catalog', 'cosine_simil')
@@ -118,17 +137,32 @@ run <- function(genome_file,
       tune_df <- tune_weighted_catalog
     else if(method == 'cosine_simil')
       tune_df <- tune_cosine_simil
+    else if(method == 'gbm')
+      tune_df <- tune_gbm
     else if(method == 'custom'){
       if(is.null(custom_tune_file)) 
         stop('method set to custom but tune is not provided
               set do_assign to F to run without a tune')
       tune_df <- read.csv(custom_tune_file)
     }
-    output <- match_to_catalog(genomes, 
-                               signatures,  
-                               method = method)
 
+    # set the column with total number of mutations if this column
+    # doesn't exist
+    if(sum(colnames(genomes) == 'total_snvs') == 0)
+      genomes$total_snvs <- rowSums(genomes[, 1:96])
 
+    #calculate the likelihood/cos simil/gbm prob
+    if(method != 'gbm') 
+      output <- match_to_catalog(genomes, 
+                                 signatures,  
+                                 method = method)
+
+    else{
+      if(exists('merged_output'))
+        output <- get_gbm_prediction(cbind(genomes, merged_output), signames[[imethod]])
+      else 
+        output <- get_gbm_prediction(genomes, signames[[imethod]])
+    }
     # calculates the pass/fail boolean based on the tune
     if(do_assign){
       if(!is.null(output_file)){
