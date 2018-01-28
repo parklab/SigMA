@@ -24,8 +24,7 @@ assignment <- function(input_files,
                        method = 'weighted_catalog',
                        signame = 'Signature_3'){
 
-  
-  if(exists('df_out')) rm(df_out)
+  if(exists('df_out')) rm(df_out)  
   nfiles <- length(input_files)
   
   for(ifile in 1:nfiles){
@@ -33,23 +32,34 @@ assignment <- function(input_files,
     if(method == 'median_catalog') matching = 'ml'
     if(method == 'weighted_catalog') matching = 'wl'
     if(method == 'cosine_simil') matching = 'c'
-
-    
+    if(method == 'gbm') matching = 'gbm'
     indices <- which(colnames(df_in) == paste0(signame, '_', matching))
 
-    if(sum(colnames(df_in) == 'total_snv') == 0)
+
+    if(sum(colnames(df_in) == 'total_snvs') == 0)
       df_in$total_snvs <- rowSums(df_in[, 1:96])
-
+ 
+    
     df_in <- df_in[, c('total_snvs', colnames(df_in)[indices])]
-
-    if(method == 'weighted_catalog' | method == 'median_catalog'){ 
+  
+    if(method == 'weighted_catalog'){ 
       pass <- assign(df_in,                       
-                     cuts = tune_df[, 'cutoff_l'],
+                     cuts = tune_df[, 'cutoff_wl'],
+                     snvs = tune_df$snv_low)
+    }
+    if(method == 'median_catalog'){
+      pass <- assign(df_in,
+                     cuts = tune_df[, 'cutoff_ml'],
                      snvs = tune_df$snv_low)
     }
     if(method == 'cosine_simil'){ 
       pass <- assign(df_in,                       
                      cuts = tune_df[, 'cutoff_c'],
+                     snvs = tune_df$snv_low)
+    }
+    if(method == 'gbm'){ 
+      pass <- assign(df_in,                       
+                     cuts = tune_df[, 'cutoff_gbm'],
                      snvs = tune_df$snv_low)
     }
 
