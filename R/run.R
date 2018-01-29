@@ -42,6 +42,12 @@ run <- function(genome_file,
     print('Removing rows with 0 mutations')
     genomes <- genomes[which(rowSums(genomes[, 1:96]) > 0), ]
   }
+
+  if(do_assign){
+    genomes <- genomes[which(rowSums(genomes[, 1:96]) >= 3), ]
+    print('assign is true samples with more than 3 SNV are used')
+  }
+
   if(method == 'weighted_catalog'){
     methods <- c('weighted_catalog')
     sig_catalogs <- c('cosmic')

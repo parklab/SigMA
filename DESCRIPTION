@@ -13,6 +13,7 @@ Imports:
     BSgenome.Hsapiens.UCSC.hg19,
     GenomicRanges,
     ggplot2,
+    gbm,
     IRanges,
     pheatmap,
     VariantAnnotation
