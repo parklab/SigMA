@@ -34,6 +34,7 @@ run <- function(genome_file,
                 use_weight = F, 
                 do_assign = F,
                 exome = F,
+                panel = F,
                 gbm = F){
   
   genomes <- read.csv(genome_file)
@@ -44,8 +45,8 @@ run <- function(genome_file,
   }
 
   if(do_assign){
-    genomes <- genomes[which(rowSums(genomes[, 1:96]) >= 3), ]
-    print('assign is true samples with more than 3 SNV are used')
+    genomes <- genomes[which(rowSums(genomes[, 1:96]) >= 4), ]
+    print('assign is true samples with more than 4 SNV are used')
   }
 
   if(method == 'weighted_catalog'){
@@ -73,16 +74,10 @@ run <- function(genome_file,
     use_weight_vec <- c(F)
   }
   else if(method == 'all'){
-    methods <- c('median_catalog', 'weighted_catalog', 'cosine_simil')
-    sig_catalogs <- c('custom', 'cosmic', 'cosmic', 'cosmic_breast')
-    signames <- c('Signature_3_c1', 'Signature_3', 'Signature_3', 'Signature_3')
-    use_weight_vec <- c(F, T, F)
-    if(exome){
-      methods <- c(methods, 'decompose')
-      sig_catalogs <- c(sig_catalogs, 'cosmic_breast')
-      signames <- c(signames, 'Signature_3')
-      use_weight_vec <- c(use_weight_vec, F)
-    }
+    methods <- c('median_catalog', 'weighted_catalog', 'cosine_simil', 'decompose')
+    sig_catalogs <- c('custom', 'cosmic', 'cosmic', 'cosmic_breast', 'cosmic_breast')
+    signames <- c('Signature_3_c1', 'Signature_3', 'Signature_3', 'Signature_3', 'Signature_3')
+    use_weight_vec <- c(F, T, F, F)
     if(gbm){
       methods <- c(methods, 'gbm')
       sig_catalogs <- c(sig_catalogs, 'none')
@@ -116,6 +111,7 @@ run <- function(genome_file,
 
     if(method == 'median_catalog'){
       if(exome) custom_sig_df <- median_catalog_for_exome
+      else if(panel) custom_sig_df <- median_catalog_for_panel
       else custom_sig_df <- median_catalog_720bc
     }
     if(method == 'custom'){
@@ -123,10 +119,16 @@ run <- function(genome_file,
         stop('custom signature data frame is empty')
       else custom_sig_df <- custom_sig_df
     }
-    if(sig_catalog == "cosmic")
-      signatures <- cosmic_catalog
-    if(sig_catalog == "cosmic_breast")
-      signatures <- cosmic_catalog_breast
+    if(sig_catalog == "cosmic"){
+      if(exome) signatures <- cosmic_catalog_exome
+      else if(panel) signatures <- cosmic_catalog_panel
+      else signatures <- cosmic_catalog
+    }
+    if(sig_catalog == "cosmic_breast"){
+      if(exome) signatures <- cosmic_catalog_breast_exome
+      else if(panel) signatures <- cosmic_catalog_breast_panel
+      else signatures <- cosmic_catalog_breast
+    }
 
     # custom overwrites all the options above and uses the 
     # user defined input file 
@@ -165,7 +167,7 @@ run <- function(genome_file,
 
     else{
       if(exists('merged_output'))
-        output <- get_gbm_prediction(cbind(genomes, merged_output), signames[[imethod]])
+        output <- get_gbm_prediction(cbind(genomes, merged_output), signames[[imethod]], exome)
       else 
         output <- get_gbm_prediction(genomes, signames[[imethod]])
     }
@@ -185,14 +187,15 @@ run <- function(genome_file,
         rm(output_comb)
       }else 
         stop('give an output file name')
-
-      assignments <- assignment(sprintf('%s.csv',
-                                        gsub(output_file,
-                                             pattern = '.csv',
-                                             replace = paste0(method, '.csv'))),
-                                method = method, 
-                                tune = tune_df, 
-                                signame = signames[[imethod]])
+      if(method != "decompose"){
+        assignments <- assignment(sprintf('%s.csv',
+                                          gsub(output_file,
+                                               pattern = '.csv',
+                                               replace = paste0(method, '.csv'))),
+                                  method = method, 
+                                  tune = tune_df, 
+                                  signame = signames[[imethod]])
+      }
       output <- cbind(output, assignments)
     }
 

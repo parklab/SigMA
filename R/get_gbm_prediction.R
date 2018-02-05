@@ -9,14 +9,16 @@
 #' output file at the moment in the future will be used
 #' for identifying a specific signature
 
-get_gbm_prediction <- function(input, signame){
-  boundary_snv <- c(3, 100, 200, 300, 500)
+get_gbm_prediction <- function(input, signame, exome){
+  input$total_snvs[input$total_snvs >= 500] <- 499
+  boundary_snv <- c(4, 100, 200, 300, 500)
   predictions <- rep(0, dim(input)[[1]])
   for(ibin in 1:(length(boundary_snv) - 1)){
     indices <- which(input$total_snvs >= boundary_snv[[ibin]] &
                      input$total_snvs < boundary_snv[[ibin + 1]])
     input_this <- input[indices, ]
-    model <- list_gbm[[ibin]]
+    if(exome) model <- gbm_exome
+    else model <- list_gbm[[ibin]]
     p_this <- predict(object = model,
                           newdata = input_this,
                           n.trees = 1000,
