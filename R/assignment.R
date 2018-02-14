@@ -29,6 +29,7 @@ assignment <- function(input_files,
   
   for(ifile in 1:nfiles){
     df_in <- read.csv(input_files[[1]])
+    print(method)
     if(method == 'median_catalog') matching = 'ml'
     if(method == 'weighted_catalog') matching = 'wl'
     if(method == 'cosine_simil') matching = 'c'
@@ -58,9 +59,7 @@ assignment <- function(input_files,
                      snvs = tune_df$snv_low)
     }
     if(method == 'gbm'){ 
-      pass <- assign(df_in,                       
-                     cuts = tune_df[, 'cutoff_gbm'],
-                     snvs = tune_df$snv_low)
+      pass <- (df_in[,2] >= 0.45)                     
     }
 
     df_out_this <- data.frame(pass = pass)
@@ -75,8 +74,9 @@ assignment <- function(input_files,
 
 assign <- function(df_m, cuts, snvs){
   results <- rep(FALSE, dim(df_m)[[1]])
+  df_m$total_snvs[df_m$total_snvs >= 500] <- 499
   indices <- match(df_m$total_snvs, snvs)
-  
+   
   if(sum(is.na(indices)) > 0)
     stop('total snv in sample is out of range of the available tune')
 

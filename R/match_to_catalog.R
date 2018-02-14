@@ -277,7 +277,6 @@ match_to_catalog <- function(genomes, signatures, method = 'median_catalog'){
     signatures <- signatures[, colnames(weights_560_bc_cooccur_PCAWG_sig)[ind_bc]]
     weights <- weights_560_bc_cooccur_PCAWG_sig[, ind_bc]
     signatures <- signatures * weights 
-#    signatures <- signatures + 0.05 * noise
   }
 
   if(method == 'weighted_catalog' | method == 'median_catalog'){
