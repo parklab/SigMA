@@ -111,7 +111,7 @@ run <- function(genome_file,
 
     if(method == 'median_catalog'){
       if(exome) custom_sig_df <- median_catalog_for_exome
-      else if(panel) custom_sig_df <- median_catalog_for_panel
+      else if(panel) custom_sig_df <- median_catalog_720bc
       else custom_sig_df <- median_catalog_720bc
     }
     if(method == 'custom'){
@@ -121,12 +121,12 @@ run <- function(genome_file,
     }
     if(sig_catalog == "cosmic"){
       if(exome) signatures <- cosmic_catalog_exome
-      else if(panel) signatures <- cosmic_catalog_panel
+      else if(panel) signatures <- cosmic_catalog
       else signatures <- cosmic_catalog
     }
     if(sig_catalog == "cosmic_breast"){
       if(exome) signatures <- cosmic_catalog_breast_exome
-      else if(panel) signatures <- cosmic_catalog_breast_panel
+      else if(panel) signatures <- cosmic_catalog_breast
       else signatures <- cosmic_catalog_breast
     }
 

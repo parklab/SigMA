@@ -108,16 +108,22 @@ match_to_catalog <- function(genomes, signatures, method = 'median_catalog'){
     min_error <- 1
     min_indices <- NULL
     min_exposures <- NULL
-    for(i in 1:(dim2 - 2)){
-      for(j in (i+1):(dim2 - 1)){
-        for(k in (j+1):(dim2)){
-          exposures <- coef(nnls::nnls(as.matrix(signatures[,c(i, j, k)]), this_genome))
+    for(i in 1:(dim2 - 5)){
+      for(j in (i+1):(dim2 - 4)){
+        for(k in (j+1):(dim2 - 3)){
+          for(l in (k+1):(dim2 - 2)){
+            for(m in (l+1):(dim2 - 1)){
+              for(n in (m+1):(dim2)){
+                exposures <- coef(nnls::nnls(as.matrix(signatures[,c(i, j, k, l, m, n)]), this_genome))
 
-          error_this <- error(this_genome, as.matrix(signatures[,c(i, j, k)]), exposures)
-          if(error_this < min_error){
-            min_error <- error_this
-            min_indices <- c(i, j, k)
-            min_exposures <- exposures
+                error_this <- error(this_genome, as.matrix(signatures[,c(i, j, k, l, m, n)]), exposures)
+                if(error_this < min_error){
+                  min_error <- error_this
+                  min_indices <- c(i, j, k, l, m, n)
+                  min_exposures <- exposures
+                }
+              }
+            }
           }
         }
       }
@@ -139,6 +145,7 @@ match_to_catalog <- function(genomes, signatures, method = 'median_catalog'){
                                     exps_all = character(),
                                     comb_all_l = double(), 
                                     comb_all_c = double(),
+                                    exp_sig3 = double(),
                                     matrix(0, 0, nsig),
                                     matrix(0, 0, nsig),
                                     matrix(0, 0, nsig),
@@ -158,6 +165,11 @@ match_to_catalog <- function(genomes, signatures, method = 'median_catalog'){
       sigs <- sigs[, exps > 0]
       exps <- exps[exps > 0]
       
+      if(sum(grepl('Signature_3', colnames(sigs))) > 0){
+        sig3_exp <- exps[[which(colnames(sigs) == 'Signature_3')]]
+      }
+      else sig3_exp <- 0
+
       comb_all <- as.matrix(sigs) %*% exps
       sigs_all <- paste0(colnames(sigs), collapse = '_')
       exps_all <- paste0(exps, collapse = '_')
@@ -240,6 +252,7 @@ match_to_catalog <- function(genomes, signatures, method = 'median_catalog'){
                             exps_all = exps_all,
                             comb_all_l = probs_comb_all,
                             comb_all_c = cos_simil_comb_all,
+                            exp_sig3 = sig3_exp,  
                             matrix(probs_comb_without, 1, length(probs_comb_without)), 
                             matrix(cos_simil_without, 1, length(cos_simil_without)), 
                             matrix(prob_rats, 1, length(prob_rats)), 
@@ -251,11 +264,11 @@ match_to_catalog <- function(genomes, signatures, method = 'median_catalog'){
                             max_dc = max_val_cos_pair)
       output <- rbind(output, output_this)
     }       
-    colnames(output)[5:(4 + nsig)] <- paste0(colnames(signatures), '_wout_l')
-    colnames(output)[(5 + nsig):(4 + 2 * nsig)] <- paste0(colnames(signatures), '_wout_c')
-    colnames(output)[(5 + 2 * nsig):(4 + 3 * nsig)] <- paste0(colnames(signatures), '_l_rat')
-    colnames(output)[(5 + 3 * nsig):(4 + 3 * nsig + nsig * (nsig - 1) / 2)] <- paste0(signames_pair, '_l')
-    colnames(output)[(5 + 3 * nsig + nsig * (nsig - 1) / 2):(4 + 3 * nsig + nsig * (nsig - 1))] <- paste0(signames_pair, '_c')
+    colnames(output)[6:(5 + nsig)] <- paste0(colnames(signatures), '_wout_l')
+    colnames(output)[(6 + nsig):(5 + 2 * nsig)] <- paste0(colnames(signatures), '_wout_c')
+    colnames(output)[(6 + 2 * nsig):(5 + 3 * nsig)] <- paste0(colnames(signatures), '_l_rat')
+    colnames(output)[(6 + 3 * nsig):(5 + 3 * nsig + nsig * (nsig - 1) / 2)] <- paste0(signames_pair, '_l')
+    colnames(output)[(6 + 3 * nsig + nsig * (nsig - 1) / 2):(5 + 3 * nsig + nsig * (nsig - 1))] <- paste0(signames_pair, '_c')
   }
 
   ##addition
@@ -264,6 +277,7 @@ match_to_catalog <- function(genomes, signatures, method = 'median_catalog'){
     signatures <- signatures[, colnames(weights_560_bc_cooccur_PCAWG_sig)[ind_bc]]
     weights <- weights_560_bc_cooccur_PCAWG_sig[, ind_bc]
     signatures <- signatures * weights 
+#    signatures <- signatures + 0.05 * noise
   }
 
   if(method == 'weighted_catalog' | method == 'median_catalog'){
