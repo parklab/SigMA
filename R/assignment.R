@@ -59,7 +59,9 @@ assignment <- function(input_files,
                      snvs = tune_df$snv_low)
     }
     if(method == 'gbm'){ 
-      pass <- (df_in[,2] >= 0.45)                     
+      if(panel) pass <- (df_in[,2] >= 0.45)                     
+      else if(exome) pass <- (df_in[, 2] >= 0.5)
+      else pass <- (df_in[, 2] >= 0.35)
     }
 
     df_out_this <- data.frame(pass = pass)
