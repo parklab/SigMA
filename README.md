@@ -5,14 +5,16 @@ One novelty of SigMA is a likelihood based matching: We associate a new patient'
 
 ### Functionalities:
 
-* Construct SNV matrix with trinucleotide context
-* Calculates cosine similarity and likelihood
-* Generate MC based on single signature probability distributions as well as 
-* Tunes the cutoff on these parameters to maximize sensitivity with a reasonable false positive rate
-* Plotting macros
-  * Heat map for cosine similary and likelihood
-  * Plots the change in sensitivity and false positive rate by changing the threshold on sensitivity/cosine similarity
-  * Plots the sensitivity and false positive rate as a function of number of SNVs for tuned values of cutoff
+* Optional input format for mutation data vcf, maf, or directly a 96-dimensional matrix
+* If vcf or maf files are provided it constructs the 96-dimensional SNV matrix with trinucleotide context
+* Contains a database of signature clusters, defining tumor subtypes, for multiple tumor type
+* For each input sample calculates:
+   * Likelihood values of the tumor subtypes
+   * Cosine similarity for all signatures
+   * Exposures of signatures which are found in the matching tumor type
+* Output
+  * Tumor type specific final decision for existence of Signature 3
+  * Plot of the mutational spectra and other relevant variables obtained from this such as likelihoods, cosine similarity and exposures, as well as the information on the signatures of the matched tumor subtype
 
 An example on how to use the package can be found at example.R
 
