@@ -23,7 +23,8 @@ assignment <- function(df_in,
                        tune_df = NULL,
                        method = 'median_catalog',
                        signame = 'Signature_3',
-                       data = NULL){
+                       data = NULL, 
+                       tissue = "breast"){
   if(exists('df_out')) rm(df_out)  
   
   if(method == 'median_catalog') matching = 'ml'
@@ -41,7 +42,7 @@ assignment <- function(df_in,
       pass <- df_in[, grep(signame, colnames(df_in))] > 0.5
   }
   if(method == 'gbm'){ 
-    if(data == "msk") pass <- (df_in[, paste0(signame, '_gbm')] >= 0.4) #0.45                     
+    if(data == "msk") pass <- (df_in[, paste0(signame, '_gbm')] >= cutoffs_tissue_strict[[tissue]]) #0.45                     
     else if(data == "found") pass <- (df_in[,paste0(signame, '_gbm')] >= 0.45) #0.5 
     else if(data == "seqcap") pass <- (df_in[, paste0(signame, '_gbm')] >= 0.4) #0.4 
     else pass <- (df_in[, paste0(signame, '_gbm')] >= 0.3) #0.05

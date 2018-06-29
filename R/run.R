@@ -174,9 +174,9 @@ run <- function(genome_file,
     }
     else{
       if(exists('merged_output'))
-        output <- get_gbm_prediction(cbind(genomes, merged_output), signames[[imethod]], data, step)
+        output <- get_gbm_prediction(cbind(genomes, merged_output), signames[[imethod]], data, tissue)
       else 
-        output <- get_gbm_prediction(genomes, signames[[imethod]], data, step)
+        output <- get_gbm_prediction(genomes, signames[[imethod]], data, tissue)
     }
     
     # calculates the pass/fail boolean based on the tune
@@ -196,7 +196,8 @@ run <- function(genome_file,
       assignments <- assignment(output_comb, 
                                 method = method, 
                                 signame = signames[[imethod]],
-                                data = data)
+                                data = data, 
+                                tissue = tissue)
       output <- cbind(output, assignments)
     }
 
