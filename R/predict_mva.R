@@ -10,7 +10,7 @@
 #' @return a data.frame with a single column with the score
 #' of MVA 
 
-get_gbm_prediction <- function(input, signame, data, tumor_type = "breast"){
+predict_mva <- function(input, signame, data, tumor_type = "breast"){
   input$rat_sig3 <- input$exp_sig3/input$total_snvs
 
   predictions <- rep(0, dim(input)[[1]])
