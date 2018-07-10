@@ -18,7 +18,9 @@ One novelty of SigMA is a likelihood based matching: We associate a new patient'
 
 ### Quick start 
 `git clone https://github.com/parklab/SigMA`
+
 `cd SigMA`
+
 `Rscript test.R`
 
 More examples can be found in example.R
