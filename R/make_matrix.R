@@ -1,5 +1,6 @@
-#' Converts an input file list with vcf or maf file paths 
-#' to a matrix, it works for general number of context
+#' Converts somatic mutation call files in a directory
+#' either in the form of vcf or maf into a 96-dimensional
+#' matrix, it works for general number of context
 #' and for 1 or 2 strands
 #' 
 #' @param directory pointer to the directory where input vcf 
@@ -8,7 +9,7 @@
 #' @param ref_genome name of the BSgenome currently set by default to
 #' BSgenome.Hsapiens.UCSC.hg19
 #' @param ncontext number of bases in the nucleotide sequence which 
-#' makes up the spectrum
+#' makes up the spectrum, default 3
 #' @param nstrand number of strands to be considered, 1 contracts to 
 #' a single strand which for ncontext = 3 gives the commonly used 
 #' 96 dimensions
@@ -193,6 +194,7 @@ conv_snv_matrix_to_df <- function(genomes_matrix){
   seq_end <- GenomicRanges::end(gr_context)
   
   chrom_nums <- paste0('chr',as.vector(GenomicRanges::seqnames(gr_context)))
+  
   context_seq <- VariantAnnotation::getSeq(ref_genome, 
                         names = chrom_nums, 
                         start = seq_start, 
@@ -240,24 +242,23 @@ conv_snv_matrix_to_df <- function(genomes_matrix){
                                   types, 
                                   ncontext = 3, 
                                   nstrand = 1){
-  maf <- read.delim(maf_file, 
+  print(maf_file)
+  maf <- read.table(maf_file, 
                     comment.char = "#", 
                     sep = "\t", 
                     header = TRUE, 
                     stringsAsFactors = TRUE)
-
   if(dim(maf)[[1]] == 0) return(rep(0, 96))
-
+  
   maf <- maf[maf$Variant_Type == "SNP",]
-  maf$Tumor_Seq_Allele2[maf$Tumor_Seq_Allele2 == "TRUE"] <- "T"
+  maf$Tumor_Seq_Allele1[maf$Tumor_Seq_Allele1 == "TRUE"] <- "T"
   maf <-  maf[maf$Chromosome != "MT",]
 
-
   gr <- with(maf, GenomicRanges::GRanges(Chromosome, 
-                                         IRanges::IRanges(Start_Position, End_Position)))
+                                         IRanges::IRanges(Start_position, End_position)))
   
   ref_vector <- maf$Reference_Allele
-  alt_vector <- maf$Tumor_Seq_Allele2
+  alt_vector <- maf$Tumor_Seq_Allele1
 
   count_vector <- .make_vector_from_gr(gr, 
                                        ref_vector, 
@@ -282,6 +283,7 @@ conv_snv_matrix_to_df <- function(genomes_matrix){
                     sep = "\t", 
                     header = TRUE, 
                     stringsAsFactors = TRUE)
+  str(custom)
 
   if(dim(custom)[[1]] == 0) return(rep(0, 96))
   gr <- GenomicRanges::GRanges(unlist(custom[chrom_colname]), 
