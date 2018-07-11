@@ -7,11 +7,13 @@
 #' @param signatures the input catalog, a data table
 #' with signature spectra in each column 
 #' @param method can be 'median_catalog', 'weighted_catalog'
-#' 'cosine_simil'. 'median_catalog' uses a custom signature
-#' catalog formed by clustering genome SNV spectra and 
+#' 'cosine_simil' or 'decompose. 'median_atalog' uses the 
+#' signature catalog formed by clustering genome SNV spectra and 
 #' using it as a probability distribution. The 'median_catalog'
 #' method can be used with any custom signatures data frame 
 #' if the user intends to provide their own signature table.
+#' @param data sets the type of sequencing platform used, options 
+#' are 'msk', 'seqcap', 'wgs'
 #'
 #' @return A data frame that contains the input genomes
 #' and in addition columns associated to each signature in
@@ -21,6 +23,7 @@ match_to_catalog <- function(genomes, signatures, method = 'median_catalog', dat
   nsig <- dim(signatures)[[2]]
   ntype <- dim(signatures)[[1]]
 
+  #calculates the likelihood
   calc_prob <- function(this_genome, signatures, normalize = T, success = NULL){
     eps <- 0.00001
     probs <- apply(signatures, 2, 
@@ -38,11 +41,15 @@ match_to_catalog <- function(genomes, signatures, method = 'median_catalog', dat
                    pow = this_genome)
  
 
-    if(normalize){
+    if(normalize){ # normalizes the total prob for all clusters to be 1
       mean_probs <- mean(probs)
+      
       q1_probs <- mean(probs[probs < mean(probs)])
       max_probs <- max(probs)
-
+   
+      # often having too small values leads to infinities so
+      # only the probabilities in the first quartile are kept
+      # to be nonzero
       inds_keep <- which(probs >= q1_probs)
       inds_rm <- which(probs < q1_probs)
     
@@ -52,6 +59,8 @@ match_to_catalog <- function(genomes, signatures, method = 'median_catalog', dat
       probs[inds_rm] <- 0
     }
 
+    # the success settings are currently not used it allows to select
+    # a subset of signatures from the whole table
     if(!is.null(success)){
       if(sum(success) == 0){
         return(list(probs = probs, ind_max = NA, sig_max = NA, max_val = NA))
@@ -60,20 +69,26 @@ match_to_catalog <- function(genomes, signatures, method = 'median_catalog', dat
     }else
       ind_max <- which(max(probs) == probs)
 
+    # signature with highest likelihood
     if(length(ind_max) > 0) ind_max <- ind_max[[1]]
     sig_max <- colnames(signatures)[[ind_max]]
     max_val <- probs[[ind_max]]
+ 
     return(list(probs = probs, ind_max = ind_max, sig_max = sig_max, max_val = max_val))
   }
 
+  # cosine similarity
   cosine <- function(x, y){
     return(x%*%y / sqrt(x%*%x * y%*%y))
   }
 
+  # calculates cosine similarity for all signature options
   calc_cos <- function(this_genome, signatures, success = NULL){
     simils <- apply(signatures, 2,
                     function(x){ cosine(this_genome, x) })
     
+    # the success settings are currently not used it allows to select
+    # a subset of signatures from the whole table
     if(!is.null(success)){
       if(sum(success) == 0){
         return(list(simils = simils, ind_max = NA, sig_max = NA, max_val = NA))
@@ -81,120 +96,28 @@ match_to_catalog <- function(genomes, signatures, method = 'median_catalog', dat
       ind_max <- which(max(simils[success]) == simils)
     }else
       ind_max <- which(max(simils) == simils)
+
+    # signature with maximum cosine similarity and its value
     if(length(ind_max) > 0) ind_max = ind_max[[1]]
     sig_max <- colnames(signatures)[[ind_max]]
     max_val <- simils[[ind_max]]
-    return(list(simils = simils, ind_max = ind_max, sig_max = sig_max, max_val = max_val))
-  }
 
-  error <- function(this_genome, signatures, exposures){
- 
-    reco <- (as.matrix(signatures) %*% exposures)
-    error_frac <- sqrt(c(this_genome - reco) %*% c(this_genome - reco))/sqrt(this_genome %*% this_genome)
-    return(error_frac)
-  }
-
-  decompose <- function(this_genome, signatures){
-    dim2 <- dim(signatures)[[2]]
-    
-    if(dim2 == 2){
-      exps <- coef(nnls::nnls(as.matrix(signatures), this_genome))
-      inds <- which(exps != 0)
-      exps <- exps[inds] 
-      sigs <- colnames(signatures)[inds]
-
-      error <- error(this_genome, signatures[, sigs], exps)
-      return(list(signatures = sigs,
-                  exposures = exps,
-                  error = error))
-    }
-
-    min_error <- 1
-    min_indices <- NULL
-    min_exposures <- NULL
-    
-    nloop <- min(dim(signatures)[[2]], 6)
-#    if(data == "msk" | data == "found" | data == "seqcap") 
-#      nloop <- min(nloop, 5)
-
-    if(nloop < 2)
-      stop('linear decomposition requires at least 2 signatures')
-    for(i in 1:(dim2 - nloop + 1)){
-      for(j in (i+1):(dim2 - nloop + 2)){
-        if(nloop >= 3){
-          for(k in (j+1):(dim2 - nloop + 3)){
-            if(nloop >= 4){
-              for(l in (k+1):(dim2 - nloop + 4)){
-                if(nloop >= 5){
-                  for(m in (l+1):(dim2 - nloop + 5)){
-                    if(nloop >= 6){
-                      for(n in (m+1):(dim2 - nloop + 6)){
-                        exposures <- coef(nnls::nnls(as.matrix(signatures[,c(i, j, k, l, m, n)]), this_genome))
-                        error_this <- error(this_genome, as.matrix(signatures[, c(i, j, k, l, m, n)]), exposures)
-                        if(error_this < min_error){
-                          min_error <- error_this
-                          min_indices <- c(i, j, k, l, m, n)
-                          min_exposures <- exposures
-                        }
-                      }
-                    }else{
-                      exposures <- coef(nnls::nnls(as.matrix(signatures[,c(i, j, k, l, m)]), this_genome))
-
-                      error_this <- error(this_genome, as.matrix(signatures[, c(i, j, k, l, m)]), exposures)
-                      if(error_this < min_error){
-                        min_error <- error_this
-                        min_indices <- c(i, j, k, l, m)
-                        min_exposures <- exposures
-                      }
-                    }
-                  }
-                }else{
-                  exposures <- coef(nnls::nnls(as.matrix(signatures[,c(i, j, k, l)]), this_genome))
-
-                  error_this <- error(this_genome, as.matrix(signatures[, c(i, j, k, l)]), exposures)
-                  if(error_this < min_error){
-                    min_error <- error_this
-                    min_indices <- c(i, j, k, l)
-                    min_exposures <- exposures
-                  }
-                }
-              }
-            }else{
-              exposures <- coef(nnls::nnls(as.matrix(signatures[,c(i, j, k)]), this_genome))
-
-              error_this <- error(this_genome, as.matrix(signatures[, c(i, j, k)]), exposures)
-              if(error_this < min_error){
-                min_error <- error_this
-                min_indices <- c(i, j, k)
-                min_exposures <- exposures
-              }
-            }
-          }
-        }else{ 
-          exposures <- coef(nnls::nnls(as.matrix(signatures[,c(i, j)]), this_genome))
-          error_this <- error(this_genome, as.matrix(signatures[, c(i, j)]), exposures)
-          if(error_this < min_error){
-            min_error <- error_this
-            min_indices <- c(i, j)
-            min_exposures <- exposures
-          }                        
-        }
-      }
-    }
-    return(list(signatures = colnames(signatures)[min_indices],
-                exposures = min_exposures,
-                error = min_error))
+    return(list(simils = simils, 
+                ind_max = ind_max, 
+                sig_max = sig_max, 
+                max_val = max_val))
   }
 
   signature_names <- colnames(signatures)
   genome_matrix <- genomes[, 1:ntype]
-  print('here')
-  print(dim(genome_matrix))
 
   names_comb <- rep('', dim(genome_matrix)[[1]])
   combined_simil <- rep(0, dim(genome_matrix)[[1]])
 
-  ##addition
+  # each genome is decomposed with NNLS into corresponding signatures
+  # and likelihood of the decomposition with and without each signature
+  # is calculated
+  
   if(method == 'decompose'){
     output <- data.frame(sigs_all = character(), 
                                     exps_all = character(),
@@ -202,12 +125,14 @@ match_to_catalog <- function(genomes, signatures, method = 'median_catalog', dat
                                     comb_all_c = double(),
                                     exp_sig3 = double(),
                                     matrix(0, 0, nsig),
-                                    matrix(0, 0, nsig),
                                     matrix(0, 0, nsig))
+
+    pb <- txtProgressBar(min = 0, max = dim(genome_matrix)[[1]], style = 3)
+
     for(igenome in 1:dim(genome_matrix)[[1]]){
       x <- unlist(genome_matrix[igenome, ])
       # decompose using all signatures
-      decomposed_all <- decompose(x, signatures)
+      decomposed_all <- decompose(x, signatures, data)
       sigs <- signatures[, decomposed_all$signatures]
       exps <- decomposed_all$exposures
       if(!is.null(dim(sigs))){
@@ -229,6 +154,7 @@ match_to_catalog <- function(genomes, signatures, method = 'median_catalog', dat
         sigs_all <- decomposed_all$signatures[[which(decomposed_all$exposures > 0)]]
         exps_all <- as.character(exps)
       }
+
       # calculate likelihood and similarity of the combination
       probs_comb_all <- calc_prob(x, comb_all/sum(comb_all, normalize = F))$probs
       cos_simil_comb_all <- calc_cos(x, comb_all/sum(comb_all))$simils
@@ -241,7 +167,7 @@ match_to_catalog <- function(genomes, signatures, method = 'median_catalog', dat
       for(isig in 1:(nsig)){
         # decompose using all except the current signature
         if(nsig > 2){
-          decomposed_without <- decompose(x, signatures[, -isig])
+          decomposed_without <- decompose(x, signatures[, -isig], data)
           sigs <- signatures[, decomposed_without$signatures]
           exps <- decomposed_without$exposures
           if(!is.null(dim(sigs))){
@@ -273,14 +199,15 @@ match_to_catalog <- function(genomes, signatures, method = 'median_catalog', dat
                             comb_all_l = probs_comb_all,
                             comb_all_c = cos_simil_comb_all,
                             exp_sig3 = sig3_exp,  
-                            matrix(probs_comb_without, 1, length(probs_comb_without)),
-                            matrix(cos_simil_without, 1, length(cos_simil_without)),
+                            matrix(cos_simil_comb_all - cos_simil_without, 1, length(cos_simil_without)),
                             matrix(prob_rats, 1, length(prob_rats))) 
       output <- rbind(output, output_this)
+      setTxtProgressBar(pb, igenome)
     }       
-    colnames(output)[6:(5 + nsig)] <- paste0(colnames(signatures), '_wout_l')
-    colnames(output)[(6 + nsig):(5 + 2 * nsig)] <- paste0(colnames(signatures), '_wout_c')
-    colnames(output)[(6 + 2 * nsig):(5 + 3 * nsig)] <- paste0(colnames(signatures), '_l_rat')
+
+    message('\n')
+    colnames(output)[6:(5 + nsig)] <- paste0(colnames(signatures), '_c_diff')
+    colnames(output)[(6 + nsig):(5 + 2 * nsig)] <- paste0(colnames(signatures), '_l_rat')
   }
 
   if(method == 'weighted_catalog'){
@@ -299,6 +226,7 @@ match_to_catalog <- function(genomes, signatures, method = 'median_catalog', dat
     max_val_all  <- apply(genome_matrix, 1, 
                           function(x, y){ calc_prob(x, y)$max_val }, y = signatures)
   }
+
   if(method == 'cosine_simil'){
     simils_all    <- apply(genome_matrix, 1, 
                           function(x, y){calc_cos(x, y)$simils}, y = signatures)
@@ -309,9 +237,6 @@ match_to_catalog <- function(genomes, signatures, method = 'median_catalog', dat
   }
   
   if(method == 'weighted_catalog' | method == 'median_catalog'){
-    print(max_sigs_all)
-    print(max_val_all)
-    print(probs_all)
     output <- data.frame(t(probs_all),
                          sig_max = max_sigs_all,
                          max = max_val_all)
@@ -322,6 +247,7 @@ match_to_catalog <- function(genomes, signatures, method = 'median_catalog', dat
                           paste0('sig_max_', mname),
                           paste0('max_', mname))
   }
+
   if(method == 'cosine_simil'){ 
     output <- data.frame(t(simils_all), 
                          sig_max_c = max_sigs_cos_all,

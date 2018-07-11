@@ -7,15 +7,15 @@
 #' from vcf file using @make_genome_matrix() function
 #' see ?make_genome_matrix
 #' @param output_file the output file name, can be NULL in which
-#' case input file name is used and appended with '_output'
-#' @param data the options are 'msk' (for a panel that is similar 
-#' size to MSK-Impact panel with 410 genes), 'seqcap' (for whole  
-#' exome sequences), or 'wgs'
-#' @param tumor_type the options are 'bladder', 'bone_other' (Ewing's 
-#' sarcoma or Chordoma), 'breast', 'crc', 'eso', 'gbm', 'lung', 
-#' 'lymph', 'medullo', 'osteo', 'ovary', 'panc_ad', 'panc_en',
-#' 'prost', 'stomach', 'thy', or 'uterus'. The exact correspondance
-#' of these names can be found in README.md file
+#' case input file name is used and appended with "_output"
+#' @param data the options are "msk" (for a panel that is similar 
+#' size to MSK-Impact panel with 410 genes), "seqcap" (for whole  
+#' exome sequences), or "wgs"
+#' @param tumor_type the options are "bladder", "bone_other" (Ewing's 
+#' sarcoma or Chordoma), "breast", "crc", "eso", "gbm", "lung", 
+#' "lymph", "medullo", "osteo", "ovary", "panc_ad", "panc_en",
+#' "prost", "stomach", "thy", or "uterus". The exact correspondance
+#' of these names can be found in https://github.com/parklab/SigMA
 #' @param do_assign boolean for whether a cutoff should be applied 
 #' to determine the final decision or just the features should 
 #' be returned
@@ -24,16 +24,13 @@
 #' @param check_msi is a boolean which determines whether the user
 #' wants to identify micro-sattelite instable tumors
 #'
-#' @return extended data frame which includes the input but with
-#' the findings of SigMA annotated as additional columns
-#'
 #' @examples
-#' run(genome_file = 'input_genomes.csv', 
-#'     data = 'msk',
-#'     tumor_type = 'ovary')
-#' run(genome_file = 'input_genomes.csv', 
-#'     data = 'exome', 
-#'     tumor_type = 'bone_other')
+#' run(genome_file = "input_genomes.csv", 
+#'     data = "msk",
+#'     tumor_type = "ovary")
+#' run(genome_file = "input_genomes.csv", 
+#'     data = "exome", 
+#'     tumor_type = "bone_other")
 
 run <- function(genome_file, 
                 output_file = NULL,
@@ -46,9 +43,9 @@ run <- function(genome_file,
   # if a custom output file is not defined 
   # use the input file name
   if(is.null(output_file))
-    output_file = gsub(input_file,
-                       pattern = '.csv',
-                       replace = '_output.csv')
+    output_file = gsub(genome_file,
+                       pattern = ".csv",
+                       replacement = "_output.csv")
 
   
   genomes <- read.csv(genome_file)
@@ -72,61 +69,67 @@ run <- function(genome_file,
     }
   }
 
-  print(paste0('You are running SigMA for ', tissue_names[[tumor_type]],
-               ' sequenced by ', platform_names[[data]], 
-               'for ', dim(genomes)[[1]], ' genomes'))
+  message(paste0("You are running SigMA for ", tissue_names[[tumor_type]],
+               " sequenced by ", platform_names[[data]], 
+               " for ", dim(genomes)[[1]], " genomes"))
 
 
   # method names to calculate different features
-  methods <- c('median_catalog', 'cosine_simil', 'decompose')
+  methods <- c("median_catalog", "cosine_simil", "decompose")
 
   # signature catalogs to be used for each method
-  sig_catalogs <- c('average', 'cosmic', 'cosmic_tissue')
+  sig_catalogs <- c("average", "cosmic", "cosmic_tissue")
 
   # first the samples are assumed to be mss and later msi 
   # calculations are done
-  steps <- c('mss', 'mss', 'mss')
+  steps <- c("mss", "mss", "mss")
 
   # signature to be identified from mss samples
   if(tumor_type == "gbm"){
-    signames <- rep('Signature_8', 3)
+    signames <- rep("Signature_8", 3)
   }
   else{
-    signames <- rep('Signature_3', 3) 
+    signames <- rep("Signature_3", 3) 
   }
 
 
   # for breast cancer there is an additional feature that is 
   # the weighted likelihood
   if(tumor_type == "breast"){
-    methods <- c(methods, 'weighted_catalog')
-    sig_catalogs <- c(sig_catalogs, 'cosmic_tissue')
-    steps <- c(steps, 'mss')
-    signames <- c(signames, 'Signature_3')
+    methods <- c(methods, "weighted_catalog")
+    sig_catalogs <- c(sig_catalogs, "cosmic_tissue")
+    steps <- c(steps, "mss")
+    signames <- c(signames, "Signature_3")
   }
     
   if(do_mva){
-    methods <- c(methods, 'mva')
-    sig_catalogs <- c(sig_catalogs, 'none')
-    signames <- c(signames, 'Signature_3')
-    steps <- c(steps, 'mss')
+    methods <- c(methods, "mva")
+    sig_catalogs <- c(sig_catalogs, "none")
+    signames <- c(signames, "Signature_3")
+    steps <- c(steps, "mss")
   }
 
   if(check_msi){
-    methods <- c(methods, 'median_catalog', 'decompose')
-    sig_catalogs <- c(sig_catalogs, 'average', 'cosmic_tissue')
-    steps <- c(steps, 'msi', 'msi')
-    signames <- c(signames, 'Signature_msi')
+    methods <- c(methods, "median_catalog", "decompose")
+    sig_catalogs <- c(sig_catalogs, "average", "cosmic_tissue")
+    steps <- c(steps, "msi", "msi")
+    signames <- c(signames, "Signature_msi")
   }
 
   for(imethod in 1:length(methods)){
     sig_catalog <- sig_catalogs[[imethod]]
     method <- methods[[imethod]]
     step <- steps[[imethod]]
-    print(method)
 
-    if(method == 'median_catalog'){
+    if(method == "median_catalog"){
       average_catalog <- all_catalogs[[tumor_type]]
+      message("Calculating likelihoods for each cluster")
+    }else if(method == "cosine_simil"){
+      message("Calculating cosine similarities")
+    }else if(method == "decompose"){
+      message("Calculating exposures with NNLS")
+    }else if(method == "mva"){
+      message("Predicting MVA score")
     }
 
     if(sig_catalog == "cosmic"){
@@ -138,16 +141,16 @@ run <- function(genome_file,
         signatures <- cosmic_catalog[, signames_per_tissue[[tumor_type]]]
       }else{
         signatures <- cosmic_catalog[, c(signames_per_tissue[[tumor_type]],
-                                       signames_per_tissue[['msi']],
-                                       signames_per_tissue[['pole']])]
+                                       signames_per_tissue[["msi"]],
+                                       signames_per_tissue[["pole"]])]
       }
     }
 
     if(sig_catalog == "average"){
       if(step == "mss") signatures <- average_catalog
       else signatures <- cbind(average_catalog, 
-                               all_catalogs[['msi']],
-                               all_catalogs[['pole']])
+                               all_catalogs[["msi"]],
+                               all_catalogs[["pole"]])
     }
 
     # scale for the tri-nucleotide context
@@ -165,26 +168,27 @@ run <- function(genome_file,
 
     # set the column with total number of mutations if this column
     # doesn't exist
-    if(sum(colnames(genomes) == 'total_snvs') == 0)
+    if(sum(colnames(genomes) == "total_snvs") == 0)
       genomes$total_snvs <- rowSums(genomes[, 1:96])
 
     #calculate the likelihood/cos simil/decomposition
-    if(method != 'mva'){
+    if(method != "mva"){
       output <- match_to_catalog(genomes, 
                                  signatures,  
                                  method = method, 
                                  data = data)
       if(step == "msi") 
-        colnames(output) <- paste0(colnames(output), '_msi')
+        colnames(output) <- paste0(colnames(output), "_msi")
     }
     else{ # calculate the multivariate analysis score
-      if(exists('merged_output'))
+      if(exists("merged_output"))
         output <- predict_mva(cbind(genomes, merged_output), signames[[imethod]], data, tumor_type)
       else 
         output <- predict_mva(genomes, signames[[imethod]], data, tumor_type)
     }
     
     # calculates the pass/fail boolean from MVA score or likelihood
+
     if(do_assign & 
        (method == "median_catalog" | method == "mva")){
       output_comb <- cbind(genomes, output)
@@ -197,9 +201,8 @@ run <- function(genome_file,
     }
 
 
-    if(!exists('merged_output')) merged_output <- output
+    if(!exists("merged_output")) merged_output <- output
     else merged_output <- cbind(merged_output, output)
-
   }
 
   merged_output <- cbind(genomes, merged_output)
@@ -210,7 +213,10 @@ run <- function(genome_file,
               row.names = F,
               col.names = T,
               quote = F,
-              sep = ',')
-  return(merged_output)
+              sep = ",")
+  if(file.exists(output_file))
+    message(paste0("SigMA output is in: ", output_file))
+
+#  return(merged_output)
 
 }

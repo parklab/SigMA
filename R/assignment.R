@@ -47,7 +47,7 @@ assignment <- function(df_in,
   }
   if(method == 'mva'){ 
     if(data == "msk" | data == "seqcap") 
-      pass <- (df_in[, paste0(signame, '_mva')] >= cutoffs[[tissue]]) #0.45/#0.4    
+      pass <- (df_in[, paste0(signame, '_mva')] >= cutoffs[[tumor_type]]) #0.45/#0.4    
     else if(data == "found") pass <- (df_in[,paste0(signame, '_mva')] >= 0.45) #0.5 
     else pass <- (df_in[, paste0(signame, '_mva')] >= 0.3) #0.05
   }

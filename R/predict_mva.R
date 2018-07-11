@@ -18,7 +18,6 @@ predict_mva <- function(input, signame, data, tumor_type = "breast"){
   if(data == "seqcap") model <- gbms_exome[[tumor_type]] #gbm_exome_5 
   else if(data == "msk"){
     model <- gbms_msk[[tumor_type]] 
-    str(model)
   }
   else if(data == "found") model <- gbm_fo_5 #gbm_found_3
   else model <- gbm_wgs_5
