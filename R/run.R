@@ -45,7 +45,12 @@ run <- function(genome_file,
   if(is.null(output_file))
     output_file = gsub(genome_file,
                        pattern = ".csv",
-                       replacement = "_output.csv")
+                       replacement = paste0("_output_tumortype_",
+                                            tumor_type,
+                                            "_platform_",
+                                            gsub(platform_names[[data]], 
+                                                 pattern = ' ', replace = ''),
+                                            ".csv"))
 
   
   genomes <- read.csv(genome_file)
@@ -69,9 +74,9 @@ run <- function(genome_file,
     }
   }
 
-  message(paste0("You are running SigMA for ", tissue_names[[tumor_type]],
-               " sequenced by ", platform_names[[data]], 
-               " for ", dim(genomes)[[1]], " genomes"))
+  message(paste0("You are running SigMA for ", dim(genomes)[[1]], 
+                 " ", tissue_names[[tumor_type]],  "(s) sequenced by ", 
+                 platform_names[[data]]))
 
 
   # method names to calculate different features

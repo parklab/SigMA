@@ -1,7 +1,7 @@
 #' plots the 96 dimensional mutational spectrum
 
 plot_tribase_dist <- function(df_snvs, file_name = "test.png", labely = "N SNVs", legend = T, 
-                              text_size = 7, y_title_size = 9){
+                              text_size = 7){
 
   
   typeref <- c(rep('C',48), rep('T',48))
@@ -40,7 +40,6 @@ plot_tribase_dist <- function(df_snvs, file_name = "test.png", labely = "N SNVs"
                        median = c(unlist(medians)))
   
   molten_table$median <- df_med$median[match(molten_table$context, df_med$context)]
-  str(molten_table)
 
   molten_table_error <- Rmisc::summarySE(molten_table, 
                                          measurevar = "value", 
@@ -67,15 +66,17 @@ plot_tribase_dist <- function(df_snvs, file_name = "test.png", labely = "N SNVs"
   plot <- plot + ggplot2::scale_fill_manual(name = "sig_group", values = c_snv_palette)
 
   plot <- plot + ggplot2::theme_bw() 
-  plot <- plot + ggplot2::theme(axis.text.x = ggplot2::element_text(angle=90, hjust=1, size = text_size, 
+  plot <- plot + ggplot2::theme(axis.text.x = ggplot2::element_text(angle=90, hjust=1, size = text_size - 2, 
                                                                     colour = c_snv_pal_label), 
                                 axis.text.y = ggplot2::element_text(size = text_size),
-                                axis.title.y = ggplot2::element_text(size = y_title_size), 
+                                axis.title.y = ggplot2::element_text(size = text_size), 
                                 text = ggplot2::element_text(size = 20),
                                 legend.title = ggplot2::element_blank(),
                                 legend.justification = c(1,1),
-                                legend.text = ggplot2::element_text(size = y_title_size, face = "bold"),
-                                legend.position="top")
+                                legend.text = ggplot2::element_text(size = text_size, face = "bold"),
+                                legend.position="top", 
+                                panel.grid.major = ggplot2::element_blank(),
+                                panel.grid.minor = ggplot2::element_blank())
   if(!legend) plot <- plot + ggplot2::theme(legend.position = "none")
 
   plot <- plot + ggplot2::ylab(labely) + ggplot2::xlab("") 
@@ -83,6 +84,5 @@ plot_tribase_dist <- function(df_snvs, file_name = "test.png", labely = "N SNVs"
 
   plot <- plot + ggplot2::guides(fill = ggplot2::guide_legend(nrow = 1))
 
-  print(plot)
   return(plot)
 }
