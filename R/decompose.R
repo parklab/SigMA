@@ -1,22 +1,37 @@
-# decomposes the mutational spectrum of a genome using the signatures
-# provided in the table, different number of signatures are tried
-decompose <- function(this_genome, signatures, data){
+#' Decomposes the mutational spectrum of a genome in terms of
+#' tumor type specific signatures that were calculated through analysis
+#' of public WGS samples from ICGC and TCGA consortia, and contained
+#' as a list in the package. Non-negative-least squares algorithm
+#' is used and the number of signatures to be considered in the 
+#' decomposition is increased gradually, first all pairs from among the
+#' available signatures are considered and minimal error pair is kept. 
+#' Then all 3-signature combinations, 4-signature combinations and so on
+#' are considered. The result is updated if the error is smaller with
+#' larger number of signatures 
+#'
+#' @param spect composite spectrum that is being decomposed
+#' @param signatures a data.frame that contains the signatures in its
+#' columns
+#' @param data sequencing platform that as in run(), used for setting
+#' the maximum number of signatures that is allowed in the decomposition
+
+decompose <- function(spect, signatures, data){
 
   # calculates frobenius error
-  error <- function(this_genome, signatures, exposures){
+  error <- function(spect, signatures, exposures){
     reco <- (as.matrix(signatures) %*% exposures)
-    error_frac <- sqrt(c(this_genome - reco) %*% c(this_genome - reco))/sqrt(this_genome %*% this_genome)
+    error_frac <- sqrt(c(spect - reco) %*% c(spect - reco))/sqrt(spect %*% spect)
     return(error_frac)
   }
 
   dim2 <- dim(signatures)[[2]]
   if(dim2 == 2){
-    exps <- coef(nnls::nnls(as.matrix(signatures), this_genome))
+    exps <- coef(nnls::nnls(as.matrix(signatures), spect))
     inds <- which(exps != 0)
     exps <- exps[inds]
     sigs <- colnames(signatures)[inds]
 
-    error <- error(this_genome, signatures[, sigs], exps)
+    error <- error(spect, signatures[, sigs], exps)
     return(list(signatures = sigs,
                 exposures = exps,
                 error = error))
@@ -44,8 +59,8 @@ decompose <- function(this_genome, signatures, data){
                 for(m in (l+1):(dim2 - nloop + 5)){
                   if(nloop >= 6){
                     for(n in (m+1):(dim2 - nloop + 6)){
-                      exposures <- coef(nnls::nnls(as.matrix(signatures[,c(i, j, k, l, m, n)]), this_genome))
-                      error_this <- error(this_genome, as.matrix(signatures[, c(i, j, k, l, m, n)]), exposures)
+                      exposures <- coef(nnls::nnls(as.matrix(signatures[,c(i, j, k, l, m, n)]), spect))
+                      error_this <- error(spect, as.matrix(signatures[, c(i, j, k, l, m, n)]), exposures)
                       if(error_this < min_error){
                         min_error <- error_this
                         min_indices <- c(i, j, k, l, m, n)
@@ -53,8 +68,8 @@ decompose <- function(this_genome, signatures, data){
                       }
                     }
                   }else{
-                    exposures <- coef(nnls::nnls(as.matrix(signatures[,c(i, j, k, l, m)]), this_genome))
-                    error_this <- error(this_genome, as.matrix(signatures[, c(i, j, k, l, m)]), exposures)
+                    exposures <- coef(nnls::nnls(as.matrix(signatures[,c(i, j, k, l, m)]), spect))
+                    error_this <- error(spect, as.matrix(signatures[, c(i, j, k, l, m)]), exposures)
                     if(error_this < min_error){
                       min_error <- error_this
                       min_indices <- c(i, j, k, l, m)
@@ -63,8 +78,8 @@ decompose <- function(this_genome, signatures, data){
                   }
                 }
               }else{
-                exposures <- coef(nnls::nnls(as.matrix(signatures[,c(i, j, k, l)]), this_genome))
-                error_this <- error(this_genome, as.matrix(signatures[, c(i, j, k, l)]), exposures)
+                exposures <- coef(nnls::nnls(as.matrix(signatures[,c(i, j, k, l)]), spect))
+                error_this <- error(spect, as.matrix(signatures[, c(i, j, k, l)]), exposures)
                 if(error_this < min_error){
                   min_error <- error_this
                   min_indices <- c(i, j, k, l)
@@ -73,8 +88,8 @@ decompose <- function(this_genome, signatures, data){
               }
             }
           }else{
-            exposures <- coef(nnls::nnls(as.matrix(signatures[,c(i, j, k)]), this_genome))
-            error_this <- error(this_genome, as.matrix(signatures[, c(i, j, k)]), exposures)
+            exposures <- coef(nnls::nnls(as.matrix(signatures[,c(i, j, k)]), spect))
+            error_this <- error(spect, as.matrix(signatures[, c(i, j, k)]), exposures)
             if(error_this < min_error){
               min_error <- error_this
               min_indices <- c(i, j, k)
@@ -83,8 +98,8 @@ decompose <- function(this_genome, signatures, data){
           }
         }
       }else{
-        exposures <- coef(nnls::nnls(as.matrix(signatures[,c(i, j)]), this_genome))
-        error_this <- error(this_genome, as.matrix(signatures[, c(i, j)]), exposures)
+        exposures <- coef(nnls::nnls(as.matrix(signatures[,c(i, j)]), spect))
+        error_this <- error(spect, as.matrix(signatures[, c(i, j)]), exposures)
         if(error_this < min_error){
           min_error <- error_this
           min_indices <- c(i, j)

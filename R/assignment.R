@@ -1,6 +1,6 @@
-#' This code assigns a boolean for weather the signature
-#' of interest is identified by applying a threshold on 
-#' the multivariate analysis score or likelihood
+#' Assigns a boolean based on a threshold on the 
+#' likelihood or mva score for whether the signature
+#' is identified 
 #'
 #' @param df_in input data.frame 
 #' @param method 'median_catalog' for likelihood based
@@ -8,11 +8,12 @@
 #' based selection
 #' @param signame name of the signature that user wants 
 #' to identify, 'Signature_3' or 'Signature_msi'
-#' @ param data 'msk', 'seqcap' or 'wgs'
-#' @param tumor_type thresholds are specific to
-#' tumor types
-#' @param do_strict boolean to set whether a strict 
-#' threshold should be applied
+#' @param data 'msk', 'seqcap' or 'wgs'
+#' @param tumor_type tumor type as listed in 
+#' https://github.com/parklab/SigMA/ because the 
+#' thresholds are tumor_type specific
+#' @param do_strict sets whether a strict 
+#' threshold should be applied or a loose one
 #'
 #' @return a data.frame with a single column which contains 
 #' the boolean indicating the presence of the signature
