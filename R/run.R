@@ -10,7 +10,7 @@
 #' case input file name is used and appended with "_output"
 #' @param data the options are "msk" (for a panel that is similar 
 #' size to MSK-Impact panel with 410 genes), "seqcap" (for whole  
-#' exome sequences), or "wgs"
+#' exome sequencing), or "wgs" (for whole genome sequencing)
 #' @param tumor_type the options are "bladder", "bone_other" (Ewing's 
 #' sarcoma or Chordoma), "breast", "crc", "eso", "gbm", "lung", 
 #' "lymph", "medullo", "osteo", "ovary", "panc_ad", "panc_en",
@@ -29,7 +29,7 @@
 #'     data = "msk",
 #'     tumor_type = "ovary")
 #' run(genome_file = "input_genomes.csv", 
-#'     data = "exome", 
+#'     data = "seqcap", 
 #'     tumor_type = "bone_other")
 
 run <- function(genome_file, 
@@ -52,7 +52,10 @@ run <- function(genome_file,
                                                  pattern = ' ', replace = ''),
                                             ".csv"))
 
-  
+  if((tumor_type == "medullo" | tumor_type == "bone_other") & data == "msk")
+    stop('tumor_type medullo and bone_other cannot be used msk data setting
+          use seqcap or wgs data options instead')
+
   genomes <- read.csv(genome_file)
 
   # remove genomes with no mutation 
@@ -222,6 +225,6 @@ run <- function(genome_file,
   if(file.exists(output_file))
     message(paste0("SigMA output is in: ", output_file))
 
-#  return(merged_output)
+  return(output_file)
 
 }
