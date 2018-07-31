@@ -2,8 +2,9 @@
 % Please edit documentation in R/make_matrix.R
 \name{make_matrix}
 \alias{make_matrix}
-\title{Converts an input file list with vcf or maf file paths 
-to a matrix, it works for general number of context
+\title{Converts somatic mutation call files in a directory
+either in the form of vcf or maf into a 96-dimensional
+matrix, it works for general number of context
 and for 1 or 2 strands}
 \usage{
 make_matrix(directory, file_type = "vcf",
@@ -21,7 +22,7 @@ maf files reside}
 BSgenome.Hsapiens.UCSC.hg19}
 
 \item{ncontext}{number of bases in the nucleotide sequence which 
-makes up the spectrum}
+makes up the spectrum, default 3}
 
 \item{nstrand}{number of strands to be considered, 1 contracts to 
 a single strand which for ncontext = 3 gives the commonly used 
@@ -40,8 +41,9 @@ string defining the colname which holds the ref allele}
 string defining the colname which holds the alt allele}
 }
 \description{
-Converts an input file list with vcf or maf file paths 
-to a matrix, it works for general number of context
+Converts somatic mutation call files in a directory
+either in the form of vcf or maf into a 96-dimensional
+matrix, it works for general number of context
 and for 1 or 2 strands
 }
 \examples{

@@ -16,11 +16,14 @@ spectra in the first ntype columns and genomes in each row}
 with signature spectra in each column}
 
 \item{method}{can be 'median_catalog', 'weighted_catalog'
-'cosine_simil'. 'median_catalog' uses a custom signature
-catalog formed by clustering genome SNV spectra and 
+'cosine_simil' or 'decompose. 'median_atalog' uses the 
+signature catalog formed by clustering genome SNV spectra and 
 using it as a probability distribution. The 'median_catalog'
 method can be used with any custom signatures data frame 
 if the user intends to provide their own signature table.}
+
+\item{data}{sets the type of sequencing platform used, options 
+are 'msk', 'seqcap', 'wgs'}
 }
 \value{
 A data frame that contains the input genomes

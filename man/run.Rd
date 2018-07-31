@@ -16,31 +16,27 @@ from vcf file using @make_genome_matrix() function
 see ?make_genome_matrix}
 
 \item{output_file}{the output file name, can be NULL in which
-case input file name is used and appended with '_output'}
+case input file name is used and appended with "_output"}
 
 \item{do_assign}{boolean for whether a cutoff should be applied 
 to determine the final decision or just the features should 
 be returned}
 
-\item{data}{the options are 'msk' (for a panel that is similar 
-size to MSK-Impact panel with 410 genes), 'seqcap' (for whole  
-exome sequences), or 'wgs'}
+\item{data}{the options are "msk" (for a panel that is similar 
+size to MSK-Impact panel with 410 genes), "seqcap" (for whole  
+exome sequencing), or "wgs" (for whole genome sequencing)}
 
-\item{tumor_type}{the options are 'bladder', 'bone_other' (Ewing's 
-sarcoma or Chordoma), 'breast', 'crc', 'eso', 'gbm', 'lung', 
-'lymph', 'medullo', 'osteo', 'ovary', 'panc_ad', 'panc_en',
-'prost', 'stomach', 'thy', or 'uterus'. The exact correspondance
-of these names can be found in README.md file}
+\item{tumor_type}{the options are "bladder", "bone_other" (Ewing's 
+sarcoma or Chordoma), "breast", "crc", "eso", "gbm", "lung", 
+"lymph", "medullo", "osteo", "ovary", "panc_ad", "panc_en",
+"prost", "stomach", "thy", or "uterus". The exact correspondance
+of these names can be found in https://github.com/parklab/SigMA}
 
 \item{do_mva}{a boolean for whether multivariate analysis 
 should be run}
 
 \item{check_msi}{is a boolean which determines whether the user
 wants to identify micro-sattelite instable tumors}
-}
-\value{
-extended data frame which includes the input but with
-the findings of SigMA annotated as additional columns
 }
 \description{
 Runs SigMA: (1) calculates likelihood, cosine similarity,
@@ -49,10 +45,10 @@ features are later used in multivariate analysis. (3) Based
 on scores a final decision on existence of the signature.
 }
 \examples{
-run(genome_file = 'input_genomes.csv', 
-    data = 'msk',
-    tumor_type = 'ovary')
-run(genome_file = 'input_genomes.csv', 
-    data = 'exome', 
-    tumor_type = 'bone_other')
+run(genome_file = "input_genomes.csv", 
+    data = "msk",
+    tumor_type = "ovary")
+run(genome_file = "input_genomes.csv", 
+    data = "seqcap", 
+    tumor_type = "bone_other")
 }
