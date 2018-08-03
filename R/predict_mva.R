@@ -6,6 +6,7 @@
 #' similarity and total snv values in it's columns
 #' @param signame name of the signature which is being identified
 #' @param tumor_type tumor type tag see ?run
+#' @param data determines the sequencing platform see run()
 #'
 #' @return a data.frame with a single column with the score
 #' of MVA 
