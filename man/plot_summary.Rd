@@ -4,16 +4,10 @@
 \alias{plot_summary}
 \title{Generates summary plot}
 \usage{
-plot_summary(file = NULL, detailed = F)
+plot_summary(file = NULL)
 }
 \arguments{
 \item{file}{the csv file produced by SigMA}
-
-\item{detailed}{boolean determines whether a detailed 
-summary plot or a short summary should be produced, if
-set to true creates a plot for each sample, if false 
-makes a single plot telling what fraction of samples had
-were determined to be Signature 3-positive}
 }
 \description{
 Generates summary plot

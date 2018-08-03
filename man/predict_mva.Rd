@@ -14,6 +14,8 @@ similarity and total snv values in it's columns}
 
 \item{signame}{name of the signature which is being identified}
 
+\item{data}{determines the sequencing platform see run()}
+
 \item{tumor_type}{tumor type tag see ?run}
 }
 \value{

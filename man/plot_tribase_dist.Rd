@@ -5,7 +5,21 @@
 \title{plots the 96 dimensional mutational spectrum}
 \usage{
 plot_tribase_dist(df_snvs, file_name = "test.png", labely = "N SNVs",
-  legend = T, text_size = 7)
+  legend = T, text_size = 10, signame = "")
+}
+\arguments{
+\item{df_snvs}{a data frame with 96-dimensional spectra on its columns}
+
+\item{file_name}{the name of the plot to be generated with the proper extension
+e.g. "test.pdf", "test.png", etc}
+
+\item{labely}{string for the label of the y axis}
+
+\item{legend}{boolean determining whether legend should be printed}
+
+\item{text_size}{size of the text of the x and y axis text and titles}
+
+\item{signame}{a text to be printed on the figure}
 }
 \description{
 plots the 96 dimensional mutational spectrum

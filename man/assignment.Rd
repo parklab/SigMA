@@ -2,9 +2,9 @@
 % Please edit documentation in R/assignment.R
 \name{assignment}
 \alias{assignment}
-\title{This code assigns a boolean for weather the signature
-of interest is identified by applying a threshold on 
-the multivariate analysis score or likelihood}
+\title{Assigns a boolean based on a threshold on the 
+likelihood or mva score for whether the signature
+is identified}
 \usage{
 assignment(df_in, method = "mva", signame = "Signature_3", data = NULL,
   tumor_type = "breast", do_strict = T)
@@ -19,18 +19,21 @@ based selection}
 \item{signame}{name of the signature that user wants 
 to identify, 'Signature_3' or 'Signature_msi'}
 
-\item{tumor_type}{thresholds are specific to
-tumor types}
+\item{data}{'msk', 'seqcap' or 'wgs'}
 
-\item{do_strict}{boolean to set whether a strict 
-threshold should be applied}
+\item{tumor_type}{tumor type as listed in 
+https://github.com/parklab/SigMA/ because the 
+thresholds are tumor_type specific}
+
+\item{do_strict}{sets whether a strict 
+threshold should be applied or a loose one}
 }
 \value{
 a data.frame with a single column which contains 
 the boolean indicating the presence of the signature
 }
 \description{
-This code assigns a boolean for weather the signature
-of interest is identified by applying a threshold on 
-the multivariate analysis score or likelihood
+Assigns a boolean based on a threshold on the 
+likelihood or mva score for whether the signature
+is identified
 }
