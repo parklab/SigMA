@@ -1,4 +1,5 @@
 library('DT')
+library(shinycssloaders)
 
 myplot <- function(x) {
   plot <- gridExtra::arrangeGrob(x)
@@ -14,33 +15,27 @@ server <- function(input, output, session){
 
   # run SigMA
   output_file <- eventReactive(input$do_run,{
-    withProgress(message = 'Running', value = 0, {
-      genomes_matrix <- make_matrix(directory = input$directory, 
-                                    file_type = input$file_type)
-      incProgress(0.3)
-      genomes <- conv_snv_matrix_to_df(genomes_matrix)
-      genomes_file = 'example.csv'
-      write.table(genomes,
-              genomes_file,
-              sep = ',',
-              row.names = F,
-              col.names = T ,
-              quote = F)
-      incProgress(0.1)
-      ind <- which(as.character(tissue_names) == input$tumor_type)
-      tumor_type = names(tissue_names)[[ind]]
+    genomes_matrix <- make_matrix(directory = input$directory, 
+                                  file_type = input$file_type)
+    genomes <- conv_snv_matrix_to_df(genomes_matrix)
+    genomes_file = 'example.csv'
+    write.table(genomes,
+            genomes_file,
+            sep = ',',
+            row.names = F,
+            col.names = T ,
+            quote = F)
+    ind <- which(as.character(tissue_names) == input$tumor_type)
+    tumor_type = names(tissue_names)[[ind]]
     
-      ind <- which(as.character(platform_names) == input$data)
-      data = names(platform_names)[[ind]]
-      incProgress(0.1)
+    ind <- which(as.character(platform_names) == input$data)
+    data = names(platform_names)[[ind]]
     
-      output_file <- run(genomes_file, 
-                         tumor_type = tumor_type,
-                         data = data,
-                         do_mva = T,
-                         do_assign = T)
-      incProgress(0.5)
-    })
+    output_file <- run(genomes_file, 
+                       tumor_type = tumor_type,
+                       data = data,
+                       do_mva = T,
+                       do_assign = T)
     return(output_file)
   })
 
@@ -50,9 +45,7 @@ server <- function(input, output, session){
   })
   
   output$plot2 <- renderPlot({
-    withProgress(message = 'Plotting', value = 0, {
-     print(plot())
-    })
+    print(plot())
   })
 
   
@@ -106,19 +99,16 @@ server <- function(input, output, session){
 
   output$plotd2 <- renderPlot({
     if(this_sample$sample != '')
-      withProgress(message = 'Plotting', value = 0, {
         print(plotd())
-        incProgress(1)
-      })
   })
 
 
   observeEvent(input$do_run, {  
-   removeTab(inputId = "tabs", target = "Signature 3")
-
+   removeTab(inputId = "tabs", target = "Results")
+   removeTab(inputId = "tabs", target = "Details")
    insertTab(inputId = "tabs",
       tabPanel(
-        "Signature 3", 
+        "Results", 
         fluidRow(style = "padding:15px;
                              margin-left:15px;
                              margin-right:15px;
@@ -126,11 +116,11 @@ server <- function(input, output, session){
                              margin-bottom:15px;",
              
           column(5, h4("Summary") ,
-            plotOutput("plot2", width = "90%", height = "750px")
+            plotOutput("plot2", width = "90%", height = "750px") %>% withSpinner(color="#dee9fc")
           ),
           column(7, style = "background-color: #eaf1fc",
             h4("Click on the tag to see more"),
-            dataTableOutput("sorted_samples")
+            dataTableOutput("sorted_samples") %>% withSpinner(color="#dee9fc")
           )
         )
       ),
@@ -139,22 +129,24 @@ server <- function(input, output, session){
   })
 
   observeEvent(input$do_run, {
-    updateTabsetPanel(session, "tabs", selected = "Signature 3")
+    updateTabsetPanel(session, "tabs", selected = "Results")
   })
 
   observeEvent(input$select_button, {
-    removeTab(inputId = "tabs", target = "selectedTumor")
+    removeTab(inputId = "tabs", target = "Details")
 
     insertTab(inputId = "tabs",
       tabPanel(
-        "selectedTumor",
+        "Details",
         fluidRow(style = "padding:15px;
                              margin-left:15px;
                              margin-right:15px;
                              margin-top:15px;
                              margin-bottom:15px;",
           column(6, 
-            fluidRow(plotOutput("plotd2", width = "90%", height = "400px"))
+            fluidRow(
+              plotOutput("plotd2", width = "90%", height = "400px") %>% withSpinner(color="#dee9fc")
+            )
           )
         )
       ),
@@ -164,7 +156,7 @@ server <- function(input, output, session){
 
   observeEvent(input$select_button, {
     updateTabsetPanel(session, "tabs", 
-      selected = "selectedTumor")
+      selected = "Details")
   })
 
 }
