@@ -1,14 +1,8 @@
 #' Generates summary plot 
 #'
 #' @param file the csv file produced by SigMA
-#' @param detailed boolean determines whether a detailed 
-#' summary plot or a short summary should be produced, if
-#' set to true creates a plot for each sample, if false 
-#' makes a single plot telling what fraction of samples had
-#' were determined to be Signature 3-positive
-#'
 
-plot_summary <- function(file = NULL, detailed = F){
+plot_summary <- function(file = NULL){
   df <- read.csv(file)
 
   # read SigMA settings from file name
@@ -45,20 +39,38 @@ plot_summary <- function(file = NULL, detailed = F){
     cutoff <- cutoffs_wgs[[tumor_type]]
   }
 
-  text_size = 7
+  text_size = 10
 
   # 3-base distributions 
-  pos_tribase <- plot_tribase_dist(as.data.frame(t(df[which(df$pass_mva), 1:96])))
-  neg_tribase <- plot_tribase_dist(as.data.frame(t(df[-which(df$pass_mva), 1:96])))
+  pos_tribase <- plot_tribase_dist(as.data.frame(t(df[which(df$pass_mva), 1:96])),
+                                   signame = paste0('  Aggregated mutations from ', 
+                                                    sum(df$pass_mva), ' Sig3+ sample(s)'))
+  neg_tribase <- plot_tribase_dist(as.data.frame(t(df[-which(df$pass_mva), 1:96])),
+                                   signame = paste0('  Aggregated mutations from ', 
+                                                    sum(df$pass_mva == F), ' Sig3- sample(s)'))
+
   neg_tribase <- neg_tribase + ggplot2::theme(legend.position = "none")
 
   # cosine density distribution
+  colors_cos <- col_pos_neg
+  if(length(unique(df$pass_mva)) == 1){
+    if(unique(df$pass_mva))
+      colors_cos <- col_pos_neg[[2]]
+    else
+      colors_cos <- col_pos_neg[[1]]
+  }
+
   plot_cos <- ggplot2::ggplot(df, ggplot2::aes(x = Signature_3_c))
   plot_cos <- plot_cos + ggplot2::geom_density(ggplot2::aes(color = pass_mva))
-  plot_cos <- plot_cos + ggplot2::scale_color_manual(values = col_pos_neg)
-  plot_cos <- plot_cos + theme_def
-  plot_cos <- plot_cos + ggplot2::xlab('cosine Sig3')
+  plot_cos <- plot_cos + ggplot2::scale_color_manual(values = colors_cos)
+  plot_cos <- plot_cos + theme_def + ggplot2::theme(axis.title.x = ggplot2::element_text(size = text_size),
+                                                    axis.title.y = ggplot2::element_text(size = text_size),
+                                                    axis.text.x = ggplot2::element_text(size = text_size),
+                                                    axis.text.y = ggplot2::element_text(size = text_size))
+
+  plot_cos <- plot_cos + ggplot2::xlab('Cosine similarity of Sig3')
   plot_cos <- plot_cos + ggplot2::xlim(0, 1)
+
 
   # likelihood density distribution
   inds <- grep('_ml', colnames(df))
@@ -75,10 +87,15 @@ plot_summary <- function(file = NULL, detailed = F){
 
   plot_ml <- ggplot2::ggplot(df_ml, ggplot2::aes(x = Signature_3_ml))
   plot_ml <- plot_ml + ggplot2::geom_density(ggplot2::aes(color = pass_mva))
-  plot_ml <- plot_ml + ggplot2::scale_color_manual(values = col_pos_neg) 
+  plot_ml <- plot_ml + ggplot2::scale_color_manual(values = colors_cos) 
   # here add a line to strip away the legend
-  plot_ml <- plot_ml + theme_def
-  plot_ml <- plot_ml + ggplot2::xlab('likelihood Sig3')
+  plot_ml <- plot_ml + theme_def + ggplot2::theme(axis.title.x = ggplot2::element_text(size = text_size),
+                                                  axis.title.y = ggplot2::element_text(size = text_size),
+                                                  axis.text.x = ggplot2::element_text(size = text_size),
+                                                  axis.text.y = ggplot2::element_text(size = text_size))
+
+
+  plot_ml <- plot_ml + ggplot2::xlab('Likelihood of Sig3')
   plot_ml <- plot_ml + ggplot2::xlim(0, 1)  
 
   # score bar plot
@@ -86,7 +103,8 @@ plot_summary <- function(file = NULL, detailed = F){
   df_ml$group <- 'Sig3 -'
   df_ml$group[df_ml$Signature_3_mva > cutoff] <- 'lc Sig3 +'
   df_ml$group[df_ml$Signature_3_mva > cutoff_strict] <- 'Sig3 +'
-  df_color <- data.frame(color = c(col_pos_neg[[1]], "#ffdf12", col_pos_neg[[2]]),
+
+  df_color <- data.frame(color = c(col_pos_neg[[1]], "#dee9fc", col_pos_neg[[2]]),
                          group = c('Sig3 -', 'lc Sig3 +', 'Sig3 +'))
   size_nchar <- mean(unlist(apply(df_ml, 1, function(x){ nchar(x['tumor']) })))
   df_ml$tumor_label <- df_ml$tumor
@@ -116,6 +134,8 @@ plot_summary <- function(file = NULL, detailed = F){
                                             axis.text.x = ggplot2::element_text(size = text_size,
                                                                                 hjust = 1,
                                                                                 angle = 45), 
+                                            axis.title.y = ggplot2::element_text(size = text_size),
+                                            axis.text.y = ggplot2::element_text(size = text_size),
                                             legend.position = 'top')
   plot_score <- plot_score + ggplot2::ylab('MVA score') + ggplot2::xlab('')
   plot_score <- plot_score + ggplot2::geom_hline(ggplot2::aes(yintercept = cutoff))
@@ -125,9 +145,21 @@ plot_summary <- function(file = NULL, detailed = F){
   # Signature 3 exposures 
   plot_exp <- ggplot2::ggplot(df[df$exp_sig3 > 0,], ggplot2::aes(x = exp_sig3))
   plot_exp <- plot_exp + ggplot2::geom_density(ggplot2::aes(color = pass_mva))
-  plot_exp <- plot_exp + ggplot2::scale_color_manual(values = col_pos_neg)
-  plot_exp <- plot_exp + theme_def
-  plot_exp <- plot_exp + ggplot2::xlab('exp Sig3')
+
+  colors_exp <- col_pos_neg
+  if(length(unique(df$pass_mva[df$exp_sig3 > 0])) == 1){
+    if(unique(df$pass_mva[df$exp_sig3 > 0]))
+      colors_exp <- col_pos_neg[[2]]
+    else 
+      colors_exp <- col_pos_neg[[1]]
+  }
+
+  plot_exp <- plot_exp + ggplot2::scale_color_manual(values = colors_exp)
+  plot_exp <- plot_exp + theme_def + ggplot2::theme(axis.title.x = ggplot2::element_text(size = text_size),
+                                                    axis.title.y = ggplot2::element_text(size = text_size),
+                                                    axis.text.x = ggplot2::element_text(size = text_size),
+                                                    axis.text.y = ggplot2::element_text(size = text_size))
+  plot_exp <- plot_exp + ggplot2::xlab('Sig3 exposure')
   plot_exp <- plot_exp + ggplot2::xlim(0, max(df$exp_sig3))
 
   # combined plot
@@ -144,28 +176,8 @@ plot_summary <- function(file = NULL, detailed = F){
                                  plot_exp,
                                  plot_score,
                                  layout_matrix = lay, 
-                                 heights = c(1.3, 0.7, 1.4, 1))
-
-  grid::grid.text(paste0(sum(df$pass_mva), " Sig3+ sample(s)"),
-            x = grid::unit(0.1, "npc"), y = grid::unit(0.47, "npc"),
-            gp = grid::gpar(fontsize = text_size))
-
-  grid::grid.text(paste0(sum(df$pass_mva == F), " Sig3- sample(s)"),
-            x = grid::unit(0.1, "npc"), y = grid::unit(0.24, "npc"),
-            gp = grid::gpar(fontsize = text_size))
+                                 heights = c(1.5, 0.8, 1.1, 0.85))
 
   dev.off()                      
-
-  if(detailed){
-    # strip cosine similarity values
-    inds <- grep('_c', colnames(df))
-    inds_rm <- grep('_c_diff|_ml', colnames(df))
-    df_cos <- df[, inds[-na.omit(match(inds_rm, inds))]]
-    df_cos <- df_cos[, grep('Signature', colnames(df_cos))]
-
-    # strip likelihood values
-    inds <- grep('_ml', colnames(df))  
-    df_ml <- df[, inds]
-    df_ml <- df_ml[, grep('Signature', colnames(df_ml))]
-  }
+  return(plot_arr)
 }
