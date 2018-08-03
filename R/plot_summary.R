@@ -4,7 +4,6 @@
 
 plot_summary <- function(file = NULL){
   df <- read.csv(file)
-
   # read SigMA settings from file name
   msk_string <- gsub(platform_names[['msk']],
                      pattern = ' ', replace = '')
@@ -17,7 +16,7 @@ plot_summary <- function(file = NULL){
 
   tumor_type <- unlist(strsplit(unlist(strsplit(file, 
                                                 split = 'tumortype_'))[[2]],
-                       split = '_'))[[1]]
+                       split = '_platform_'))[[1]]
 
   platform <- unlist(strsplit(unlist(strsplit(file, 
                                               split = 'platform_'))[[2]],
@@ -41,13 +40,20 @@ plot_summary <- function(file = NULL){
 
   text_size = 10
 
-  # 3-base distributions 
-  pos_tribase <- plot_tribase_dist(as.data.frame(t(df[which(df$pass_mva), 1:96])),
-                                   signame = paste0('  Aggregated mutations from ', 
-                                                    sum(df$pass_mva), ' Sig3+ sample(s)'))
-  neg_tribase <- plot_tribase_dist(as.data.frame(t(df[-which(df$pass_mva), 1:96])),
-                                   signame = paste0('  Aggregated mutations from ', 
-                                                    sum(df$pass_mva == F), ' Sig3- sample(s)'))
+
+  # 3-base distributions
+  if(sum(df$pass_mva) > 0){ 
+    inds_pos <- which(df$pass_mva)
+    pos_tribase <- plot_tribase_dist(as.data.frame(colSums(df[inds_pos, 1:96])),
+                                     signame = paste0('  Aggregated mutations from ', 
+                                                      sum(df$pass_mva), ' Sig3+ sample(s)'))
+  }
+  if(sum(!df$pass_mva) > 0){
+    inds_neg <- which(!df$pass_mva)
+    neg_tribase <- plot_tribase_dist(as.data.frame(colSums(df[inds_neg, 1:96])),
+                                     signame = paste0('  Aggregated mutations from ', 
+                                                      sum(df$pass_mva == F), ' Sig3- sample(s)'))
+  }
 
   neg_tribase <- neg_tribase + ggplot2::theme(legend.position = "none")
 
@@ -163,20 +169,44 @@ plot_summary <- function(file = NULL){
   plot_exp <- plot_exp + ggplot2::xlim(0, max(df$exp_sig3))
 
   # combined plot
-  lay <- rbind(c(6, 6, 6),
-               c(3, 4, 5),
-               c(1, 1, 1),
-               c(2, 2, 2))
 
   pdf('summary_short_sig3.pdf', width = 1.2*9.8/2.4, 7)
-  plot_arr <- gridExtra::grid.arrange(pos_tribase,
-                                 neg_tribase,
-                                 plot_cos,
-                                 plot_ml,
-                                 plot_exp,
-                                 plot_score,
-                                 layout_matrix = lay, 
-                                 heights = c(1.5, 0.8, 1.1, 0.85))
+  if(sum(df$pass_mva) > 0 & sum(!df$pass_mva > 0)){
+    lay <- rbind(c(6, 6, 6),
+                 c(3, 4, 5),
+                 c(1, 1, 1),
+                 c(2, 2, 2))
+    plot_arr <- gridExtra::grid.arrange(pos_tribase,
+                                   neg_tribase,
+                                   plot_cos,
+                                   plot_ml,
+                                   plot_exp,
+                                   plot_score,
+                                   layout_matrix = lay, 
+                                   heights = c(1.5, 0.8, 1.1, 0.85))
+  }else if(sum(df$pass_mva) > 0 & sum(!df$pass_mva == 0)){
+    lay <- rbind(c(5, 5, 5),
+                 c(2, 3, 4),
+                 c(1, 1, 1))
+    plot_arr <- gridExtra::grid.arrange(pos_tribase,
+                                   plot_cos,
+                                   plot_ml,
+                                   plot_exp,
+                                   plot_score,
+                                   layout_matrix = lay, 
+                                   heights = c(1.5, 0.8, 1.1, 0.85))
+  }else if(sum(df$pass_mva) == 0 & sum(!df$pass_mva > 0)){
+    lay <- rbind(c(5, 5, 5),
+                 c(2, 3, 4),
+                 c(1, 1, 1))
+    plot_arr <- gridExtra::grid.arrange(neg_tribase,
+                                   plot_cos,
+                                   plot_ml,
+                                   plot_exp,
+                                   plot_score,
+                                   layout_matrix = lay, 
+                                   heights = c(1.5, 0.8, 1.1, 0.85))
+  }
 
   dev.off()                      
   return(plot_arr)
