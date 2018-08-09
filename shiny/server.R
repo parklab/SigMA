@@ -13,35 +13,47 @@ print.myplot <- function(x, ...) {
 
 server <- function(input, output, session){
 
+  file_memory <- reactiveValues(
+    name = '')
+
   # run SigMA
   output_file <- eventReactive(input$do_run,{
-    genomes_matrix <- make_matrix(directory = input$directory, 
-                                  file_type = input$file_type)
-    genomes <- conv_snv_matrix_to_df(genomes_matrix)
-    genomes_file = 'example.csv'
-    write.table(genomes,
-            genomes_file,
-            sep = ',',
-            row.names = F,
-            col.names = T ,
-            quote = F)
-    ind <- which(as.character(tissue_names) == input$tumor_type)
-    tumor_type = names(tissue_names)[[ind]]
+    if(recalculate$val){
+      genomes_matrix <- make_matrix(directory = input$directory, 
+                                    file_type = input$file_type)
+      genomes <- conv_snv_matrix_to_df(genomes_matrix)
+      genomes_file = 'example.csv'
+      write.table(genomes,
+              genomes_file,
+              sep = ',',
+              row.names = F,
+              col.names = T ,
+              quote = F)
+      ind <- which(as.character(tissue_names) == input$tumor_type)
+      tumor_type = names(tissue_names)[[ind]]
     
-    ind <- which(as.character(platform_names) == input$data)
-    data = names(platform_names)[[ind]]
+      ind <- which(as.character(platform_names) == input$data)
+      data = names(platform_names)[[ind]]
     
-    output_file <- run(genomes_file, 
-                       tumor_type = tumor_type,
-                       data = data,
-                       do_mva = T,
-                       do_assign = T)
-    return(output_file)
+      output_file <- run(genomes_file, 
+                         tumor_type = tumor_type,
+                         data = data,
+                         do_mva = T,
+                         do_assign = T)
+      print('Finished running SigMA')
+      file_memory$name <<- output_file
+      return(output_file)
+    }else{
+      return(file_memory$name)
+    }
   })
+
+
+  recalculate <- reactiveValues(val = T)
 
   # make summary figure
   plot <- reactive({
-    myplot(plot_summary(output_file()))
+    return(myplot(plot_summary(output_file())))
   })
   
   output$plot2 <- renderPlot({
@@ -92,6 +104,7 @@ server <- function(input, output, session){
     this_sample$sample <<- sorted_samples()$filename[[selectedRow]]
   })
 
+
   plotd <- reactive({
     if(this_sample$sample != '')
       myplot(plot_detailed(output_file(), this_sample$sample))
@@ -99,28 +112,38 @@ server <- function(input, output, session){
 
   output$plotd2 <- renderPlot({
     if(this_sample$sample != '')
-        print(plotd())
+      print(plotd())
   })
 
 
-  observeEvent(input$do_run, {  
-   removeTab(inputId = "tabs", target = "Results")
-   removeTab(inputId = "tabs", target = "Details")
-   insertTab(inputId = "tabs",
+  dataset <- reactiveValues(number = 0)
+
+  observeEvent(input$do_run, {
+    # cleaning tabs
+
+    recalculate$val <<- T
+    output_file()    
+    recalculate$val <<- F
+
+    removeTab(inputId = "tabs", target = "Results")
+    dataset$number <<- dataset$number + 1
+    removeTab(inputId = "tabs", target = "Details")   
+
+    insertTab(inputId = "tabs",
       tabPanel(
-        "Results", 
+        "Results",
         fluidRow(style = "padding:15px;
                              margin-left:15px;
                              margin-right:15px;
                              margin-top:15px;
                              margin-bottom:15px;",
              
+          column(7, style = "background-color: #eaf1fc",
+            h4("Click to see sample-specific information"),
+            dataTableOutput("sorted_samples") %>% withSpinner(color="#dee9fc")
+          ),
           column(5, h4("Summary") ,
             plotOutput("plot2", width = "90%", height = "750px") %>% withSpinner(color="#dee9fc")
-          ),
-          column(7, style = "background-color: #eaf1fc",
-            h4("Click on the tag to see more"),
-            dataTableOutput("sorted_samples") %>% withSpinner(color="#dee9fc")
           )
         )
       ),

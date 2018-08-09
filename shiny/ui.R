@@ -44,7 +44,7 @@ ui <- fluidPage(
             selectInput(
               inputId = "tumor_type",
               label = "Select tumor type",
-              choices = as.character(tissue_names)
+              choices = sort(as.character(tissue_names))
             ),
             selectInput(
               inputId = "data",
