@@ -11,6 +11,7 @@ plot_tribase_dist <- function(df_snvs, file_name = "test.png", labely = "N SNVs"
                               text_size = 10, signame = ''){
 
 
+  str(df_snvs)  
   typeref <- c(rep('C',48), rep('T',48))
   typealt <- c(rep('A',16), rep('G',16), rep('T',16), 
                rep('A',16), rep('C',16),rep('G',16))
@@ -40,6 +41,7 @@ plot_tribase_dist <- function(df_snvs, file_name = "test.png", labely = "N SNVs"
   molten_table <- reshape2::melt(df_snvs, 
                        id = c('context', 'snvs', 'subtype'))
 
+  str(molten_table)
   medians <- by(molten_table, molten_table$context, 
                 function(x){median(x[,'value'])})
 
