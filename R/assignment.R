@@ -31,9 +31,14 @@ assignment <- function(df_in,
   if(data == "msk"){
     if(do_strict) cutoffs <- cutoffs_msk_strict
     else cutoffs <- cutoffs_msk 
-  }else if(data == seqcap){
+  }else if(data == "seqcap"){
     if(do_strict) cutoffs <- cutoffs_exome_strict
     else cutoffs <- cutoffs_exome 
+  }else if(data == "wgs"){ 
+    if(do_strict) cutoffs <- cutoffs_wgs_strict
+    else cutoffs <- cutoffs_wgs
+  }else{
+    stop('invalid data selection')
   }
 
   if(sum(colnames(df_in) == 'total_snvs') == 0)
@@ -47,10 +52,7 @@ assignment <- function(df_in,
       pass <- df_in[, grep(signame, colnames(df_in))] > 0.5
   }
   if(method == 'mva'){ 
-    if(data == "msk" | data == "seqcap") 
-      pass <- (df_in[, paste0(signame, '_mva')] >= cutoffs[[tumor_type]]) #0.45/#0.4    
-    else if(data == "found") pass <- (df_in[,paste0(signame, '_mva')] >= 0.45) #0.5 
-    else pass <- (df_in[, paste0(signame, '_mva')] >= 0.3) #0.05
+    pass <- (df_in[, paste0(signame, '_mva')] >= cutoffs[[tumor_type]])     
   }
 
   df_out <- data.frame(pass = pass)

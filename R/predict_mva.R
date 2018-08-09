@@ -13,15 +13,24 @@
 
 predict_mva <- function(input, signame, data, tumor_type = "breast"){
   input$rat_sig3 <- input$exp_sig3/input$total_snvs
-
   predictions <- rep(0, dim(input)[[1]])
   
   if(data == "seqcap") model <- gbms_exome[[tumor_type]] #gbm_exome_5 
   else if(data == "msk"){
     model <- gbms_msk[[tumor_type]] 
   }
-  else if(data == "found") model <- gbm_fo_5 #gbm_found_3
-  else model <- gbm_wgs_5
+
+  else if(data == "wgs"){
+    input$tissue <- tumor_type
+    if(tumor_type == "breast") model <- gbms_wgs[["breast"]]
+    else{
+      inds <- na.omit(match(paste0('Signature_3_c', 1:10, '_ml'), colnames(input)))
+      input$Signature_3_ml <- rowSums(input[,inds])
+      model <- gbms_wgs[["generic"]]
+    }
+  }
+
+  else stop('the data option selected which indicates the sequencing platform is not valid')
 
   p_this <- predict(object = model,
                     newdata = input,
