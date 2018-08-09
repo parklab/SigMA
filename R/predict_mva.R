@@ -21,10 +21,11 @@ predict_mva <- function(input, signame, data, tumor_type = "breast"){
   }
 
   else if(data == "wgs"){
+    input$tissue <- tumor_type
     if(tumor_type == "breast") model <- gbms_wgs[["breast"]]
     else{
       inds <- na.omit(match(paste0('Signature_3_c', 1:10, '_ml'), colnames(input)))
-      Signature_3_ml <- rowSums(input[,inds])
+      input$Signature_3_ml <- rowSums(input[,inds])
       model <- gbms_wgs[["generic"]]
     }
   }
