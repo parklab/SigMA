@@ -3,7 +3,7 @@ load("../R/sysdata.rda")
 ui <- fluidPage(
   tags$head(tags$style(
     HTML('
-        body { 
+        body,canvas,figure { 
             font-family: "Helvetica";
             background-color: #FFF;
         }')
@@ -44,7 +44,7 @@ ui <- fluidPage(
             selectInput(
               inputId = "tumor_type",
               label = "Select tumor type",
-              choices = as.character(tissue_names)
+              choices = as.character(sort(tissue_names))
             ),
             selectInput(
               inputId = "data",
