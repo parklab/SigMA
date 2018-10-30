@@ -34,12 +34,18 @@
 
 run <- function(genome_file, 
                 output_file = NULL,
-                do_assign = F,
+                do_assign = T,
                 data = "msk",
                 tumor_type = "breast",
-                do_mva = F,
-                check_msi = F){
+                do_mva = T,
+                check_msi = F, 
+                weight_cf = T,
+                lite_format = F){
 
+  # give a warning if weight_cf is TRUE but the sequencing platform
+  # is not a panel
+  if(data != 'msk') weight_cf = T
+  
   # if a custom output file is not defined 
   # use the input file name
   if(is.null(output_file))
@@ -49,7 +55,8 @@ run <- function(genome_file,
                                             tumor_type,
                                             "_platform_",
                                             gsub(platform_names[[data]], 
-                                                 pattern = ' ', replace = ''),
+                                                 pattern = " ", replace = ""),
+                                            "_cf", as.integer(weight_cf),
                                             ".csv"))
 
   if((tumor_type == "medullo" | tumor_type == "bone_other") & data == "msk")
@@ -68,12 +75,15 @@ run <- function(genome_file,
     if(data == "msk"){
       if(tumor_type == "prost")
         genomes <- genomes[which(rowSums(genomes[, 1:96]) >= 4), ]
-      else if(tumor_type == "osteo")
+      else if(tumor_type == "osteo" | tumor_type == "panc_en")
         genomes <- genomes[which(rowSums(genomes[, 1:96]) >= 3), ]
       else
         genomes <- genomes[which(rowSums(genomes[, 1:96]) >= 5), ]      
     }else{ # for exomes and wgs a larger lower cutoff is applied
-      genomes <- genomes[which(rowSums(genomes[, 1:96]) >= 10), ]
+      if(tumor_type == "bone_other" | tumor_type == "medullo")
+        genomes <- genomes[which(rowSums(genomes[, 1:96]) >= 5), ]
+      else
+        genomes <- genomes[which(rowSums(genomes[, 1:96]) >= 10), ]
     }
   }
 
@@ -125,6 +135,7 @@ run <- function(genome_file,
   }
 
   for(imethod in 1:length(methods)){
+    
     sig_catalog <- sig_catalogs[[imethod]]
     method <- methods[[imethod]]
     step <- steps[[imethod]]
@@ -181,18 +192,61 @@ run <- function(genome_file,
 
     #calculate the likelihood/cos simil/decomposition
     if(method != "mva"){
-      output <- match_to_catalog(genomes, 
-                                 signatures,  
-                                 method = method, 
-                                 data = data)
-      if(step == "msi") 
-        colnames(output) <- paste0(colnames(output), "_msi")
+      if(method == 'median_catalog'){
+
+        # When likelihoods are calculated they are scaled with the number
+        # of tumors in the public datasets that are in that specific cluster
+        # with respect to which likelihoods are calculated. For WES data
+        # this is the default for panel data there is the option of not 
+        # having this weighting to make the model more robust 
+        if(weight_cf){
+          cluster_fractions_this <- cluster_fractions[[tumor_type]]
+          if(check_msi & step == 'msi'){
+            msi_count <- cluster_fractions$msi_tissue_weights[[tumor_type]]
+            pole_count <- cluster_fractions$pole_tissue_weights[[tumor_type]]
+            counts <- c(cluster_fractions_this, 
+                        msi_count*cluster_fractions$msi/sum(cluster_fractions$msi), 
+                        pole_count*cluster_fractions$pole/sum(cluster_fractions$pole))
+            names(counts) <- c(names(cluster_fractions_this), 
+                               names(cluster_fractions$msi), 
+                               names(cluster_fractions$pole))
+            cluster_fractions_this <- counts
+          }
+        }else{
+          cluster_fractions_this <- NULL
+        }    
+        output <- match_to_catalog(genomes, 
+                                   signatures,  
+                                   method = method, 
+                                   data = data, 
+                                   cluster_fractions = cluster_fractions_this)
+        
+      }else{
+        output <- match_to_catalog(genomes, 
+                                   signatures,  
+                                   method = method, 
+                                   data = data)
+      }
+
+      if(step == "msi"){
+        colnames(output) <- paste0(colnames(output), "_msi")        
+      }
     }
     else{ # calculate the multivariate analysis score
-      if(exists("merged_output"))
-        output <- predict_mva(cbind(genomes, merged_output), signames[[imethod]], data, tumor_type)
-      else 
-        output <- predict_mva(genomes, signames[[imethod]], data, tumor_type)
+      if(exists("merged_output")){
+        output <- predict_mva(cbind(genomes, merged_output), 
+                              signames[[imethod]], 
+                              data, 
+                              tumor_type, 
+                              weight_cf)
+      }
+      else{ 
+        output <- predict_mva(genomes, 
+                              signames[[imethod]], 
+                              data, 
+                              tumor_type, 
+                              weight_cf)
+      }
     }
     
     # calculates the pass/fail boolean from MVA score or likelihood
@@ -204,7 +258,8 @@ run <- function(genome_file,
                                 method = method, 
                                 signame = signames[[imethod]],
                                 data = data, 
-                                tumor_type = tumor_type)
+                                tumor_type = tumor_type, 
+                                weight_cf = weight_cf)
       output <- cbind(output, assignments)
     }
 
@@ -215,15 +270,33 @@ run <- function(genome_file,
 
   merged_output <- cbind(genomes, merged_output)
 
+  # lite format removes cosine similarities and NNLS + likelihood results for
+  # signatures other than Signature 3 it keeps likelihoods with respect to
+  # cluster averages, but combines the different clusters in different 
+  # categories together
+  if(lite_format){   
+    lite <- lite_df(merged_output)
+    output_file <- gsub(output_file, pattern = '\\.csv', replace = '_lite\\.csv')
+    write.table(lite,
+                output_file, 
+                row.names = F,
+                col.names = T,
+                quote = F,
+                sep = ",") 
 
-  write.table(merged_output,
-              output_file, 
-              row.names = F,
-              col.names = T,
-              quote = F,
-              sep = ",")
-  if(file.exists(output_file))
-    message(paste0("SigMA output is in: ", output_file))
+    if(file.exists(output_file))
+      message(paste0("SigMA output is in: ", output_file))
+
+  }else{
+    write.table(merged_output,
+                output_file, 
+                row.names = F,
+                col.names = T,
+                quote = F,
+                sep = ",")
+    if(file.exists(output_file))
+      message(paste0("SigMA output is in: ", output_file))
+  }
 
   return(output_file)
 

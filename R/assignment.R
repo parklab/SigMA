@@ -23,40 +23,52 @@ assignment <- function(df_in,
                        signame = 'Signature_3',
                        data = NULL, 
                        tumor_type = "breast",
-                       do_strict = T){
+                       do_strict = T,
+                       weight_cf){
   
-  if(method == 'median_catalog') matching = 'ml'
-  if(method == 'mva') matching = 'mva'
-
-  if(data == "msk"){
-    if(do_strict) cutoffs <- cutoffs_msk_strict
-    else cutoffs <- cutoffs_msk 
-  }else if(data == "seqcap"){
-    if(do_strict) cutoffs <- cutoffs_exome_strict
-    else cutoffs <- cutoffs_exome 
-  }else if(data == "wgs"){ 
-    if(do_strict) cutoffs <- cutoffs_wgs_strict
-    else cutoffs <- cutoffs_wgs
-  }else{
-    stop('invalid data selection')
-  }
-
-  if(sum(colnames(df_in) == 'total_snvs') == 0)
-    df_in$total_snvs <- rowSums(df_in[, 1:96])
- 
-
   if(method == 'median_catalog'){
+    matching = 'ml'
     if(length(grep(signame, colnames(df_in))) > 1)
       pass <- rowSums(df_in[, grep(signame, colnames(df_in))]) > 0.5
     else
       pass <- df_in[, grep(signame, colnames(df_in))] > 0.5
   }
-  if(method == 'mva'){ 
+  else if(method == 'mva'){
+    matching = 'mva'
+
+    if(data == "msk"){
+      if(weight_cf){
+        cutoffs_strict <- cutoffs_msk_strict_cf
+        cutoffs <- cutoffs_msk_cf
+      }else{
+        cutoffs_strict <- cutoffs_msk_strict
+        cutoffs <- cutoffs_msk     
+      }
+    }else if(data == "seqcap"){
+      cutoffs_strict <- cutoffs_exome_strict
+      cutoffs <- cutoffs_exome 
+    }else if(data == "wgs"){ 
+      cutoffs_strict <- cutoffs_wgs_strict
+      cutoffs <- cutoffs_wgs
+    }else{
+      stop('invalid data selection')
+    }
     pass <- (df_in[, paste0(signame, '_mva')] >= cutoffs[[tumor_type]])     
+    pass_strict <- (df_in[, paste0(signame, '_mva')] >= cutoffs_strict[[tumor_type]])     
+  }
+  else{
+    stop('assignments cannot be done for this method')
   }
 
+  if(sum(colnames(df_in) == 'total_snvs') == 0)
+    df_in$total_snvs <- rowSums(df_in[, 1:96])
+ 
   df_out <- data.frame(pass = pass)
   colnames(df_out)[[1]] <- paste0('pass_', matching)
- 
+
+  if(method == 'mva'){
+    df_out$pass_mva_strict <- pass_strict
+  }
+
   return(df_out)
 }
