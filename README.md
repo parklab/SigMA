@@ -40,6 +40,8 @@ SigMA is a signature analysis tool optimized to detect the mutational signature 
 
 `cd SigMA`
 
+`Rscript install.R`
+
 `Rscript test.R`
 
 More details on the optional settings can be found in the User's Manual
@@ -52,6 +54,8 @@ More details on the optional settings can be found in the User's Manual
 `cd SigMA`
 
 `git checkout shiny`
+
+`Rscript install.R`
 
 `Rscript runShiny.R`
 
