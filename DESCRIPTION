@@ -7,7 +7,7 @@ Depends: R (>= 3.4.0)
 License: What license is it under?
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 6.0.1
+RoxygenNote: 6.1.0
 Imports:
     BSgenome,
     BSgenome.Hsapiens.UCSC.hg19,
@@ -18,7 +18,6 @@ Imports:
     gridExtra,
     IRanges,
     nnls,
-    pheatmap,
     reshape2,
     Rmisc,
     VariantAnnotation

@@ -6,8 +6,8 @@
 likelihood or mva score for whether the signature
 is identified}
 \usage{
-assignment(df_in, method = "mva", signame = "Signature_3", data = NULL,
-  tumor_type = "breast", do_strict = T)
+assignment(df_in, method = "mva", signame = "Signature_3",
+  data = NULL, tumor_type = "breast", do_strict = T, weight_cf)
 }
 \arguments{
 \item{df_in}{input data.frame}

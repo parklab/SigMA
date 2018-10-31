@@ -6,7 +6,7 @@
 boosting  models, inside the package to assign a probability
 for the existence of the signature of interest.}
 \usage{
-predict_mva(input, signame, data, tumor_type = "breast")
+predict_mva(input, signame, data, tumor_type = "breast", weight_cf)
 }
 \arguments{
 \item{input}{is a data frame that has likelihood cosine 

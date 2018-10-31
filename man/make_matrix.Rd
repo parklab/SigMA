@@ -9,8 +9,8 @@ and for 1 or 2 strands}
 \usage{
 make_matrix(directory, file_type = "vcf",
   ref_genome = BSgenome.Hsapiens.UCSC.hg19::BSgenome.Hsapiens.UCSC.hg19,
-  ncontext = 3, nstrand = 1, chrom_colname = NULL, pos_colname = NULL,
-  ref_colname = NULL, alt_colname = NULL)
+  ncontext = 3, nstrand = 1, chrom_colname = NULL,
+  pos_colname = NULL, ref_colname = NULL, alt_colname = NULL)
 }
 \arguments{
 \item{directory}{pointer to the directory where input vcf 

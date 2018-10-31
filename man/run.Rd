@@ -7,8 +7,9 @@ NNLS exposures, and likelihood of the decomposition. (2) These
 features are later used in multivariate analysis. (3) Based
 on scores a final decision on existence of the signature.}
 \usage{
-run(genome_file, output_file = NULL, do_assign = F, data = "msk",
-  tumor_type = "breast", do_mva = F, check_msi = F)
+run(genome_file, output_file = NULL, do_assign = T, data = "msk",
+  tumor_type = "breast", do_mva = T, check_msi = F, weight_cf = T,
+  lite_format = F)
 }
 \arguments{
 \item{genome_file}{a csv file with snv spectra info can be created

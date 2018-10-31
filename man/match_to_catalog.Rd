@@ -6,7 +6,8 @@
 to an input catalog based on likelihood and cosine 
 similarity}
 \usage{
-match_to_catalog(genomes, signatures, method = "median_catalog", data)
+match_to_catalog(genomes, signatures, data, cluster_fractions = NULL,
+  method = "median_catalog")
 }
 \arguments{
 \item{genomes}{a data table or matrix with snv
@@ -15,15 +16,15 @@ spectra in the first ntype columns and genomes in each row}
 \item{signatures}{the input catalog, a data table
 with signature spectra in each column}
 
+\item{data}{sets the type of sequencing platform used, options 
+are 'msk', 'seqcap', 'wgs'}
+
 \item{method}{can be 'median_catalog', 'weighted_catalog'
 'cosine_simil' or 'decompose. 'median_atalog' uses the 
 signature catalog formed by clustering genome SNV spectra and 
 using it as a probability distribution. The 'median_catalog'
 method can be used with any custom signatures data frame 
 if the user intends to provide their own signature table.}
-
-\item{data}{sets the type of sequencing platform used, options 
-are 'msk', 'seqcap', 'wgs'}
 }
 \value{
 A data frame that contains the input genomes
