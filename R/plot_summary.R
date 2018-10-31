@@ -20,8 +20,7 @@ plot_summary <- function(file = NULL){
 
   platform <- unlist(strsplit(unlist(strsplit(file, 
                                               split = 'platform_'))[[2]],
-                     split = '.csv'))[[1]]
-
+                     split = '_cf'))[[1]]
 
   if(platform == msk_string) data = 'msk'
   if(platform == exome_string) data = 'seqcap'
@@ -40,7 +39,6 @@ plot_summary <- function(file = NULL){
 
   text_size = 10
 
-
   # 3-base distributions
   if(sum(df$pass_mva) > 0){ 
     inds_pos <- which(df$pass_mva)
@@ -53,9 +51,9 @@ plot_summary <- function(file = NULL){
     neg_tribase <- plot_tribase_dist(as.data.frame(colSums(df[inds_neg, 1:96])),
                                      signame = paste0('  Aggregated mutations from ', 
                                                       sum(df$pass_mva == F), ' Sig3- sample(s)'))
+    neg_tribase <- neg_tribase + ggplot2::theme(legend.position = "none")
   }
 
-  neg_tribase <- neg_tribase + ggplot2::theme(legend.position = "none")
 
   # cosine density distribution
   colors_cos <- col_pos_neg
@@ -66,15 +64,34 @@ plot_summary <- function(file = NULL){
       colors_cos <- col_pos_neg[[1]]
   }
 
-  plot_cos <- ggplot2::ggplot(df, ggplot2::aes(x = Signature_3_c))
-  plot_cos <- plot_cos + ggplot2::geom_density(ggplot2::aes(color = pass_mva))
-  plot_cos <- plot_cos + ggplot2::scale_color_manual(values = colors_cos)
+  cos_bin_width = 0.1
+  cos_bins <- seq(0, 1, by = cos_bin_width)
+  counts_cos_pos <- rep(0, length(cos_bins) - 1)
+  counts_cos_neg <- rep(0, length(cos_bins) - 1)
+  bin_center <- rep(0, length(cos_bins) - 1)
+  
+  for(ibin in seq_len(length(cos_bins) - 1)){
+    cos_vals_pos <- df$Signature_3_c[df$pass_mva]
+    cos_vals_neg <- df$Signature_3_c[!df$pass_mva]
+    counts_cos_pos[[ibin]] <- sum(cos_vals_pos >= cos_bins[[ibin]] & cos_vals_pos < cos_bins[[ibin + 1]]) 
+    counts_cos_neg[[ibin]] <- sum(cos_vals_neg >= cos_bins[[ibin]] & cos_vals_neg < cos_bins[[ibin + 1]]) 
+
+    bin_center[[ibin]] <- (cos_bins[[ibin]] + cos_bins[[ibin + 1]])/2
+  }
+
+  df_cos <- rbind(data.frame( cos = bin_center, count = counts_cos_pos, group = 'Sig3+' ),
+                  data.frame( cos = bin_center, count = counts_cos_neg, group = 'Sig3-' ))
+
+  plot_cos <- ggplot2::ggplot(df_cos, ggplot2::aes(x = cos, y = count))
+  plot_cos <- plot_cos + ggplot2::geom_bar(stat = 'identity', position = 'dodge', 
+                                           ggplot2::aes(fill = group))
+  plot_cos <- plot_cos + ggplot2::scale_fill_manual(values = colors_cos)
   plot_cos <- plot_cos + theme_def + ggplot2::theme(axis.title.x = ggplot2::element_text(size = text_size),
                                                     axis.title.y = ggplot2::element_text(size = text_size),
                                                     axis.text.x = ggplot2::element_text(size = text_size),
                                                     axis.text.y = ggplot2::element_text(size = text_size))
 
-  plot_cos <- plot_cos + ggplot2::xlab('Cosine similarity of Sig3')
+  plot_cos <- plot_cos + ggplot2::xlab('Cos simil of Sig3')
   plot_cos <- plot_cos + ggplot2::xlim(0, 1)
 
 
@@ -91,9 +108,28 @@ plot_summary <- function(file = NULL){
   df_ml$pass_mva <- df$pass_mva
   df_ml$Signature_3_mva <- df$Signature_3_mva 
 
-  plot_ml <- ggplot2::ggplot(df_ml, ggplot2::aes(x = Signature_3_ml))
-  plot_ml <- plot_ml + ggplot2::geom_density(ggplot2::aes(color = pass_mva))
-  plot_ml <- plot_ml + ggplot2::scale_color_manual(values = colors_cos) 
+  ml_bin_width = 0.1
+  ml_bins <- seq(0, 1, by = ml_bin_width)
+  counts_ml_pos <- rep(0, length(ml_bins) - 1)
+  counts_ml_neg <- rep(0, length(ml_bins) - 1)
+  bin_center <- rep(0, length(ml_bins) - 1)
+  
+  for(ibin in seq_len(length(ml_bins) - 1)){
+    ml_vals_pos <- df_ml$Signature_3_ml[df_ml$pass_mva]
+    ml_vals_neg <- df_ml$Signature_3_ml[!df_ml$pass_mva]
+    counts_ml_pos[[ibin]] <- sum(ml_vals_pos >= ml_bins[[ibin]] & ml_vals_pos < ml_bins[[ibin + 1]]) 
+    counts_ml_neg[[ibin]] <- sum(ml_vals_neg >= ml_bins[[ibin]] & ml_vals_neg < ml_bins[[ibin + 1]]) 
+
+    bin_center[[ibin]] <- (ml_bins[[ibin]] + ml_bins[[ibin + 1]])/2
+  }
+
+  df_ml_binned <- rbind(data.frame( ml = bin_center, count = counts_ml_pos, group = 'Sig3+' ),
+                  data.frame( ml = bin_center, count = counts_ml_neg, group = 'Sig3-' ))
+
+  plot_ml <- ggplot2::ggplot(df_ml_binned, ggplot2::aes(x = ml, y = count))
+  plot_ml <- plot_ml + ggplot2::geom_bar(stat = 'identity', position = 'dodge', 
+                                           ggplot2::aes(fill = group))
+  plot_ml <- plot_ml + ggplot2::scale_fill_manual(values = colors_cos) 
   # here add a line to strip away the legend
   plot_ml <- plot_ml + theme_def + ggplot2::theme(axis.title.x = ggplot2::element_text(size = text_size),
                                                   axis.title.y = ggplot2::element_text(size = text_size),
@@ -117,6 +153,7 @@ plot_summary <- function(file = NULL){
   if(size_nchar > 20){
     df_ml$tumor_label <- paste0('tumor', 1:dim(df_ml)[[1]])
   }
+
   df_ml$group_fac <- df_ml$group
   df_ml <- transform(df_ml, group_fac = factor(group_fac, 
                                                levels = unique(df_ml$group)))
@@ -149,18 +186,35 @@ plot_summary <- function(file = NULL){
                                                  linetype = 'dashed')
 
   # Signature 3 exposures 
-  plot_exp <- ggplot2::ggplot(df[df$exp_sig3 > 0,], ggplot2::aes(x = exp_sig3))
-  plot_exp <- plot_exp + ggplot2::geom_density(ggplot2::aes(color = pass_mva))
-
   colors_exp <- col_pos_neg
   if(length(unique(df$pass_mva[df$exp_sig3 > 0])) == 1){
     if(unique(df$pass_mva[df$exp_sig3 > 0]))
-      colors_exp <- col_pos_neg[[2]]
-    else 
-      colors_exp <- col_pos_neg[[1]]
+      colors_exp <- c(col_pos_neg[[2]], col_pos_neg[[1]])
   }
 
-  plot_exp <- plot_exp + ggplot2::scale_color_manual(values = colors_exp)
+  exp_bin_width <- (max(df$exp_sig3) + 1)/10
+  exp_bins <- seq(0.001, max(df$exp_sig3) + 1, by = exp_bin_width)
+  counts_exp_pos <- rep(0, length(exp_bins) - 1)
+  counts_exp_neg <- rep(0, length(exp_bins) - 1)
+  bin_center <- rep(0, length(exp_bins) - 1)
+  
+  for(ibin in seq_len(length(exp_bins) - 1)){
+    exp_vals_pos <- df$exp_sig3[df$pass_mva]
+    exp_vals_neg <- df$exp_sig3[!df$pass_mva]
+    counts_exp_pos[[ibin]] <- sum(exp_vals_pos >= exp_bins[[ibin]] & exp_vals_pos < exp_bins[[ibin + 1]]) 
+    counts_exp_neg[[ibin]] <- sum(exp_vals_neg >= exp_bins[[ibin]] & exp_vals_neg < exp_bins[[ibin + 1]]) 
+
+    bin_center[[ibin]] <- (exp_bins[[ibin]] + exp_bins[[ibin + 1]])/2
+  }
+
+  df_exp <- rbind(data.frame( exp = bin_center, count = counts_exp_pos, group = 'Sig3+' ),
+                  data.frame( exp = bin_center, count = counts_exp_neg, group = 'Sig3-' ))
+
+  plot_exp <- ggplot2::ggplot(df_exp, ggplot2::aes(x = exp, y = count))
+  plot_exp <- plot_exp + ggplot2::geom_bar(stat = 'identity', position = 'dodge',
+                                           ggplot2::aes(fill = group))
+
+  plot_exp <- plot_exp + ggplot2::scale_fill_manual(values = colors_exp)
   plot_exp <- plot_exp + theme_def + ggplot2::theme(axis.title.x = ggplot2::element_text(size = text_size),
                                                     axis.title.y = ggplot2::element_text(size = text_size),
                                                     axis.text.x = ggplot2::element_text(size = text_size),
@@ -176,6 +230,8 @@ plot_summary <- function(file = NULL){
                  c(3, 4, 5),
                  c(1, 1, 1),
                  c(2, 2, 2))
+     
+   
     plot_arr <- gridExtra::grid.arrange(pos_tribase,
                                    neg_tribase,
                                    plot_cos,
