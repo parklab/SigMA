@@ -2,6 +2,7 @@ source("https://bioconductor.org/biocLite.R")
 biocLite(c("BSgenome",
 "BSgenome.Hsapiens.UCSC.hg19",
 "devtools",
+"DT",
 "GenomicRanges",
 "ggplot2",
 "gbm",

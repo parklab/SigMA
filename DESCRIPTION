@@ -11,6 +11,8 @@ RoxygenNote: 6.0.1
 Imports:
     BSgenome,
     BSgenome.Hsapiens.UCSC.hg19,
+    devtools,
+    DT,
     GenomicRanges,
     ggplot2,
     gbm,
@@ -21,4 +23,5 @@ Imports:
     pheatmap,
     reshape2,
     Rmisc,
+    shinycssloaders,    
     VariantAnnotation
