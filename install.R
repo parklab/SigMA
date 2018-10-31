@@ -12,4 +12,5 @@ biocLite(c("BSgenome",
 "pheatmap",
 "reshape2",
 "Rmisc",
+"shinycssloaders",
 "VariantAnnotation"))
