@@ -1,9 +1,9 @@
 # SigMA
-1. [ Description. ](#desc)
-2. [ Functionalities. ](#func)
-3. [ Quick start. ](#quick)
-4. [ Quick start shiny. ](#shiny)
-5. [ Tumor type tags. ](#tissue)
+1. [ Description ](#desc)
+2. [ Functionalities ](#func)
+3. [ Quick start ](#quick)
+4. [ Quick start shiny ](#shiny)
+5. [ Tumor type tags ](#tissue)
 
 <a name="desc"></a>
 
@@ -48,7 +48,11 @@ More details on the optional settings can be found in the User's Manual
 
 `Rscript runShiny.R`
 
-Enter the path to `inst/extdata/`
+As an example you can enter the path you obtain by doing
+
+`cd inst/extdata/`
+
+`pwd`
 
 <a name="tissue"></a>
 
