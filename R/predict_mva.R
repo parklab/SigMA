@@ -11,15 +11,26 @@
 #' @return a data.frame with a single column with the score
 #' of MVA 
 
-predict_mva <- function(input, signame, data, tumor_type = "breast"){
+predict_mva <- function(input, signame, data, tumor_type = "breast", weight_cf){
+
   input$rat_sig3 <- input$exp_sig3/input$total_snvs
+  
+  if(length(grep(paste0(paste0('Signature_3_c', 1:10, '_ml'), collapse = '|'), colnames(input))) == 1)
+    input$Signature_3_ml <- input$Signature_3_c1_ml
+  else
+    input$Signature_3_ml <- rowSums(input[, grep(paste0(paste0('Signature_3_c', 1:10, '_ml'), collapse = '|'), colnames(input))])
+
   predictions <- rep(0, dim(input)[[1]])
   
-  if(data == "seqcap") model <- gbms_exome[[tumor_type]] #gbm_exome_5 
-  else if(data == "msk"){
-    model <- gbms_msk[[tumor_type]] 
+  if(data == "msk"){
+    if(weight_cf)
+      model <- gbms_msk_cf[[tumor_type]] 
+    else 
+      model <- gbms_msk[[tumor_type]] 
   }
-
+  else if(data == "seqcap"){
+    model <- gbms_exome[[tumor_type]] #gbm_exome_5 
+  }
   else if(data == "wgs"){
     input$tissue <- tumor_type
     if(tumor_type == "breast") model <- gbms_wgs[["breast"]]
@@ -29,7 +40,6 @@ predict_mva <- function(input, signame, data, tumor_type = "breast"){
       model <- gbms_wgs[["generic"]]
     }
   }
-
   else stop('the data option selected which indicates the sequencing platform is not valid')
 
   p_this <- predict(object = model,
