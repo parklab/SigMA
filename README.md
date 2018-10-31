@@ -16,7 +16,7 @@ SigMA is a signature analysis tool optimized to detect the mutational signature 
 
 ### 2. Manual
 
-[ Manual ](manual_sigma.pdf)
+[ manual_sigma.pdf ](manual_sigma.pdf)
 
 <a name="func"></a>
 
