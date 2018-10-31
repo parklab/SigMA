@@ -1,4 +1,5 @@
 #' produces a data.frame with fewer columns for easier use
+#' it is used in run.R function when lite_format is set to T
 #'
 #' @param merged_output is the input data.frame
 

@@ -23,6 +23,13 @@
 #' should be run
 #' @param check_msi is a boolean which determines whether the user
 #' wants to identify micro-sattelite instable tumors
+#' @param weight_cf is a boolean that determines whether number of
+#' tumors in each cluster is going to be used as weights in 
+#' calculating probability, it only works for panels, for other
+#' platforms it is always T
+#' @param lite_format is a boolean when set T the output file is 
+#' saved in the lite format with fewer columns for easier use
+#' by default it is F
 #'
 #' @examples
 #' run(genome_file = "input_genomes.csv", 
