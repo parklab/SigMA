@@ -42,7 +42,9 @@ make_matrix <- function(directory,
                         alt_colname = NULL){
   file_list <- list.files(directory)
   file_list <- paste0(directory, '/', file_list)
- 
+
+  if(length(file_list) == 1) file_list <- directory
+
   if(file_type == "vcf") .make_matrix_from_vcf_list(file_list,  
                                                     ref_genome, 
                                                     ncontext, 
@@ -241,25 +243,42 @@ conv_snv_matrix_to_df <- function(genomes_matrix){
                                   ref_genome, 
                                   types, 
                                   ncontext = 3, 
-                                  nstrand = 1){
-  print(maf_file)
-  maf <- read.table(maf_file, 
-                    comment.char = "#", 
-                    sep = "\t", 
-                    header = TRUE, 
-                    stringsAsFactors = TRUE)
-  if(dim(maf)[[1]] == 0) return(rep(0, 96))
+                                  nstrand = 1,
+                                  maf_table = NULL){
   
+  if(is.null(maf_table)){
+    maf <- read.delim(maf_file, 
+                      comment.char = "#", 
+                      sep = "\t", 
+                      header = TRUE, 
+                      stringsAsFactors = TRUE)
+  }else{
+    maf <- maf_table
+  }
+
+  if(dim(maf)[[1]] == 0) return(rep(0, 96))
+
+
   maf <- maf[maf$Variant_Type == "SNP",]
   maf$Tumor_Seq_Allele1[maf$Tumor_Seq_Allele1 == "TRUE"] <- "T"
   maf <-  maf[maf$Chromosome != "MT",]
 
+  if(dim(maf)[[1]] == 0) return(rep(0, 96))
+
+  ind_sp <- which(colnames(maf) == "Start_Position")
+  ind_ep <- which(colnames(maf) == "End_Position")
+  if(length(ind_sp) != 0) colnames(maf)[[ind_sp]] <- 'Start_position'
+  if(length(ind_ep) != 0) colnames(maf)[[ind_ep]] <- 'End_position'
+
   gr <- with(maf, GenomicRanges::GRanges(Chromosome, 
                                          IRanges::IRanges(Start_position, End_position)))
-  
   ref_vector <- maf$Reference_Allele
   alt_vector <- maf$Tumor_Seq_Allele1
 
+  if(identical(ref_vector, alt_vector)){
+    alt_vector <- maf$Tumor_Seq_Allele2
+  }
+ 
   count_vector <- .make_vector_from_gr(gr, 
                                        ref_vector, 
                                        alt_vector, 
@@ -325,16 +344,44 @@ conv_snv_matrix_to_df <- function(genomes_matrix){
                                        ref_genome, 
                                        ncontext = 3, 
                                        nstrand = 1){
-  matrix_snvs <- matrix(0, 6*4^(ncontext - 1)*nstrand, length(maf_files))
 
   types <- .make_type(ncontext, nstrand)
-  for(ifile in 1:length(maf_files)){
-    count_vector <- .make_vector_from_maf(maf_files[[ifile]], ref_genome, types, ncontext, nstrand)   
-    matrix_snvs[, ifile] <- count_vector
+  print(length(maf_files))
+  print(maf_files)
+  if(length(maf_files) == 1){
+    maf <- read.delim(maf_files[[1]],
+                      comment.char = "#",
+                      sep = "\t",
+                      header = TRUE,
+                      stringsAsFactors = TRUE)
+
+
+    tumors <- unique(maf$Tumor_Sample_Barcode)
+    if(length(tumors) > 1){
+      matrix_snvs <- matrix(0, 6*4^(ncontext - 1)*nstrand, length(tumors))
+      for(itumor in 1:length(tumors)){
+        
+        maf_this <- maf[maf$Tumor_Sample_Barcode == tumors[[itumor]],]
+        count_vector <- .make_vector_from_maf(maf_file = maf_files[[1]],
+                                              ref_genome = ref_genome, 
+                                              types = types,
+                                              ncontext = ncontext, 
+                                              nstrand = nstrand,  
+                                              maf_table = maf_this)
+        matrix_snvs[, itumor] <- count_vector
+      }
+      colnames(matrix_snvs) <- tumors
+    }
+  }
+  else{
+    matrix_snvs <- matrix(0, 6*4^(ncontext - 1)*nstrand, length(maf_files))
+    for(ifile in 1:length(maf_files)){
+      count_vector <- .make_vector_from_maf(maf_files[[ifile]], ref_genome, types, ncontext, nstrand)   
+      matrix_snvs[, ifile] <- count_vector
+    }
+    colnames(matrix_snvs) <- maf_files
   }  
   rownames(matrix_snvs) <- types
-  colnames(matrix_snvs) <- maf_files
-
   return(matrix_snvs)
 }
 
