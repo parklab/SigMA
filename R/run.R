@@ -40,7 +40,8 @@ run <- function(genome_file,
                 do_mva = T,
                 check_msi = F, 
                 weight_cf = F,
-                lite_format = F){
+                lite_format = F,
+                add_sig3 = F){
 
   # give a warning if weight_cf is TRUE but the sequencing platform
   # is not a panel
@@ -66,6 +67,9 @@ run <- function(genome_file,
   genomes <- read.csv(genome_file)
 
   # remove genomes with no mutation 
+  if(sum(is.na(rowSums(genomes[, 1:96]))) > 0){
+    genomes <- genomes[!is.na(rowSums(genomes[, 1:96])), ]
+  }
   if(sum(rowSums(genomes[, 1:96]) == 0) > 0){
     genomes <- genomes[which(rowSums(genomes[, 1:96]) > 0), ]
   }
@@ -142,6 +146,7 @@ run <- function(genome_file,
 
     if(method == "median_catalog"){
       average_catalog <- all_catalogs[[tumor_type]]
+      if(add_sig3) average_catalog$Signature_3_c1 <- all_catalogs$breast$Signature_3_c1
       message("Calculating likelihoods for each cluster")
     }else if(method == "cosine_simil"){
       message("Calculating cosine similarities")
@@ -163,6 +168,7 @@ run <- function(genome_file,
                                        signames_per_tissue[["msi"]],
                                        signames_per_tissue[["pole"]])]
       }
+      if(add_sig3) signatures$Signature_3 <- cosmic_catalog$Signature_3
     }
 
     if(sig_catalog == "average"){
