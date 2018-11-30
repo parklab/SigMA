@@ -12,7 +12,7 @@ plot_detailed <- function(file = NULL, sample = NULL){
 
   tumor_type <- unlist(strsplit(unlist(strsplit(file,
                        split = 'tumortype_'))[[2]],
-                       split = '_'))[[1]]
+                       split = '_platform_'))[[1]]
 
   platform <- unlist(strsplit(unlist(strsplit(file,
                      split = 'platform_'))[[2]],
@@ -21,7 +21,6 @@ plot_detailed <- function(file = NULL, sample = NULL){
   signames <- signames_per_tissue[[tumor_type]]
 
   this <- df[df$tumor == sample,]
-  print(colnames(this))
 ###cosine simil################################################################################################## 
   # strip cosine similarity values
   inds <- grep('_c', colnames(this))
@@ -70,13 +69,11 @@ plot_detailed <- function(file = NULL, sample = NULL){
   ml_vals <- this[, inds]
   ml_vals <- ml_vals[, grep('Signature', colnames(ml_vals))]
 
-  print(colnames(ml_vals))
 
   # determine the groups
   groups <- c(unlist(unique(strsplit(colnames(ml_vals), 
                             split = '_c1_ml|_c2_ml|_c3_ml|_c4_ml|_c5_ml|_c6_ml|_c7_ml|_c8_ml|_c9_ml|_c10_ml'))))
 
-  print(groups)
 
   name_groups <- c(unlist(strsplit(groups, split = 'Signature_')))[seq(from = 2, to = length(groups)*2, by = 2)]
   name_groups[name_groups == "3"] <- "Signature3"
@@ -120,9 +117,7 @@ plot_detailed <- function(file = NULL, sample = NULL){
   df_exp <- transform(df_exp, sigs = factor(sigs, levels = as.character(sigs)))
 
   plot_exp <- ggplot2::ggplot(df_exp, ggplot2::aes(x = sigs, y = exps)) 
-  print(1)
   plot_exp <- plot_exp + ggplot2::geom_bar(stat = 'identity', ggplot2::aes(fill = is_sig3))
-  print(2)
   plot_exp <- plot_exp + theme_def + ggplot2::theme(axis.title.x = ggplot2::element_blank(),
                                            axis.title.y = ggplot2::element_text(size = text_size),
                                            axis.text.y = ggplot2::element_text(size = text_size),

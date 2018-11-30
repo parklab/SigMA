@@ -20,7 +20,7 @@ decompose <- function(spect, signatures, data){
   # calculates frobenius error
   error <- function(spect, signatures, exposures){
     reco <- (as.matrix(signatures) %*% exposures)
-    error_frac <- sqrt(c(spect - reco) %*% c(spect - reco))/sqrt(spect %*% spect)
+    error_frac <- sqrt(sum(diag((spect - reco) %*% t(spect - reco))))/sqrt(sum(diag(spect %*% t(spect))))
     return(error_frac)
   }
 

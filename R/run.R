@@ -23,13 +23,6 @@
 #' should be run
 #' @param check_msi is a boolean which determines whether the user
 #' wants to identify micro-sattelite instable tumors
-#' @param weight_cf is a boolean that determines whether number of
-#' tumors in each cluster is going to be used as weights in 
-#' calculating probability, it only works for panels, for other
-#' platforms it is always T
-#' @param lite_format is a boolean when set T the output file is 
-#' saved in the lite format with fewer columns for easier use
-#' by default it is F
 #'
 #' @examples
 #' run(genome_file = "input_genomes.csv", 
@@ -46,8 +39,9 @@ run <- function(genome_file,
                 tumor_type = "breast",
                 do_mva = T,
                 check_msi = F, 
-                weight_cf = T,
-                lite_format = F){
+                weight_cf = F,
+                lite_format = F,
+                add_sig3 = F){
 
   # give a warning if weight_cf is TRUE but the sequencing platform
   # is not a panel
@@ -73,6 +67,9 @@ run <- function(genome_file,
   genomes <- read.csv(genome_file)
 
   # remove genomes with no mutation 
+  if(sum(is.na(rowSums(genomes[, 1:96]))) > 0){
+    genomes <- genomes[!is.na(rowSums(genomes[, 1:96])), ]
+  }
   if(sum(rowSums(genomes[, 1:96]) == 0) > 0){
     genomes <- genomes[which(rowSums(genomes[, 1:96]) > 0), ]
   }
@@ -149,6 +146,7 @@ run <- function(genome_file,
 
     if(method == "median_catalog"){
       average_catalog <- all_catalogs[[tumor_type]]
+      if(add_sig3) average_catalog$Signature_3_c1 <- all_catalogs$breast$Signature_3_c1
       message("Calculating likelihoods for each cluster")
     }else if(method == "cosine_simil"){
       message("Calculating cosine similarities")
@@ -170,6 +168,7 @@ run <- function(genome_file,
                                        signames_per_tissue[["msi"]],
                                        signames_per_tissue[["pole"]])]
       }
+      if(add_sig3) signatures$Signature_3 <- cosmic_catalog$Signature_3
     }
 
     if(sig_catalog == "average"){

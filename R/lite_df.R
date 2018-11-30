@@ -1,5 +1,4 @@
 #' produces a data.frame with fewer columns for easier use
-#' it is used in run.R function when lite_format is set to T
 #'
 #' @param merged_output is the input data.frame
 
@@ -52,6 +51,8 @@ lite_df <- function(merged_output){
                         inds = col_indices)))
   }
 
+ 
+  ncols <- dim(lite)[[2]]
   if(length(cols_apobec_ml) > 0)
     lite$Signature_APOBEC_ml <- sum_cols(cols_apobec_ml)
   if(length(cols_sig3_ml) > 0)
@@ -77,6 +78,34 @@ lite_df <- function(merged_output){
   if(length(cols_clock_ml) > 0)
     lite$Signature_clock_ml <- sum_cols(cols_clock_ml)
 
+
+  if(ncols != dim(lite)[[2]]){
+    cols_ml <- colnames(lite)[(ncols + 1):(dim(lite)[[2]])]
+  }
+
   if(length(inds_keep) > 0)
     lite <- cbind(lite, merged_output[, inds_keep])
+
+  if(sum(colnames(lite) == "pass_mva") > 0){
+    categs <- rep('', dim(lite)[[1]])
+    if(exists('cols_ml')){
+      for(i in seq_len(dim(lite)[[1]])){
+        if(lite$Signature_msi_ml[[i]] >= 0.95 & lite$total_snvs[[i]] > 10)
+          categs[[i]] <- 'Signature_msi'
+        else if(lite$Signature_pole_ml[[i]] > 0.9999)
+          categs[[i]] <- 'Signature_pole'
+        else if(lite$pass_mva[[i]])
+          categs[[i]] <- 'Signature_3'
+        else{
+          cols_ml_this <- cols_ml[cols_ml != 'Signature_3_ml' & cols_ml != 'Signature_msi_ml' & cols_ml != 'Signature_pole_ml']
+          ind_max <- which(max(lite[i, cols_ml_this]) == lite[i,])
+          categs[[i]] <- gsub(paste0(colnames(lite)[ind_max], collapse = ':'),
+                              pattern = '_ml',
+                              replace = '')
+        }
+      }
+      lite$categ <- categs
+    }
+  }
+  return(lite)
 }
