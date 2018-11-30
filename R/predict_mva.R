@@ -44,7 +44,7 @@ predict_mva <- function(input, signame, data, tumor_type = "breast", weight_cf){
 
   p_this <- predict(object = model,
                     newdata = input,
-                    n.trees = 1000,
+                    n.trees = model$n.trees,
                     type = "response")
   predictions <- p_this  
   output <- data.frame(prob = predictions)
