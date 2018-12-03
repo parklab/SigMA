@@ -179,7 +179,7 @@ run <- function(genome_file,
     }
 
     # scale for the tri-nucleotide context
-    if(data == "seqcap"){
+    if(data == "seqcap" | data == "seqcap_probe"){
       signatures <- weight_exome*signatures
     }else if(data == "msk"){
       signatures <- weight_msk*signatures

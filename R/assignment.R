@@ -47,6 +47,9 @@ assignment <- function(df_in,
     }else if(data == "seqcap"){
       cutoffs_strict <- cutoffs_exome_strict
       cutoffs <- cutoffs_exome 
+    }else if(data == "seqcap_probe"){
+      cutoffs_strict <- cutoffs_seqcap_probe_strict
+      cutoffs <- cutoffs_seqcap_probe
     }else if(data == "wgs"){ 
       cutoffs_strict <- cutoffs_wgs_strict
       cutoffs <- cutoffs_wgs
