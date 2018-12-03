@@ -19,7 +19,16 @@ server <- function(input, output, session){
   # run SigMA
   output_file <- eventReactive(input$do_run,{
     if(recalculate$val){
-      genomes_matrix <- make_matrix(directory = input$directory, 
+      if(!is.null(input$directory) & input$directory != ''){
+        directory <- input$directory
+      }
+      else if(!is.null(input$directory1$datapath) & input$directory1$datapath != ''){
+        directory <- input$directory1$datapath
+      }
+      else{
+        stop('input directory/file is not valid') 
+      }
+      genomes_matrix <- make_matrix(directory = directory, 
                                     file_type = input$file_type)
       genomes <- conv_snv_matrix_to_df(genomes_matrix)
       genomes_file = 'example.csv'
@@ -103,7 +112,6 @@ server <- function(input, output, session){
     selectedRow <- as.integer(c(unlist(strsplit(input$select_button, split = "tumor")))[[2]])
     this_sample$sample <<- sorted_samples()$filename[[selectedRow]]
   })
-
 
   plotd <- reactive({
     if(this_sample$sample != '')

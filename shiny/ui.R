@@ -32,8 +32,9 @@ ui <- fluidPage(
           column(4, style = "background-color:#dee9fc;
                              padding:15px;margin-top:
                              15px;margin-bottom:15px;",
-            h4('Input file location and format'),
-            textInput("directory", label = "Enter directory path"),
+            h4('Input directory/Input file and format'),
+            fileInput("directory1", label = "Browse and select file"),
+            textInput("directory", label = "OR Enter directory path"),
             selectInput(
               inputId = "file_type",
               label = "File format",
