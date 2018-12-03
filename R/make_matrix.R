@@ -346,8 +346,6 @@ conv_snv_matrix_to_df <- function(genomes_matrix){
                                        nstrand = 1){
 
   types <- .make_type(ncontext, nstrand)
-  print(length(maf_files))
-  print(maf_files)
   if(length(maf_files) == 1){
     maf <- read.delim(maf_files[[1]],
                       comment.char = "#",
