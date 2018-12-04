@@ -4,6 +4,7 @@
 3. [ Functionalities ](#func)
 4. [ Quick start ](#quick)
 5. [ Quick start shiny ](#shiny)
+6. [ Input file format ](#input)
 6. [ Tumor type tags ](#tissue)
 
 <a name="desc"></a>
@@ -59,15 +60,18 @@ More details on the optional settings can be found in the User's Manual
 
 `Rscript runShiny.R`
 
-As an example you can enter the path you obtain by doing
+<a name="input"></a>
 
+### 6. Input file format
+
+MAF file example: For MAF file format, both a single file with multiple samples, or a directory which contains multiple files with a single sample in each, is acceptable
+You can download the test_mutations_50sample.maf file on this repository and use this for testing. 
+VCF file example: Direct SigMA to a directory with multiple VCF files. Two test samples can be found in:
 `cd inst/extdata/`
-
-`pwd`
 
 <a name="tissue"></a>
 
-### 6. Tumor type tags
+### 7. Tumor type tags
 
 Tags and descriptions of performance of SigMA for signature 3 detection
 
