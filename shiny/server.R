@@ -15,15 +15,17 @@ server <- function(input, output, session){
 
   file_memory <- reactiveValues(
     name = '')
-
+    
   # run SigMA
   output_file <- eventReactive(input$do_run,{
     if(recalculate$val){
-      if(!is.null(input$directory) & input$directory != ''){
-        directory <- input$directory
-      }
-      else if(!is.null(input$directory1$datapath) & input$directory1$datapath != ''){
+      session$sendCustomMessage(type = 'launch-modal', "modal_inprogress") # launch the modal
+      if(!is.null(input$directory1)){
         directory <- input$directory1$datapath
+      }
+      else if(!is.null(input$directory2)){ # & input$directory2 != ''){
+        if(sum(grepl('0.vcf', input$directory2$datapath[[1]])) > 0)
+          directory <- gsub(input$directory2$datapath[[1]], pattern = '0.vcf', replace = "")
       }
       else{
         stop('input directory/file is not valid') 
@@ -44,21 +46,46 @@ server <- function(input, output, session){
       ind <- which(as.character(platform_names) == input$data)
       data = names(platform_names)[[ind]]
     
+      check_msi <- F
+      lite_format <- F
+      if(sum(grepl('check_msi', input$other_settings)) > 0){
+        check_msi <- T
+      }
+
       output_file <- run(genomes_file, 
                          tumor_type = tumor_type,
                          data = data,
                          do_mva = T,
-                         do_assign = T)
+                         do_assign = T, 
+                         check_msi = check_msi)
       print('Finished running SigMA')
       file_memory$name <<- output_file
+      session$sendCustomMessage(type = 'remove-modal', "modal_inprogress") # hide the modal programmatically
       return(output_file)
     }else{
       return(file_memory$name)
     }
   })
 
-
+ 
   recalculate <- reactiveValues(val = T)
+
+  output$save_file <- downloadHandler(
+    filename = 'SigMA_output.csv',
+    content = function(file){
+      if(sum(grepl('lite_format', input$other_settings)) > 0){
+        df <- read.csv(output_file())
+        df_output <- lite_df(df)
+      }else{
+        df_output <- read.csv(output_file())
+      }
+      write.table(df_output, 
+                  file,
+                  row.names = F, 
+                  sep = ',',
+                  quote = F)
+    }
+  ) 
 
   # make summary figure
   plot <- reactive({
@@ -73,11 +100,12 @@ server <- function(input, output, session){
   # make a data table 
   sorted_samples <- reactive({
     df <- read.csv(output_file())
-    df <- df[order(-df$Signature_3_mva),]
-    df$name <- paste0('tumor', 1:dim(df)[[1]])
-    df$Signature_3_mva <- round(df$Signature_3_mva, digit = 4)
-    df2 <- df[, c('name', 'tumor', 'Signature_3_mva')]
-    colnames(df2) <- c('tag', 'filename', 'score')
+    df_lite <- lite_df(df)
+    df_lite$name <- paste0('tumor', 1:dim(df_lite)[[1]])
+    df_lite <- df_lite[order(-df_lite$Signature_3_mva),]
+    df_lite$Signature_3_mva <- round(df_lite$Signature_3_mva, digit = 4)
+    df2 <- df_lite[, c('name', 'tumor', 'Signature_3_mva', 'categ')]
+    colnames(df2) <- c('tag', 'filename', 'score', 'categ')
 
     buttons <- character(dim(df2)[[1]])
     
@@ -95,11 +123,11 @@ server <- function(input, output, session){
   })
 
   output$sorted_samples <- renderDataTable(
-                             datatable(sorted_samples()[, -which(colnames(sorted_samples()) == "tagname")], 
+                             datatable(sorted_samples()[, -grep("tagname|filename", colnames(sorted_samples()))], 
                                        escape = F, 
                                        rownames = F,
-                                       options = list(dom = 'ftr', scrollY = T)) %>%
-                             formatStyle(c("tag", "filename", "score"),
+                                       options = list(dom = 'ftrp', scrollY = T)) %>%
+                             formatStyle(c("tag", "score", "categ"),
                                          backgroundColor = '#eaf1fc'))
                                      
                                          
@@ -109,8 +137,8 @@ server <- function(input, output, session){
   this_sample <- reactiveValues(sample = '')
 
   observeEvent(input$select_button, {
-    selectedRow <- as.integer(c(unlist(strsplit(input$select_button, split = "tumor")))[[2]])
-    this_sample$sample <<- sorted_samples()$filename[[selectedRow]]
+    ind <- which(sorted_samples()$tagname == as.character(input$select_button))
+    this_sample$sample <<- sorted_samples()$filename[[ind]]
   })
 
   plotd <- reactive({
@@ -151,6 +179,7 @@ server <- function(input, output, session){
             dataTableOutput("sorted_samples") %>% withSpinner(color="#dee9fc")
           ),
           column(5, h4("Summary") ,
+            downloadButton("save_file", "Save data file"),
             plotOutput("plot2", width = "90%", height = "750px") %>% withSpinner(color="#dee9fc")
           )
         )
