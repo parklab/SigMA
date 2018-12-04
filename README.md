@@ -65,7 +65,8 @@ More details on the optional settings can be found in the User's Manual
 ### 6. Input file format
 
 MAF file example: For MAF file format, both a single file with multiple samples, or a directory which contains multiple files with a single sample in each, is acceptable
-You can download the test_mutations_50sample.maf file on this repository and use this for testing. 
+You can download the [a relative link](test_mutations_50sample.maf) file on this repository and use this for testing. 
+
 VCF file example: Direct SigMA to a directory with multiple VCF files. Two test samples can be found in:
 `cd inst/extdata/`
 
