@@ -9,6 +9,5 @@ echo "image-$STAMP"
 docker pull $REPO:latest
 
 docker build -f docker-context/Dockerfile \
-             --cache-from $REPO:latest \
              --tag image-$STAMP \
              .
