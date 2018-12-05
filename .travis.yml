@@ -1,0 +1,30 @@
+script:
+  # Login to be able to build/push new docker images
+  - docker login -u $DOCKER_USER -p $DOCKER_PASS
+  
+  # Wait a maximum of 20 mins for image creation
+  - travis_wait 20 sh build-docker-image.sh
+
+after_success:
+  - REPO=scottx611x/sigma
+  - IMAGE=`docker ps --latest --format '{{ .Image }}'` # TODO: with more containers, can't rely on ordering
+  - tag_push() { echo "Tagging into $2"; docker tag $1 $2; docker push $2; }
+
+  # Always update "latest" tag: the cache will be used for the next build.
+  - tag_push $IMAGE $REPO
+  - >
+      if [ "$TRAVIS_EVENT_TYPE" == "pull_request" ]; then
+        echo "PR!";
+        BRANCH=`echo ${TRAVIS_PULL_REQUEST_BRANCH:-$TRAVIS_BRANCH} | perl -pne 'chomp;s{.*/}{};s/\W/-/g'`;
+        tag_push $IMAGE $REPO:$BRANCH;
+        tag_push $IMAGE $REPO:latest-pr;
+      fi
+  - >
+      if [ ! -z "$TRAVIS_TAG" ]; then
+        echo "Git tag!";
+        tag_push $IMAGE $REPO:$TRAVIS_TAG;
+        tag_push $IMAGE $REPO:latest;
+      fi
+env:
+  global:
+   
