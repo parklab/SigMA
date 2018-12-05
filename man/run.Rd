@@ -8,8 +8,8 @@ features are later used in multivariate analysis. (3) Based
 on scores a final decision on existence of the signature.}
 \usage{
 run(genome_file, output_file = NULL, do_assign = T, data = "msk",
-  tumor_type = "breast", do_mva = T, check_msi = F, weight_cf = T,
-  lite_format = F)
+  tumor_type = "breast", do_mva = T, check_msi = F, weight_cf = F,
+  lite_format = F, add_sig3 = F)
 }
 \arguments{
 \item{genome_file}{a csv file with snv spectra info can be created
@@ -25,7 +25,8 @@ be returned}
 
 \item{data}{the options are "msk" (for a panel that is similar 
 size to MSK-Impact panel with 410 genes), "seqcap" (for whole  
-exome sequencing), or "wgs" (for whole genome sequencing)}
+exome sequencing), "seqcap_probe" (64 Mb SeqCap EZ Probe v3),
+or "wgs" (for whole genome sequencing)}
 
 \item{tumor_type}{the options are "bladder", "bone_other" (Ewing's 
 sarcoma or Chordoma), "breast", "crc", "eso", "gbm", "lung", 
@@ -39,14 +40,18 @@ should be run}
 \item{check_msi}{is a boolean which determines whether the user
 wants to identify micro-sattelite instable tumors}
 
-\item{weight_cf}{is a boolean that determines whether number of
-tumors in each cluster is going to be used as weights in 
-calculating probability, it only works for panels, for other
-platforms it is always T}
+\item{weight_cf}{determines whether the likelihood calculation
+will take into account the number of tumors in each cluster
+when it is F the clusters get equal weights and when it's T
+they are weighted according to the fraction of tumors in each
+cluster}
 
-\item{lite_format}{is a boolean when set T the output file is 
-saved in the lite format with fewer columns for easier use
-by default it is F}
+\item{lite_format}{saves the output in a lite format when set
+to true}
+
+\item{add_sig3}{should be set to T when the likelihood of 
+Signature 3 is calculated for tumor types for which Signature 3 
+was not discovered by NMF in their WGS data}
 }
 \description{
 Runs SigMA: (1) calculates likelihood, cosine similarity,

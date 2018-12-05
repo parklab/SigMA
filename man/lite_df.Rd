@@ -2,8 +2,7 @@
 % Please edit documentation in R/lite_df.R
 \name{lite_df}
 \alias{lite_df}
-\title{produces a data.frame with fewer columns for easier use
-it is used in run.R function when lite_format is set to T}
+\title{produces a data.frame with fewer columns for easier use}
 \usage{
 lite_df(merged_output)
 }
@@ -12,5 +11,4 @@ lite_df(merged_output)
 }
 \description{
 produces a data.frame with fewer columns for easier use
-it is used in run.R function when lite_format is set to T
 }

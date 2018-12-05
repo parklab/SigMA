@@ -8,6 +8,8 @@ plot_detailed(file = NULL, sample = NULL)
 }
 \arguments{
 \item{file}{the csv file produced by SigMA}
+
+\item{sample}{name to be plotted}
 }
 \description{
 Generates a detailed plot per sample
