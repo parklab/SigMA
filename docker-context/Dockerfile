@@ -8,7 +8,7 @@ RUN sudo apt-get update && apt-get install -y \
     libxml2-dev
 
 # Just copy install.R over to install necessary R packages
-COPY install.R /tmp/install.R
+COPY ./install.R /tmp/install.R
 RUN R -f /tmp/install.R
 
 # Copy SigMa app context to where rocker expects it to reside
