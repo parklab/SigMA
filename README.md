@@ -45,6 +45,10 @@ SigMA is a signature analysis tool optimized to detect the mutational signature 
 
 `Rscript test.R`
 
+or 
+
+`Rscript test_maf.R`
+
 More details on the optional settings can be found in the User's Manual
 
 <a name="shiny"></a>
