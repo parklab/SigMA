@@ -5,7 +5,11 @@ cache:
 script:
   # Login to be able to build/push new docker images
   - docker login -u $DOCKER_USER -p $DOCKER_PASS
+
+  # Load any previously cached docker images
   - if [ -f ${DOCKER_CACHE_FILE} ]; then gunzip -c ${DOCKER_CACHE_FILE} | docker load; fi
+
+  # Build docker image and export $DOCKER_IMAGE
   - sh build-docker-image.sh
 
 after_success:
@@ -14,11 +18,10 @@ after_success:
   # Update Travis Docker Cache
   - mkdir -p $(dirname ${DOCKER_CACHE_FILE}) ; docker save $(docker history -q ${REPO}:${TRAVIS_COMMIT} | grep -v '<missing>') | gzip > ${DOCKER_CACHE_FILE};
   
-  - IMAGE=`docker ps --latest --format '{{ .Image }}'` # TODO: with more containers, can't rely on ordering
   - tag_push() { echo "Tagging into $2"; docker tag $1 $2; docker push $2; }
 
   # Always update "latest" tag: the cache will be used for the next build.
-  - tag_push $IMAGE $REPO:latest
+  - tag_push $DOCKER_IMAGE $REPO
   - >
       if [ "$TRAVIS_EVENT_TYPE" == "pull_request" ]; then
         echo "PR!";
