@@ -6,7 +6,7 @@ REPO=scottx611x/sigma
 export STAMP=`date +"%Y-%m-%d_%H-%M-%S"`
 echo "image-$STAMP"
 
-docker pull $REPO
+docker pull $REPO:latest
 
 docker build -f docker-context/Dockerfile \
              --cache-from $REPO:latest \

@@ -1,9 +1,7 @@
 script:
   # Login to be able to build/push new docker images
   - docker login -u $DOCKER_USER -p $DOCKER_PASS
-  
-  # Wait a maximum of 20 mins for image creation
-  - travis_wait 20 sh build-docker-image.sh
+  - sh build-docker-image.sh
 
 after_success:
   - REPO=scottx611x/sigma
