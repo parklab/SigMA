@@ -15,6 +15,4 @@ docker build -f docker-context/Dockerfile \
              .
 
 # Run a container in CI so that we can grab the tag from the docker cli
-if [[ -z "${CONTINUOUS_INTEGRATION}" ]]; then
-    docker run -d -p $DOCKER_IMAGE_TAG 
-fi
+if [[ -v CONTINUOUS_INTEGRATION ]]; then docker run -d -p 3242:3242 $DOCKER_IMAGE_TAG; fi
