@@ -1,6 +1,7 @@
 #' Generates a detailed plot per sample 
 #'
 #' @param file the csv file produced by SigMA
+#' @sample sample name to be plotted
 
 plot_detailed <- function(file = NULL, sample = NULL){
   text_size = 10
@@ -65,19 +66,25 @@ plot_detailed <- function(file = NULL, sample = NULL){
 
 ###likelihood##################################################################################################
   # columns related to likelihood
-  inds <- grep('_ml', colnames(this))  
-  ml_vals <- this[, inds]
+  if(length(grep('ml_msi', colnames(this))) > 0){
+    inds_msi <- grep('_msi_c1_ml_msi|_msi_c2_ml_msi|_msi_c3_ml_msi|_msi_c4_ml_msi', colnames(this))
+    inds_pole <- grep('_pole_c1_ml_msi', colnames(this))
+    inds_rm <- grep('_ml_msi', colnames(this))
+    inds <- grep('_ml', colnames(this)[-inds_rm])
+    ml_vals <- this[, c(inds, inds_msi, inds_pole)]
+  }else{
+    inds <- grep('_ml', colnames(this))
+    ml_vals <- this[, inds]
+  }
+
   ml_vals <- ml_vals[, grep('Signature', colnames(ml_vals))]
 
-
   # determine the groups
-  groups <- c(unlist(unique(strsplit(colnames(ml_vals), 
-                            split = '_c1_ml|_c2_ml|_c3_ml|_c4_ml|_c5_ml|_c6_ml|_c7_ml|_c8_ml|_c9_ml|_c10_ml'))))
-
-
-  name_groups <- c(unlist(strsplit(groups, split = 'Signature_')))[seq(from = 2, to = length(groups)*2, by = 2)]
-  name_groups[name_groups == "3"] <- "Signature3"
-  is_sig3 <- (name_groups == "Signature3")
+  groups <-  unique(c(unlist(lapply(strsplit(colnames(ml_vals),
+                             split = paste0('_c', 1:10, '_ml', collapse = '|')), 
+                      function(x){ x[[1]] }))))
+  
+  is_sig3 <- (groups == "Signature_3")
 
   # sum the likelihood of clusters within each group
   vals <- numeric(length(groups))
@@ -85,11 +92,16 @@ plot_detailed <- function(file = NULL, sample = NULL){
     vals[[i]] <- sum(ml_vals[, grep(groups[[i]], colnames(ml_vals))])
   }
 
+  groups <- gsub(groups, pattern = 'Signature_msi', replace = 'MSI')
+  groups <- gsub(groups, pattern = 'Signature_pole', replace = 'POLE')
+  groups <- gsub(groups, pattern = 'Signature_clock', replace = 'Clock')
+  groups <- gsub(groups, pattern = 'Signature_APOBEC', replace = 'APOBEC')
+  groups <- gsub(groups, pattern = 'Signature_', replace = 'Signature')
+
   df_ml <- data.frame(likelihood = vals,
-                      group = name_groups, 
+                      group = groups, 
                       is_sig3)
   df_ml <- df_ml[order(-df_ml$likelihood), ]
-
   df_ml <- transform(df_ml, is_sig3 = factor(is_sig3, levels = c(T, F)))
   df_ml <- transform(df_ml, group = factor(group, levels = as.character(df_ml$group)))
 
@@ -108,6 +120,14 @@ plot_detailed <- function(file = NULL, sample = NULL){
 ###exposures################################################################################################## 
   exps <- as.numeric(unlist(strsplit(as.character(this$exps_all), split = '_')))
   sigs <- unlist(strsplit(as.character(this$sigs_all), split = '\\.'))
+
+  if(length(grep('ml_msi', colnames(this))) > 0){
+    this$Signature_msi_ml <- rowSums(this[, paste0('Signature_msi_c', 1:4, '_ml_msi')])
+    if(this$Signature_msi_ml > 0.99 | this$Signature_pole_c1_ml_msi > 0.99){
+      exps <- as.numeric(unlist(strsplit(as.character(this$exps_all_msi), split = '_')))
+      sigs <- unlist(strsplit(as.character(this$sigs_all_msi), split = '\\.'))
+    }
+  }
   sigs <- gsub(sigs, pattern = '_', replace = '')
 
   df_exp <- data.frame(exps = exps, sigs = sigs, is_sig3 = (sigs == "Signature3"))

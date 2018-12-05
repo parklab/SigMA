@@ -56,7 +56,7 @@ plot_summary <- function(file = NULL){
 
 
   # cosine density distribution
-  colors_cos <- col_pos_neg
+  colors_cos <- c(col_pos_neg[[2]], col_pos_neg[[1]])
   if(length(unique(df$pass_mva)) == 1){
     if(unique(df$pass_mva))
       colors_cos <- col_pos_neg[[2]]
@@ -82,6 +82,7 @@ plot_summary <- function(file = NULL){
   df_cos <- rbind(data.frame( cos = bin_center, count = counts_cos_pos, group = 'Sig3+' ),
                   data.frame( cos = bin_center, count = counts_cos_neg, group = 'Sig3-' ))
 
+
   plot_cos <- ggplot2::ggplot(df_cos, ggplot2::aes(x = cos, y = count))
   plot_cos <- plot_cos + ggplot2::geom_bar(stat = 'identity', position = 'dodge', 
                                            ggplot2::aes(fill = group))
@@ -97,6 +98,11 @@ plot_summary <- function(file = NULL){
 
   # likelihood density distribution
   inds <- grep('_ml', colnames(df))
+  if(length(grep('_ml_msi', colnames(df))) > 0){
+    inds_rm <- grep('_ml_msi', colnames(df))
+    inds <- inds[-na.omit(match(inds_rm, inds))]
+  }
+
   ind_tumor <- grep('tumor', colnames(df))
   inds <- c(inds, ind_tumor)
   rm(ind_tumor)
@@ -109,14 +115,16 @@ plot_summary <- function(file = NULL){
   df_ml$Signature_3_mva <- df$Signature_3_mva 
 
   ml_bin_width = 0.1
-  ml_bins <- seq(0, 1, by = ml_bin_width)
+  ml_bins <- seq(0, 1.001, by = ml_bin_width)
   counts_ml_pos <- rep(0, length(ml_bins) - 1)
   counts_ml_neg <- rep(0, length(ml_bins) - 1)
   bin_center <- rep(0, length(ml_bins) - 1)
   
+  ml_vals_pos <- df_ml$Signature_3_ml[df_ml$pass_mva]
+  ml_vals_neg <- df_ml$Signature_3_ml[!df_ml$pass_mva]
+
+  
   for(ibin in seq_len(length(ml_bins) - 1)){
-    ml_vals_pos <- df_ml$Signature_3_ml[df_ml$pass_mva]
-    ml_vals_neg <- df_ml$Signature_3_ml[!df_ml$pass_mva]
     counts_ml_pos[[ibin]] <- sum(ml_vals_pos >= ml_bins[[ibin]] & ml_vals_pos < ml_bins[[ibin + 1]]) 
     counts_ml_neg[[ibin]] <- sum(ml_vals_neg >= ml_bins[[ibin]] & ml_vals_neg < ml_bins[[ibin + 1]]) 
 
@@ -159,6 +167,8 @@ plot_summary <- function(file = NULL){
                                                levels = unique(df_ml$group)))
 
 
+  
+  df_ml <- transform(df_ml, tumor_label = factor(tumor_label, levels = df_ml$tumor[order(df_ml$Signature_3_mva)]))
   plot_score <- ggplot2::ggplot(df_ml, 
                                 ggplot2::aes(x = tumor_label, 
                                              y = Signature_3_mva))
@@ -186,10 +196,10 @@ plot_summary <- function(file = NULL){
                                                  linetype = 'dashed')
 
   # Signature 3 exposures 
-  colors_exp <- col_pos_neg
+  colors_exp <- colors_cos
   if(length(unique(df$pass_mva[df$exp_sig3 > 0])) == 1){
     if(unique(df$pass_mva[df$exp_sig3 > 0]))
-      colors_exp <- c(col_pos_neg[[2]], col_pos_neg[[1]])
+      colors_exp <- c(colors_cos[[2]], colors_cos[[1]])
   }
 
   exp_bin_width <- (max(df$exp_sig3) + 1)/10
@@ -209,6 +219,7 @@ plot_summary <- function(file = NULL){
 
   df_exp <- rbind(data.frame( exp = bin_center, count = counts_exp_pos, group = 'Sig3+' ),
                   data.frame( exp = bin_center, count = counts_exp_neg, group = 'Sig3-' ))
+
 
   plot_exp <- ggplot2::ggplot(df_exp, ggplot2::aes(x = exp, y = count))
   plot_exp <- plot_exp + ggplot2::geom_bar(stat = 'identity', position = 'dodge',

@@ -4,6 +4,8 @@
 
 lite_df <- function(merged_output){
   lite <- merged_output[, c('tumor', 'total_snvs')]
+  merged_output$exps_all <- as.character(merged_output$exps_all)
+  merged_output$sigs_all <- as.character(merged_output$sigs_all)
 
   all_cols <- colnames(merged_output)
 
@@ -89,23 +91,53 @@ lite_df <- function(merged_output){
   if(sum(colnames(lite) == "pass_mva") > 0){
     categs <- rep('', dim(lite)[[1]])
     if(exists('cols_ml')){
-      for(i in seq_len(dim(lite)[[1]])){
-        if(lite$Signature_msi_ml[[i]] >= 0.95 & lite$total_snvs[[i]] > 10)
-          categs[[i]] <- 'Signature_msi'
-        else if(lite$Signature_pole_ml[[i]] > 0.9999)
-          categs[[i]] <- 'Signature_pole'
-        else if(lite$pass_mva[[i]])
-          categs[[i]] <- 'Signature_3'
-        else{
-          cols_ml_this <- cols_ml[cols_ml != 'Signature_3_ml' & cols_ml != 'Signature_msi_ml' & cols_ml != 'Signature_pole_ml']
-          ind_max <- which(max(lite[i, cols_ml_this]) == lite[i,])
-          categs[[i]] <- gsub(paste0(colnames(lite)[ind_max], collapse = ':'),
+      if(sum(grepl('msi_ml', colnames(lite))) > 0){
+        for(i in seq_len(dim(lite)[[1]])){
+          if(lite$Signature_msi_ml[[i]] >= 0.95 & lite$total_snvs[[i]] > 10)
+            categs[[i]] <- 'Signature_msi'
+          else if(lite$Signature_pole_ml[[i]] > 0.9999)
+            categs[[i]] <- 'Signature_pole'
+          else if(lite$pass_mva_strict[[i]])
+            categs[[i]] <- 'Signature_3_hc'
+          else if(lite$pass_mva[[i]])
+            categs[[i]] <- 'Signature_3_lc'
+          else{
+            cols_ml_this <- cols_ml[cols_ml != 'Signature_3_ml' & cols_ml != 'Signature_msi_ml' & cols_ml != 'Signature_pole_ml']
+            ind_max <- which(max(lite[i, cols_ml_this]) == lite[i,])
+            categs[[i]] <- gsub(paste0(colnames(lite)[ind_max], collapse = ':'),
                               pattern = '_ml',
                               replace = '')
+        
+          }
+        }
+     }
+     else{
+       for(i in seq_len(dim(lite)[[1]])){
+          if(lite$pass_mva_strict[[i]])
+            categs[[i]] <- 'Signature_3_hc'
+          else if(lite$pass_mva[[i]])
+            categs[[i]] <- 'Signature_3_lc'
+          else{
+            cols_ml_this <- cols_ml[cols_ml != 'Signature_3_ml' & cols_ml != 'Signature_msi_ml' & cols_ml != 'Signature_pole_ml']
+            ind_max <- which(max(lite[i, cols_ml_this]) == lite[i,])
+            categs[[i]] <- gsub(paste0(colnames(lite)[ind_max], collapse = ':'),
+                              pattern = '_ml',
+                              replace = '')
+        
+          }
         }
       }
       lite$categ <- categs
     }
   }
+  
+  if(length(grep('msi_ml', colnames(lite))) > 0){
+    inds <- which(lite$categ == "Signature_msi" | lite$categ == "Signature_pole")
+    merged_output$exps_all_msi <- as.character(merged_output$exps_all_msi)
+    merged_output$sigs_all_msi <- as.character(merged_output$sigs_all_msi)
+    lite$exps_all[inds] <- merged_output$exps_all_msi[inds]
+    lite$sigs_all[inds] <- merged_output$sigs_all_msi[inds]
+  }
+  
   return(lite)
 }

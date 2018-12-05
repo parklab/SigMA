@@ -22,6 +22,7 @@ ui <- fluidPage(
           img(height = 70, width = 120, src = 'sigma.jpg'))
     )
   ),
+
   # main panel
   fluidRow(class= "R1", 
     tabsetPanel(id = "tabs", #type= "tabs",
@@ -32,9 +33,21 @@ ui <- fluidPage(
           column(4, style = "background-color:#dee9fc;
                              padding:15px;margin-top:
                              15px;margin-bottom:15px;",
-            h4('Input directory/Input file and format'),
-            fileInput("directory1", label = "Browse and select file"),
-            textInput("directory", label = "OR Enter directory path"),
+            h4('Load data'),
+            tags$div(class="form-group shiny-input-container", 
+                     tags$div(tags$label("Select a directory")),
+                     tags$div(tags$label("Browse", class="btn btn-default btn-file",
+                              tags$input(id = "directory2", 
+                                         webkitdirectory = TRUE, 
+                                         type = "file", 
+                                         style="display: none;", 
+                                         onchange="pressed()"))
+                              ),
+                    tags$div(id = paste("directory2",  "_progress", sep = ""), 
+                            class = "progress progress-striped active shiny-file-input-progress", 
+                            tags$div(class = "progress-bar"))
+                     ),
+            fileInput("directory1", label = "OR Select a file"),
             selectInput(
               inputId = "file_type",
               label = "File format",
@@ -52,6 +65,10 @@ ui <- fluidPage(
               label = "Select sequencing platform",
               choices = as.character(platform_names)
             ),
+            checkboxGroupInput("other_settings", "Options:",
+                               choiceNames = c("Check for microsattelite instability",
+                                               "Lite data format"),
+                               choiceValues = c("check_msi", "lite_format")),
             actionButton("do_run", "Run")
           ),
           align = "center"
@@ -66,8 +83,23 @@ ui <- fluidPage(
                                  a(href = 'https://github.com/parklab/SigMA', 
                                  'github')))))
       )
+    )    
+  ),
+
+  # generates a modal bux upon clicking run that informs the use
+  # that calculation is in progress
+  tags$script("Shiny.addCustomMessageHandler('launch-modal', function(d) {$('#' + d).modal().focus();})"),
+  tags$script("Shiny.addCustomMessageHandler('remove-modal', function(d) {$('#' + d).modal('hide');})"),
+  tags$div(
+    id = "modal_inprogress",
+    class="modal fade", tabindex="-1", `data-backdrop`="static", `data-keyboard`="false",
+    tags$div(
+      class="modal-dialog",
+      tags$div(
+        class = "modal-content",
+        tags$div(class="modal-header", tags$h4(class="modal-title", "Calculation in progress, please wait.")),
+        tags$div(class="modal-footer", tags$button(type="button", class="btn btn-default", `data-dismiss`="modal", "Dismiss"))
+      )
     )
-    
-#    align = "center"         
   )
 )
