@@ -1,26 +1,26 @@
-# SigMA 
+# SigMA [![Build Status](https://travis-ci.org/parklab/SigMA.svg?branch=master)](https://travis-ci.org/parklab/SigMA)
 
 ### Pre-Reqs: 
 - [docker](https://docs.docker.com/engine/installation/)
 
 ### Running the app:
 - `docker run -d -p 3242:3242 scottx611x/sigma`
-- open http://localhost:3242
+- Open http://localhost:3242
 - Voila!
 
 ### Local Development:
 - Make your edits to the application code
-- Run `sudo sh build_image.sh` -> you should get a docker image ID in the console if things built properly
+- Run `./build-docker-image.sh` (from the repo root) -> you should get a docker image ID in the console if things built properly
 - Open http://localhost:3242 and poke around the app
 - If you're satisfied with the changes create a pull request and/or notify @scottx611x
 
-### Continuous integration/Deployment ToDos:
-- [ ] New docker images will be built, tagged, and pushed to: [docker hub](https://hub.docker.com/r/scottx611x/sigma/) if a `PR` or `TAG` are noticed.
+### Continuous integration/Deployment:
+- New docker images will be built, tagged, and pushed to: [docker hub](https://hub.docker.com/r/scottx611x/sigma/) if a `PR` or `TAG` are noticed.
 - We use [watchtower](https://github.com/v2tec/watchtower) to keep the current deployment up to date. Watchtower will detect new docker images that have been pushed, and update our remote docker gracefully.
 
 
 ### Deployment:
-- AWS m5.large instance
+- AWS t2.medium instance
 - Accessible at: http://compbio.med.harvard.edu/sigMA
 - `compbio.med.harvard.edu` providing http/ws proxy in `/etc/apache2/sites-available/compbio.med.harvard.edu.conf` to AWS instance
 - Apache Proxy Config:
