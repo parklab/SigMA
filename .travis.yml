@@ -9,7 +9,7 @@ after_success:
   - tag_push() { echo "Tagging into $2"; docker tag $1 $2; docker push $2; }
 
   # Always update "latest" tag: the cache will be used for the next build.
-  - tag_push $IMAGE $REPO
+  - tag_push $IMAGE $REPO:latest
   - >
       if [ "$TRAVIS_EVENT_TYPE" == "pull_request" ]; then
         echo "PR!";
