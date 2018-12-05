@@ -8,11 +8,11 @@ RUN sudo apt-get update && apt-get install -y \
     libxml2-dev
 
 # Just copy install.R over to install necessary R packages
-COPY app/install.R /tmp/install.R
+COPY install.R /tmp/install.R
 RUN R -f /tmp/install.R
 
-# Copy Shiny app context to where rocker expects it to reside
-COPY app/ $APP_DIR
+# Copy SigMa app context to where rocker expects it to reside
+COPY . $APP_DIR
 
 EXPOSE 3242
 
