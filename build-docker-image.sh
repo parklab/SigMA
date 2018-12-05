@@ -12,6 +12,7 @@ docker pull $REPO
 docker build -f docker-context/Dockerfile \
              --cache-from $REPO \
              --tag image-$STAMP \
+             .
 
 # Run a container in CI so that we can grab the tag from the docker cli
 if [[ -z "${CONTINUOUS_INTEGRATION}" ]]; then
