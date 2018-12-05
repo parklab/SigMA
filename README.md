@@ -4,7 +4,7 @@
 3. [ Functionalities ](#func)
 4. [ Quick start ](#quick)
 5. [ Quick start shiny ](#shiny)
-6. [ Input file format ](#input)
+6. [ Input/Output file format ](#input)
 6. [ Tumor type tags ](#tissue)
 
 <a name="desc"></a>
@@ -62,19 +62,32 @@ More details on the optional settings can be found in the User's Manual
 
 <a name="input"></a>
 
-### 6. Input file format
+### 6. Input/Output file format
 
-MAF file example: For MAF file format, both a single file with multiple samples, or a directory which contains multiple files with a single sample in each, is acceptable.
+#### Input 
+
+**MAF file example:** For MAF file format, both a single file with multiple samples, or a directory which contains multiple files with a single sample in each, is accepted.
 You can download the [test_mutations_50sample.maf](test_mutations_50sample.maf) file on this repository and use this for testing. 
 
-VCF file example: Direct SigMA to a directory with multiple VCF files. Two test samples can be found in:
+**VCF file example:** Direct SigMA to a directory with multiple VCF files. Two test samples can be found in:
 `cd inst/extdata/`
+
+#### Output
+
+There are two different outputs formats a large format or a lite format where the information in the large format is summarized using `lite_df()` function. The conversion can be done after the output is produced using the output file of the `run()` function, let's say is called output_file_name:
+
+```
+df <- read.csv(output_file_name)
+lite <- lite_df(df)
+```
+or by setting `lite_format = T` in the settings of `run()`.
 
 <a name="tissue"></a>
 
 ### 7. Tumor type tags
 
-Tags and descriptions of performance of SigMA for signature 3 detection
+Tags and descriptions of performance of SigMA for signature 3 detection. The exploratory tumor types should be used with `do_mva = F` and `do_assign = F` settings for the `run()` function.
+ 
 
 | Tumor type                           | Tag           | Details     | Platform        |
 | ------------------------------------ | ------------- | ----------- | --------------- |
