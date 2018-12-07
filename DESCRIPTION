@@ -20,7 +20,6 @@ Imports:
     gridExtra,
     IRanges,
     nnls,
-    pheatmap,
     reshape2,
     Rmisc,
     shinycssloaders,    
