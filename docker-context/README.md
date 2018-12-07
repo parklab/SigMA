@@ -1,4 +1,4 @@
-# SigMA [![Build Status](https://travis-ci.org/parklab/SigMA.svg?branch=master)](https://travis-ci.org/parklab/SigMA)
+# SigMA Docker
 
 ### Pre-Reqs: 
 - [docker](https://docs.docker.com/engine/installation/)
