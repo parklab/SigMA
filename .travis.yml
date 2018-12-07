@@ -1,4 +1,4 @@
-script:
+before_script:
   # Login to be able to build/push new docker images
   - docker login -u $DOCKER_USER -p $DOCKER_PASS
 
@@ -9,6 +9,7 @@ script:
   - IMAGE_ID=`docker ps --latest --format '{{ .Image }}'` # TODO: with more containers, can't rely on ordering
   - CONTAINER_ID=`docker ps --latest --format '{{ .ID }}'`
   
+script:
   # Run test script inside of container
   - docker exec -it $CONTAINER_ID Rscript test.R
 
