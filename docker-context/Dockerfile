@@ -17,5 +17,5 @@ EXPOSE 3242
 # Copy SigMa app context to where rocker expects it to reside
 COPY . $APP_DIR
 
-# Run runShiny.R script
+# Run shiny app
 CMD ["R", "-e", "shiny::runApp('/srv/shinyapps/app/shiny/', 3242, host='0.0.0.0')"]
