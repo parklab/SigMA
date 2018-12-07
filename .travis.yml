@@ -1,0 +1,38 @@
+before_script:
+  # Login to be able to build/push new docker images
+  - docker login -u $DOCKER_USER -p $DOCKER_PASS
+
+  # Build and run new docker image
+  - bash build-docker-image.sh
+
+  # Set image envvar from running container
+  - IMAGE_ID=`docker ps --latest --format '{{ .Image }}'` # TODO: with more containers, can't rely on ordering
+  - CONTAINER_ID=`docker ps --latest --format '{{ .ID }}'`
+  
+script:
+  # Run test script inside of container
+  - docker exec -it $CONTAINER_ID Rscript test.R
+
+after_success:
+  - tag_push() { echo "Tagging into $2"; docker tag $1 $2; docker push $2; }
+
+  # Always update "latest" tag: the cache will be used for the next build.
+  - tag_push $IMAGE_ID $REPO
+  - >
+      if [ "$TRAVIS_EVENT_TYPE" == "pull_request" ]; then
+        echo "PR!";
+        BRANCH=`echo ${TRAVIS_PULL_REQUEST_BRANCH:-$TRAVIS_BRANCH} | perl -pne 'chomp;s{.*/}{};s/\W/-/g'`;
+        tag_push $IMAGE_ID $REPO:$BRANCH;
+        tag_push $IMAGE_ID $REPO:latest-pr;
+      fi
+  - >
+      if [ ! -z "$TRAVIS_TAG" ]; then
+        echo "Git tag!";
+        tag_push $IMAGE_ID $REPO:$TRAVIS_TAG;
+        tag_push $IMAGE_ID $REPO:latest;
+      fi
+env:
+  global:
+    - secure: TeikQTM5YOgSnGmwDQ3XKJQIesM4WW/htX807aCoe5/ioeskxK57YolH8zWYArNDestfkyfs8FBxH80MQaXVlejqmyzbmS+11GhiCKoWvb4gi1TegvsTUkSkqq0OcrdjrrfS2eHc0Cq1+y/hy+4rmecpkvOe9knhghmMji5E2WCxi6Wq0BTXcqTYXaXH3cNFNuoqoJKtrdFy+XNmVhsXeUG1ocRIz0nB3w1v3hCXXBl4K6vDEgu8vkAaLFSWTdcUPb+BLLZAiOQ9tuzPT59rRtZF5AJLBrg5NzBrwCzTPmbGd91EIjPGa9gLqD9G7STO8tJvJnbsujd4LrNuzuL8QUMhJRi6vJQBD7oZ6F8GjjV+hKOQyTRym+bXU+EMwaucfcaLDiph71LWST+l6XqpdlV+1ffuyv+nJakGs3ShukNcXCP/SRCJIRv7Kn/YSf4U7jbeJN3hsjV7b8j6KuuUMoM5bc+0q9Os154L5KAZtDnPNq9P+Jb0qU/S7Cr0Sx/WwZB+3jRIwXcM4Ik6xOlmFe6aYD56ZbuxkLVmIV1g3S7berSa91fVN6RhOLbLIVS8w9eUEzM9pXmMzzwOtOU0myvw7cWIELDHM/D5KlUnmpyPojUtiZKcbcXBS3DWJ4pZi9Gl8ZDyfy6Ncfx1Urh7aPwbupsG1sKe5RYXl9EjliY=
+    - secure: MB5EnFkYF/Ecp55wvKmsZnDWnVObxWt73ooVCewRXLb6bZgYNfWp/QzoEfZVyjRftk4djAryleuMu5iKufx/03XCYmg7H/Y4zt/fU0ud9ohLCf2XcmB/IJ52pL7Wq+PvaOU8tvg6WQoXV+kBzs5JuaDvbpzgGdz1YYOOz6NCVtXeXJxq/il5mjGaIBIX13cWrRvS0LXEnPvgf7w8dMZgADpcpKQWEMP6HwesxPTQd8ufnLHaEKU7siw0Osa5D1NG4hsZE4t3lKRVPTkv2yy7udhL9j8h2G2XYtsfl1d4FZw/WjXjEMUuez43CNQGuCKduGeuqjgJrS8kzj5GTsVW1LQI0mVfUYogaDtoovlPQBQfk92tgAt8PsY/NZLs0aCepjbvYWdQWx7rOaab7hjiXcbxU1ST002obS1g9ljGVB5MYdOT85JdlX+/oHDVWnFExSITBvjruYzn9YFDAJMnwtXY8bnWjKtgxBKPpF8xhMdcF9/aGXOOOoN8bT9RCD7gj28KVS/68O48Zhp73D2s1fTP4+GrDxRJnQ+Lbx7IxWbNzbVJ9IME5JHLoLhqk7yGOLY8qayPlSd8nk0igLjBxNxfzpQVmYEcGTammFbJ6WAsHwtw5woacrVpndRGBZETq+XWLIWrBbAL6ygJAPC9icb5QBeMgfEda8M6K3ybT7U=
+    - REPO=scottx611x/sigma
