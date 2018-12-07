@@ -11,12 +11,11 @@ RUN sudo apt-get update && apt-get install -y \
 COPY ./install.R /tmp/install.R
 RUN R -f /tmp/install.R
 
-# Copy SigMa app context to where rocker expects it to reside
-COPY . $APP_DIR
-
+WORKDIR $APP_DIR
 EXPOSE 3242
 
-WORKDIR $APP_DIR
+# Copy SigMa app context to where rocker expects it to reside
+COPY . $APP_DIR
 
 # Run runShiny.R script
 CMD ["sh", "-c", "R -f runShiny.R"]
