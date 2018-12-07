@@ -18,4 +18,4 @@ EXPOSE 3242
 COPY . $APP_DIR
 
 # Run runShiny.R script
-CMD ["sh", "-c", "R -f runShiny.R"]
+CMD ["R", "-e", "shiny::runApp('/srv/shinyapps/app/shiny/', 3242, host='0.0.0.0')"]
