@@ -10,7 +10,7 @@
 plot_tribase_dist <- function(df_snvs, file_name = "test.png", labely = "N SNVs", legend = T, 
                               text_size = 10, signame = ''){
 
-  
+
   typeref <- c(rep('C',48), rep('T',48))
   typealt <- c(rep('A',16), rep('G',16), rep('T',16), 
                rep('A',16), rep('C',16),rep('G',16))
