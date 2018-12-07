@@ -10,7 +10,7 @@ echo "$DOCKER_IMAGE_TAG"
 docker pull $REPO
 
 docker build -f docker-context/Dockerfile \
-             --cache-from $REPO \
+             --cache-from rocker/shiny:3.5.0,$REPO:latest \
              --tag image-$STAMP \
              .
 
