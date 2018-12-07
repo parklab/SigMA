@@ -17,8 +17,13 @@ write.table(genomes,
             col.names = T ,
             quote = F)
 
-message(paste0('96-dimensional matrix is saved in ', genome_file))
 
+message(paste0('96-dimensional matrix is saved in ', genome_file))
 message('Running SigMA')
-run(genome_file, data = "msk", do_assign = T, do_mva = T)
+
+run(genome_file, 
+    data = "msk", 
+    do_assign = T, 
+    do_mva = T, 
+    lite_format = T)
 

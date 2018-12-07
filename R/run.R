@@ -10,7 +10,8 @@
 #' case input file name is used and appended with "_output"
 #' @param data the options are "msk" (for a panel that is similar 
 #' size to MSK-Impact panel with 410 genes), "seqcap" (for whole  
-#' exome sequencing), or "wgs" (for whole genome sequencing)
+#' exome sequencing), "seqcap_probe" (64 Mb SeqCap EZ Probe v3),
+#' or "wgs" (for whole genome sequencing)
 #' @param tumor_type the options are "bladder", "bone_other" (Ewing's 
 #' sarcoma or Chordoma), "breast", "crc", "eso", "gbm", "lung", 
 #' "lymph", "medullo", "osteo", "ovary", "panc_ad", "panc_en",
@@ -23,6 +24,16 @@
 #' should be run
 #' @param check_msi is a boolean which determines whether the user
 #' wants to identify micro-sattelite instable tumors
+#' @param weight_cf determines whether the likelihood calculation
+#' will take into account the number of tumors in each cluster
+#' when it is F the clusters get equal weights and when it's T
+#' they are weighted according to the fraction of tumors in each
+#' cluster
+#' @param lite_format saves the output in a lite format when set
+#' to true
+#' @param add_sig3 should be set to T when the likelihood of 
+#' Signature 3 is calculated for tumor types for which Signature 3 
+#' was not discovered by NMF in their WGS data
 #'
 #' @examples
 #' run(genome_file = "input_genomes.csv", 
@@ -303,7 +314,7 @@ run <- function(genome_file,
     if(file.exists(output_file))
       message(paste0("SigMA output is in: ", output_file))
   }
-
+  
   return(output_file)
 
 }

@@ -1,7 +1,7 @@
 #' Generates a detailed plot per sample 
 #'
 #' @param file the csv file produced by SigMA
-#' @sample sample name to be plotted
+#' @param sample name to be plotted
 
 plot_detailed <- function(file = NULL, sample = NULL){
   text_size = 10
