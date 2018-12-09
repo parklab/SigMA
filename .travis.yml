@@ -10,8 +10,9 @@ before_script:
   - CONTAINER_ID=`docker ps --latest --format '{{ .ID }}'`
   
 script:
-  # Run test script inside of container
+  # Run test scripts inside of container
   - docker exec -it $CONTAINER_ID Rscript test.R
+  - docker exec -it $CONTAINER_ID Rscript test_maf.R
 
 after_success:
   - tag_push() { echo "Tagging into $2"; docker tag $1 $2; docker push $2; }
