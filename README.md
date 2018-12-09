@@ -1,4 +1,5 @@
-# SigMA
+# SigMA [![Build Status](https://travis-ci.org/parklab/SigMA.svg?branch=master)](https://travis-ci.org/parklab/SigMA)
+
 
 [http://compbio.med.harvard.edu/sigma/](http://compbio.med.harvard.edu/sigma/)
 
