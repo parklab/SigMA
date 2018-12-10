@@ -4,6 +4,7 @@
 
 plot_summary <- function(file = NULL){
   df <- read.csv(file)
+  
   # read SigMA settings from file name
   msk_string <- gsub(platform_names[['msk']],
                      pattern = ' ', replace = '')
@@ -54,9 +55,9 @@ plot_summary <- function(file = NULL){
     neg_tribase <- neg_tribase + ggplot2::theme(legend.position = "none")
   }
 
-
   # cosine density distribution
   colors_cos <- c(col_pos_neg[[2]], col_pos_neg[[1]])
+
   if(length(unique(df$pass_mva)) == 1){
     if(unique(df$pass_mva))
       colors_cos <- col_pos_neg[[2]]
@@ -64,6 +65,7 @@ plot_summary <- function(file = NULL){
       colors_cos <- col_pos_neg[[1]]
   }
 
+  
   cos_bin_width = 0.1
   cos_bins <- seq(0, 1, by = cos_bin_width)
   counts_cos_pos <- rep(0, length(cos_bins) - 1)
@@ -79,9 +81,19 @@ plot_summary <- function(file = NULL){
     bin_center[[ibin]] <- (cos_bins[[ibin]] + cos_bins[[ibin + 1]])/2
   }
 
-  df_cos <- rbind(data.frame( cos = bin_center, count = counts_cos_pos, group = 'Sig3+' ),
-                  data.frame( cos = bin_center, count = counts_cos_neg, group = 'Sig3-' ))
-
+  
+  if(sum(counts_cos_pos) > 0){
+    df_cos <- data.frame(cos = bin_center, count = counts_cos_pos, group = 'Sig3+')
+    if(sum(counts_cos_neg) > 0){
+      df_cos <- rbind(df_cos, data.frame( cos = bin_center, count = counts_cos_neg, group = 'Sig3-' ))
+    }
+  }
+  else if(sum(counts_cos_neg) > 0){
+    df_cos <- data.frame( cos = bin_center, count = counts_cos_neg, group = 'Sig3-' )
+  }
+  else{
+    stop('no samples')
+  }
 
   plot_cos <- ggplot2::ggplot(df_cos, ggplot2::aes(x = cos, y = count))
   plot_cos <- plot_cos + ggplot2::geom_bar(stat = 'identity', position = 'dodge', 
@@ -94,7 +106,6 @@ plot_summary <- function(file = NULL){
 
   plot_cos <- plot_cos + ggplot2::xlab('Cos simil of Sig3')
   plot_cos <- plot_cos + ggplot2::xlim(0, 1)
-
 
   # likelihood density distribution
   inds <- grep('_ml', colnames(df))
@@ -131,8 +142,18 @@ plot_summary <- function(file = NULL){
     bin_center[[ibin]] <- (ml_bins[[ibin]] + ml_bins[[ibin + 1]])/2
   }
 
-  df_ml_binned <- rbind(data.frame( ml = bin_center, count = counts_ml_pos, group = 'Sig3+' ),
-                  data.frame( ml = bin_center, count = counts_ml_neg, group = 'Sig3-' ))
+  if(sum(counts_ml_pos) > 0){
+    df_ml_binned <- data.frame(ml = bin_center, count = counts_ml_pos, group = 'Sig3+')
+    if(sum(counts_ml_neg) > 0){
+      df_ml_binned <- rbind(df_ml_binned, data.frame( ml = bin_center, count = counts_ml_neg, group = 'Sig3-' ))
+    }
+  }
+  else if(sum(counts_ml_neg) > 0){
+    df_ml_binned <- data.frame( ml = bin_center, count = counts_ml_neg, group = 'Sig3-' )
+  }
+  else{
+    stop('no samples')
+  }
 
   plot_ml <- ggplot2::ggplot(df_ml_binned, ggplot2::aes(x = ml, y = count))
   plot_ml <- plot_ml + ggplot2::geom_bar(stat = 'identity', position = 'dodge', 
@@ -161,14 +182,13 @@ plot_summary <- function(file = NULL){
   if(size_nchar > 20){
     df_ml$tumor_label <- paste0('tumor', 1:dim(df_ml)[[1]])
   }
-
+  
+  
   df_ml$group_fac <- df_ml$group
   df_ml <- transform(df_ml, group_fac = factor(group_fac, 
                                                levels = unique(df_ml$group)))
+  df_ml <- transform(df_ml, tumor_label = factor(tumor_label, levels = df_ml$tumor_label[order(df_ml$Signature_3_mva)]))
 
-
-  
-  df_ml <- transform(df_ml, tumor_label = factor(tumor_label, levels = df_ml$tumor[order(df_ml$Signature_3_mva)]))
   plot_score <- ggplot2::ggplot(df_ml, 
                                 ggplot2::aes(x = tumor_label, 
                                              y = Signature_3_mva))
@@ -217,62 +237,107 @@ plot_summary <- function(file = NULL){
     bin_center[[ibin]] <- (exp_bins[[ibin]] + exp_bins[[ibin + 1]])/2
   }
 
-  df_exp <- rbind(data.frame( exp = bin_center, count = counts_exp_pos, group = 'Sig3+' ),
-                  data.frame( exp = bin_center, count = counts_exp_neg, group = 'Sig3-' ))
+  if(sum(counts_exp_pos) > 0){
+    df_exp <- data.frame(exp = bin_center, count = counts_exp_pos, group = 'Sig3+')
+    if(sum(counts_exp_neg) > 0){
+      df_exp <- rbind(df_exp, data.frame( exp = bin_center, count = counts_exp_neg, group = 'Sig3-' ))
+    }
+  }
+  else if(sum(counts_exp_neg) > 0){
+    df_exp <- data.frame( exp = bin_center, count = counts_exp_neg, group = 'Sig3-' )
+  }
 
-
-  plot_exp <- ggplot2::ggplot(df_exp, ggplot2::aes(x = exp, y = count))
-  plot_exp <- plot_exp + ggplot2::geom_bar(stat = 'identity', position = 'dodge',
-                                           ggplot2::aes(fill = group))
-
-  plot_exp <- plot_exp + ggplot2::scale_fill_manual(values = colors_exp)
-  plot_exp <- plot_exp + theme_def + ggplot2::theme(axis.title.x = ggplot2::element_text(size = text_size),
-                                                    axis.title.y = ggplot2::element_text(size = text_size),
-                                                    axis.text.x = ggplot2::element_text(size = text_size),
-                                                    axis.text.y = ggplot2::element_text(size = text_size))
-  plot_exp <- plot_exp + ggplot2::xlab('Sig3 exposure')
-  plot_exp <- plot_exp + ggplot2::xlim(0, max(df$exp_sig3))
+  if(sum(counts_exp_pos) > 0 | sum(counts_exp_neg) > 0){
+    plot_exp <- ggplot2::ggplot(df_exp, ggplot2::aes(x = exp, y = count))
+    plot_exp <- plot_exp + ggplot2::geom_bar(stat = 'identity', position = 'dodge',
+                                             ggplot2::aes(fill = group))
+    plot_exp <- plot_exp + ggplot2::scale_fill_manual(values = colors_exp)
+    plot_exp <- plot_exp + theme_def + ggplot2::theme(axis.title.x = ggplot2::element_text(size = text_size),
+                                                      axis.title.y = ggplot2::element_text(size = text_size),
+                                                      axis.text.x = ggplot2::element_text(size = text_size),
+                                                      axis.text.y = ggplot2::element_text(size = text_size))
+    plot_exp <- plot_exp + ggplot2::xlab('Sig3 exposure')
+    plot_exp <- plot_exp + ggplot2::xlim(0, max(df$exp_sig3))
+  }
 
   # combined plot
-
   pdf('summary_short_sig3.pdf', width = 1.2*9.8/2.4, 7)
   if(sum(df$pass_mva) > 0 & sum(!df$pass_mva > 0)){
-    lay <- rbind(c(6, 6, 6),
-                 c(3, 4, 5),
-                 c(1, 1, 1),
-                 c(2, 2, 2))
-     
+    if(sum(counts_exp_pos) > 0 | sum(counts_exp_neg) > 0){
+      lay <- rbind(c(6, 6, 6),
+                   c(3, 4, 5),
+                   c(1, 1, 1),
+                   c(2, 2, 2))
    
-    plot_arr <- gridExtra::grid.arrange(pos_tribase,
-                                   neg_tribase,
-                                   plot_cos,
-                                   plot_ml,
-                                   plot_exp,
-                                   plot_score,
-                                   layout_matrix = lay, 
-                                   heights = c(1.5, 0.8, 1.1, 0.85))
+      plot_arr <- gridExtra::grid.arrange(pos_tribase,
+                                     neg_tribase,
+                                     plot_cos,
+                                     plot_ml,
+                                     plot_exp,
+                                     plot_score,
+                                     layout_matrix = lay, 
+                                     heights = c(1.5, 0.8, 1.1, 0.85))
+    }else{
+      lay <- rbind(c(5, 5),
+                   c(3, 4),
+                   c(1, 1),
+                   c(2, 2))
+   
+      plot_arr <- gridExtra::grid.arrange(pos_tribase,
+                                     neg_tribase,
+                                     plot_cos,
+                                     plot_ml,
+                                     plot_score,
+                                     layout_matrix = lay, 
+                                     heights = c(1.5, 0.8, 1.1, 0.85))
+    }
   }else if(sum(df$pass_mva) > 0 & sum(!df$pass_mva == 0)){
-    lay <- rbind(c(5, 5, 5),
-                 c(2, 3, 4),
-                 c(1, 1, 1))
-    plot_arr <- gridExtra::grid.arrange(pos_tribase,
-                                   plot_cos,
-                                   plot_ml,
-                                   plot_exp,
-                                   plot_score,
-                                   layout_matrix = lay, 
-                                   heights = c(1.5, 0.8, 1.1, 0.85))
+    if(sum(counts_exp_pos) > 0 | sum(counts_exp_neg) > 0){
+      lay <- rbind(c(5, 5, 5),
+                   c(2, 3, 4),
+                   c(1, 1, 1))
+      plot_arr <- gridExtra::grid.arrange(pos_tribase,
+                                     plot_cos,
+                                     plot_ml,
+                                     plot_exp,
+                                     plot_score,
+                                     layout_matrix = lay, 
+                                     heights = c(1.5, 0.8, 1.1, 0.85))
+    }else{
+      lay <- rbind(c(4, 4),
+                   c(2, 3),
+                   c(1, 1))
+      plot_arr <- gridExtra::grid.arrange(pos_tribase,
+                                     plot_cos,
+                                     plot_ml,
+                                     plot_score,
+                                     layout_matrix = lay, 
+                                     heights = c(1.5, 0.8, 1.1, 0.85))
+    }
   }else if(sum(df$pass_mva) == 0 & sum(!df$pass_mva > 0)){
-    lay <- rbind(c(5, 5, 5),
-                 c(2, 3, 4),
-                 c(1, 1, 1))
-    plot_arr <- gridExtra::grid.arrange(neg_tribase,
-                                   plot_cos,
-                                   plot_ml,
-                                   plot_exp,
-                                   plot_score,
-                                   layout_matrix = lay, 
-                                   heights = c(1.5, 0.8, 1.1, 0.85))
+    if(sum(counts_exp_pos) > 0 | sum(counts_exp_neg) > 0){
+      lay <- rbind(c(5, 5, 5),
+                   c(2, 3, 4),
+                   c(1, 1, 1))
+      plot_arr <- gridExtra::grid.arrange(neg_tribase,
+                                     plot_cos,
+                                     plot_ml,
+                                     plot_exp,
+                                     plot_score,
+                                     layout_matrix = lay, 
+                                     heights = c(1.5, 0.8, 1.1, 0.85))
+    }
+    else{
+      lay <- rbind(c(4, 4),
+                   c(2, 3),
+                   c(1, 1))
+      plot_arr <- gridExtra::grid.arrange(neg_tribase,
+                                     plot_cos,
+                                     plot_ml,
+                                     plot_score,
+                                     layout_matrix = lay, 
+                                     heights = c(1.5, 0.8, 1.1, 0.85))
+    }
   }
 
   dev.off()                      

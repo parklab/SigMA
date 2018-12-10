@@ -40,8 +40,14 @@ make_matrix <- function(directory,
                         pos_colname = NULL, 
                         ref_colname = NULL, 
                         alt_colname = NULL){
-  file_list <- list.files(directory)
-  file_list <- paste0(directory, '/', file_list)
+
+  if(!is.list(directory)){ 
+    file_list <- directory
+  }
+  else{
+    file_list <- list.files(directory)
+    file_list <- paste0(directory, '/', file_list)
+  }
 
   if(length(file_list) == 1) file_list <- directory
 

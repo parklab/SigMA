@@ -15,21 +15,70 @@ server <- function(input, output, session){
 
   file_memory <- reactiveValues(
     name = '')
+
     
   # run SigMA
   output_file <- eventReactive(input$do_run,{
     if(recalculate$val){
-      session$sendCustomMessage(type = 'launch-modal', "modal_inprogress") # launch the modal
       if(!is.null(input$directory1)){
         directory <- input$directory1$datapath
       }
       else if(!is.null(input$directory2)){ # & input$directory2 != ''){
-        if(sum(grepl('0.vcf', input$directory2$datapath[[1]])) > 0)
-          directory <- gsub(input$directory2$datapath[[1]], pattern = '0.vcf', replace = "")
+        if(sum(grepl('maf', input$directory2$datapath[[1]])) != length(input$directory2$datapath) & sum(grepl('vcf', input$directory2$datapath)) != length(input$directory2$datapath)){
+          error_message <- 'input directory/file can only consist of only maf or vcf files'
+          showNotification(error_message, type = 'error',
+                          action = a(href = "javascript:location.reload();", "Reload page"), duration = NULL)
+          return('')
+        }
+        else if(sum(grepl('0.vcf', input$directory2$datapath[[1]])) > 0){
+          directory <- input$directory2$datapath
+        }
+        else if(sum(grepl('0.maf', input$directory2$datapath[[1]])) > 0){
+          directory <- input$directory2$datapath
+        }
+        else{ 
+          error_message <- 'input directory is invalid'
+          showNotification(error_message, type = 'error',
+                          action = a(href = "javascript:location.reload();", "Reload page"), duration = NULL)
+          return('')
+        }
       }
       else{
-        stop('input directory/file is not valid') 
+        error_message <- 'input directory/file is not valid'
+        showNotification(error_message, type = 'error',
+                         action = a(href = "javascript:location.reload();", "Reload page"), duration = NULL)
+
+        return('')
       }
+
+      # check whether file format is maf or vcf
+      check_input <- function(file){
+        if(input$file_type == "maf"){
+          header <- readLines(file, n = 1)
+          if(!(grepl('Reference_Allele', header) & grepl('Tumor_Seq_Allele1|Tumor_Seq_Allele2', header) & grepl('Start_position|Start_Position', header) & grepl('End_position|End_Position', header) & grepl('Chromosome', header))){
+            error_message <- 'Not a maf file'
+            showNotification(error_message, type = 'error',
+                             action = a(href = "javascript:location.reload();", "Reload page"), duration = NULL)
+            return(F)
+          }else
+            return(T)
+        }
+        if(input$file_type == "vcf"){
+          if(sum(grepl('#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO', readLines(file, n = 500))) == 0){ 
+            error_message <- 'Not a vcf file'
+            showNotification(error_message, type = 'error',
+                             action = a(href = "javascript:location.reload();", "Reload page"), duration = NULL)
+            return(F)
+          }else
+            return(T)
+        }
+      }
+
+      for(file in directory){
+        if(!check_input(file)) return('')
+      }
+
+      session$sendCustomMessage(type = 'launch-modal', "modal_inprogress") # launch the modal      
       genomes_matrix <- make_matrix(directory = directory, 
                                     file_type = input$file_type)
       genomes <- conv_snv_matrix_to_df(genomes_matrix)
@@ -66,8 +115,7 @@ server <- function(input, output, session){
       return(file_memory$name)
     }
   })
-
- 
+  
   recalculate <- reactiveValues(val = T)
 
   output$save_file <- downloadHandler(
@@ -89,7 +137,7 @@ server <- function(input, output, session){
 
   # make summary figure
   plot <- reactive({
-    return(myplot(plot_summary(output_file())))
+      return(myplot(plot_summary(output_file())))
   })
   
   output$plot2 <- renderPlot({
@@ -174,11 +222,11 @@ server <- function(input, output, session){
                              margin-top:15px;
                              margin-bottom:15px;",
              
-          column(7, style = "background-color: #eaf1fc",
+          column(5, style = "background-color: #eaf1fc",
             h4("Click to see sample-specific information"),
             dataTableOutput("sorted_samples") %>% withSpinner(color="#dee9fc")
           ),
-          column(5, h4("Summary") ,
+          column(7, h4("Summary") ,
             downloadButton("save_file", "Save data file"),
             plotOutput("plot2", width = "90%", height = "750px") %>% withSpinner(color="#dee9fc")
           )
