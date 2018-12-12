@@ -32,8 +32,9 @@
 #'             nstrand = 2)
 
 make_matrix <- function(directory, 
-                        file_type = 'vcf',
-                        ref_genome = BSgenome.Hsapiens.UCSC.hg19::BSgenome.Hsapiens.UCSC.hg19, 
+                        file_type = 'vcf', 
+                        is_list = F,
+                        ref_genome = BSgenome.Hsapiens.UCSC.hg19::BSgenome.Hsapiens.UCSC.hg19,
                         ncontext = 3, 
                         nstrand = 1, 
                         chrom_colname = NULL, 
@@ -41,7 +42,7 @@ make_matrix <- function(directory,
                         ref_colname = NULL, 
                         alt_colname = NULL){
 
-  if(!is.list(directory)){ 
+  if(is_list){ 
     file_list <- directory
   }
   else{
