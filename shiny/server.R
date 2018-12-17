@@ -12,7 +12,21 @@ print.myplot <- function(x, ...) {
 }
 
 server <- function(input, output, session){
+  urlMAF <- a("test MAF file", href = "https://github.com/parklab/SigMA/blob/master/test_mutations_50sample.maf")
+  urlVCF <- a("test VCF directory", href = "https://github.com/parklab/SigMA/tree/master/inst/extdata/")
+  urlVCFinfo <- a("VCF", href = "https://docs.gdc.cancer.gov/Data/File_Formats/VCF_Format/")
+  urlMAFinfo <- a("MAF", href = "https://docs.gdc.cancer.gov/Data/File_Formats/MAF_Format/")
 
+  output$testFilesLink <- renderUI({
+    tagList("To test SigMA you can download example datasets from the GitHub respository (", urlMAF, "or ", urlVCF, ").")
+  })
+  output$fileFormatInfo <- renderUI({
+    tagList("You can upload your data as a single", 
+            urlMAFinfo, 
+            "file or by selecting a directory with multiple",  
+            urlMAFinfo, " or", urlVCFinfo, " files.")
+  })
+  
   file_memory <- reactiveValues(
     name = '')
 

@@ -30,32 +30,30 @@ ui <- fluidPage(
       tabPanel(style = "background-color:#eaf1fc",
         "Home",
         fluidRow(
-          column(6, style = "background-color:#eaf1fc;
+          column(8, align = 'center', style = "background-color:#eaf1fc;
                              padding:30px;margin-top:
-                             0px;margin-bottom:0px;",
+                             10px;margin-bottom:10px;",
                  tags$div(tags$h3('Description of the algorithm'),
+                          tags$br(),
                           tags$p('SigMA (Signature Multivariate Analysis): We developed SigMA to detect mutational signatures from the SNV calls of whole-genome, exome or targeted gene panel data. A detailed description of the algorithm and its performance is provided in the related manuscript.'),
-                          tags$p('In brief, SigMA consists of 5 main steps. First, mutational signatures in WGS data are discovered using NMF. Second, the tumor subtypes based on their signature composition are determined with clustering, and used as a reference for panels. Third, we simulate cancer-gene panels and exomes from the WGS data. In our simulations, the labels (whether a tumor is true Signature 3-positive or -negative) are known based on the signature analysis in WGS data. In the fourth step, the likelihood measure, cosine similarity and exposure of Signature 3 with NNLS are calculated for simulated panels, exomes and WGS data. Finally, we train Gradient Boosting Classifiers (GBCs) specific for each tumor type, and sequencing platform, using the features from step 4. The GBCs yield a final combined score. We determine the thresholds on SigMA score, which corresponds to small false positive rates, using the simulated data and the true labels from the WGS analysis. The thresholds depend on tumor type and on the platform.'))),
-              column(6, style = "background-color:#eaf1fc;
-                                  padding:30px;margin-top:
-                                  0px;margin-bottom:0px;",
-                         tags$div(style = "display: inline-block;
-                                          vertical-align:top;
-                                          width: 150px;
-                                          margin-left:15px;",
-                                  img(height = 400, height = 374, src = 'workflow.png')))
-        ),
-        fluidRow(
-          column(10, style = "background-color:#eaf1fc;
+                          tags$p('In brief, SigMA consists of 5 main steps. First, mutational signatures in WGS data are discovered using NMF. Second, the tumor subtypes based on their signature composition are determined with clustering, and used as a reference for panels. Third, we simulate cancer-gene panels and exomes from the WGS data. In our simulations, the labels (whether a tumor is true Signature 3-positive or -negative) are known based on the signature analysis in WGS data. In the fourth step, the likelihood measure, cosine similarity and exposure of Signature 3 with NNLS are calculated for simulated panels, exomes and WGS data. Finally, we train Gradient Boosting Classifiers (GBCs) specific for each tumor type, and sequencing platform, using the features from step 4. The GBCs yield a final combined score. We determine the thresholds on SigMA score, which corresponds to small false positive rates, using the simulated data and the true labels from the WGS analysis. The thresholds depend on tumor type and on the platform.')),
+                         tags$br(),
+                         img(height = 1.5*373.973, width = 1.5*366.396 , src = 'workflow.png')
+          ),
+          column(4, align = "center", style = "background-color:#eaf1fc;
                              padding:30px;margin-top:
-                             0px;margin-bottom:0px;",
-                  h3('Instructions for use'),
-                  tags$div(style = "display: inline-block;
-                                    vertical-align:top;
-                                    width: 150px;
-                                    margin-left:15px;",
-                           img(height = 300, height = 124, src = 'howtorun.png'))
-          )
+                             10px;margin-bottom:10px;",
+                 h3('Instructions for use'),
+                 tags$div(style = "display: inline-block;
+                                   vertical-align:top;",
+                         img(height = 3.5*189.513, width = 3.5*85.756, src = 'howtorun.png'),
+                         tags$br(),
+                         tags$br(),
+                         tags$p('Go to the "Get Started" tab. Browse and select a file or directory as described on the figure to upload your data.'), 
+                         uiOutput("fileFormatInfo"),
+                         uiOutput("testFilesLink")
+                         )
+                )
         )
       ),
       tabPanel(style = "background-color:#eaf1fc",
