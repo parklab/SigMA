@@ -1,6 +1,8 @@
 library('DT')
 library(shinycssloaders)
 
+devtools::load_all(path = "../R")
+
 myplot <- function(x) {
   plot <- gridExtra::arrangeGrob(x)
   class(plot) <- c("myplot", class(plot))
