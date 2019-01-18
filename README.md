@@ -7,8 +7,7 @@
 2. [ Manual ](#man)
 3. [ Functionalities ](#func)
 4. [ Quick start ](#quick)
-5. [ Quick start shiny ](#shiny)
-6. [ Input/Output file format ](#input)
+5. [ Input/Output file format ](#input)
 6. [ Tumor type tags ](#tissue)
 
 <a name="desc"></a>
@@ -57,20 +56,8 @@ More details on the optional settings can be found in the User's Manual
 
 <a name="shiny"></a>
 
-### 5. Quick start shiny 
-`git clone https://github.com/parklab/SigMA`
 
-`cd SigMA`
-
-`git checkout shiny`
-
-`Rscript install.R`
-
-`Rscript runShiny.R`
-
-<a name="input"></a>
-
-### 6. Input/Output file format
+### 5. Input/Output file format
 
 #### Input 
 
@@ -92,7 +79,7 @@ or by setting `lite_format = T` in the settings of `run()`.
 
 <a name="tissue"></a>
 
-### 7. Tumor type tags
+### 6. Tumor type tags
 
 Tags and descriptions of performance of SigMA for signature 3 detection. The exploratory tumor types should be used with `do_mva = F` and `do_assign = F` settings for the `run()` function.
  
