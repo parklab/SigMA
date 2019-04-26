@@ -1,5 +1,6 @@
 # SigMA [![Build Status](https://travis-ci.org/parklab/SigMA.svg?branch=master)](https://travis-ci.org/parklab/SigMA)
 
+DISCLAMER: A provisional patent application has been filed for this framework.
 
 [http://compbio.med.harvard.edu/sigma/](http://compbio.med.harvard.edu/sigma/)
 
