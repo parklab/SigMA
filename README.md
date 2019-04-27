@@ -1,5 +1,7 @@
 # SigMA [![Build Status](https://travis-ci.org/parklab/SigMA.svg?branch=master)](https://travis-ci.org/parklab/SigMA)
 
+Copyright (c) 2019 - President and Fellows of Harvard College. All rights reserved.
+
 [http://compbio.med.harvard.edu/sigma/](http://compbio.med.harvard.edu/sigma/)
 
 1. [ Description ](#desc)
