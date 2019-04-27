@@ -4,28 +4,42 @@ Copyright (c) 2019 - President and Fellows of Harvard College. All rights reserv
 
 [http://compbio.med.harvard.edu/sigma/](http://compbio.med.harvard.edu/sigma/)
 
-1. [ Description ](#desc)
-2. [ Manual ](#man)
-3. [ Functionalities ](#func)
-4. [ Quick start ](#quick)
-5. [ Input/Output file format ](#input)
-6. [ Tumor type tags ](#tissue)
+1. [ Contact ](#contact)
+2. [ Description ](#desc)
+3. [ Manual ](#man)
+4. [ Functionalities ](#func)
+5. [ Quick start ](#quick)
+6. [ Input/Output file format ](#input)
+7. [ Tumor type tags ](#tissue)
+
+<a name="contact"></a>
+
+### 1. Contact
+Requests for use of the Software for or on behalf of for-profit entities or for any commercial purposes, please contact:
+
+Office of Technology Development  
+Harvard University  
+Smith Campus Center, Suite 727E  
+1350 Massachusetts Avenue  
+Cambridge, MA 02138 USA  
+Telephone: (617) 495-3067  
+E-mail: otd@harvard.edu  
 
 <a name="desc"></a>
 
-### 1. Description
+### 2. Description
 
 SigMA is a signature analysis tool optimized to detect the mutational signature associated to HR defect, Signature 3, from hybrid capture panels, exomes and whole genome sequencing. For panels with low SNV counts, conventional signature analysis tools do not perform well while the novel approach of SigMA allows it to detect Signature 3-positive tumors with 74% sensitivity at 10% false positive rate. One novelty of SigMA is a likelihood based matching: We associate a new patient's mutational spectrum to subtypes of tumors according to their signature composition. The subtypes of tumors are defined using the WGS data from ICGC and TCGA consortia, by a clustering of signature fractions with hierarchical clustering. The likelihood of the sample to belong to each tumor subtype is calculated, and the likelihood of Signature 3 is the sum of the likelihoods of all Signature 3-positive tumor subtypes. The second novel step is the multivariate analysis with gradient boosting machines, which allows us to obtain a final score for presence of Signature-3 combining likelihood with cosine similarity and exposure of Signature 3 obtained with non-negativel-least-squares (NNLS) algorithm. The multivariate analysis allows us to automatically handle different sequencing platforms. For different platforms different methods for signature analysis become more efficient, e.g. for WGS data it is not necessary to associate the tumor to a subtype of tumors, because it is possible to determine Signature 3 with NNLS acurately. We have a new feature also for these cases and we calculate the likelihood of NNLS decomposition to be unique. This likelihood value was found to be the most influential feature in the multivariate analysis.
 
 <a name="man"></a>
 
-### 2. Manual
+### 3. Manual
 
 [ manual_sigma.pdf ](manual_sigma.pdf)
 
 <a name="func"></a>
 
-### 3. Functionalities:
+### 4. Functionalities:
 
 * Optional input format for mutation data vcf, maf, or directly a 96-dimensional matrix
 * If vcf or maf files are provided it constructs the 96-dimensional SNV matrix with trinucleotide context
@@ -40,7 +54,7 @@ SigMA is a signature analysis tool optimized to detect the mutational signature 
 
 <a name="quick"></a>
 
-### 4. Quick start 
+### 5. Quick start 
 `git clone https://github.com/parklab/SigMA`
 
 `cd SigMA`
@@ -58,7 +72,7 @@ More details on the optional settings can be found in the User's Manual
 <a name="shiny"></a>
 
 
-### 5. Input/Output file format
+### 6. Input/Output file format
 
 #### Input 
 
@@ -80,7 +94,7 @@ or by setting `lite_format = T` in the settings of `run()`.
 
 <a name="tissue"></a>
 
-### 6. Tumor type tags
+### 7. Tumor type tags
 
 Tags and descriptions of performance of SigMA for signature 3 detection. The exploratory tumor types should be used with `do_mva = F` and `do_assign = F` settings for the `run()` function.
  
