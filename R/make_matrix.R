@@ -50,7 +50,7 @@ make_matrix <- function(directory,
     file_list <- paste0(directory, '/', file_list)
   }
 
-  if(length(file_list) == 1) file_list <- directory
+  if(length(file_list) == 1 & file_type == 'maf') file_list <- directory
 
   if(file_type == "vcf") .make_matrix_from_vcf_list(file_list,  
                                                     ref_genome, 
@@ -202,8 +202,20 @@ conv_snv_matrix_to_df <- function(genomes_matrix){
   seq_start <- GenomicRanges::start(gr_context)
   seq_end <- GenomicRanges::end(gr_context)
   
-  chrom_nums <- paste0('chr',as.vector(GenomicRanges::seqnames(gr_context)))
-  
+  if(!grepl('chr', as.vector(GenomicRanges::seqnames(gr_context)))[[1]]){
+    chrom_nums <- paste0('chr', as.vector(GenomicRanges::seqnames(gr_context)))
+  }else{
+    chrom_nums <- as.vector(GenomicRanges::seqnames(gr_context))
+  }
+
+  if(sum(grepl('MT', chrom_nums)) > 0){ 
+    seq_start <- seq_start[!grepl('MT', chrom_nums)]
+    seq_end <- seq_end[!grepl('MT', chrom_nums)]
+    ref_vector <- ref_vector[!grepl('MT', chrom_nums)]
+    alt_vector <- alt_vector[!grepl('MT', chrom_nums)]
+    chrom_nums <- chrom_nums[!grepl('MT', chrom_nums)]
+  }
+
   context_seq <- VariantAnnotation::getSeq(ref_genome, 
                         names = chrom_nums, 
                         start = seq_start, 
@@ -227,6 +239,7 @@ conv_snv_matrix_to_df <- function(genomes_matrix){
                                   nstrand = 1){
   #get vcf obj using genomic ranges
   vcf <- VariantAnnotation::readVcf(vcf_file)
+ 
   if(dim(vcf)[[1]] == 0)
     return(rep(0, length(types)))
 

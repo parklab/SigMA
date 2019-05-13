@@ -73,7 +73,6 @@ match_to_catalog <- function(genomes, signatures, data, cluster_fractions = NULL
       # calculate likelihood and similarity of the combination
       probs_comb_all <- calc_llh(x, comb_all/sum(comb_all), normalize = F)$probs
       cos_simil_comb_all <- calc_cos(x, comb_all/sum(comb_all))$simils
-      
       probs_comb_without <- rep(0, nsig)
       cos_simil_without <- rep(0, nsig)
       prob_rats <- rep(0, nsig)
