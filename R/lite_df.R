@@ -30,6 +30,7 @@ lite_df <- function(merged_output){
   col_sig3_mva <- na.omit(match('Signature_3_mva', all_cols))
   col_pass_mva <- na.omit(match('pass_mva', all_cols))
   col_pass_mva_strict <- na.omit(match('pass_mva_strict', all_cols))
+  col_pass_ml <- na.omit(match('pass_ml', all_cols))
 
   # nnls results
   col_sigs_all <- na.omit(match('sigs_all', all_cols))
@@ -43,7 +44,7 @@ lite_df <- function(merged_output){
                  col_pass_mva_strict,
                  col_sigs_all,
                  col_exps_all)
-
+  if(sum(colnames(lite) == "pass_mva") == 0) inds_keep <- c(inds_keep, col_pass_ml)
 
   sum_cols <- function(col_indices){
     return(unlist(apply(merged_output, 1,
@@ -117,6 +118,44 @@ lite_df <- function(merged_output){
             categs[[i]] <- 'Signature_3_hc'
           else if(lite$pass_mva[[i]])
             categs[[i]] <- 'Signature_3_lc'
+          else{
+            cols_ml_this <- cols_ml[cols_ml != 'Signature_3_ml' & cols_ml != 'Signature_msi_ml' & cols_ml != 'Signature_pole_ml']
+            ind_max <- which(max(lite[i, cols_ml_this]) == lite[i,])
+            categs[[i]] <- gsub(paste0(colnames(lite)[ind_max], collapse = ':'),
+                              pattern = '_ml',
+                              replace = '')
+        
+          }
+        }
+      }
+      lite$categ <- categs
+    }
+  }
+  else if(sum(colnames(lite) == "pass_ml") > 0){
+    categs <- rep('', dim(lite)[[1]])
+    if(exists('cols_ml')){
+      if(sum(grepl('msi_ml', colnames(lite))) > 0){
+        for(i in seq_len(dim(lite)[[1]])){
+          if(lite$Signature_msi_ml[[i]] >= 0.95 & lite$total_snvs[[i]] > 10)
+            categs[[i]] <- 'Signature_msi'
+          else if(lite$Signature_pole_ml[[i]] > 0.9999)
+            categs[[i]] <- 'Signature_pole'
+          else if(lite$pass_ml[[i]]) 
+            categs[[i]] <- 'Signature_3 (No MVA)'
+          else{
+            cols_ml_this <- cols_ml[cols_ml != 'Signature_3_ml' & cols_ml != 'Signature_msi_ml' & cols_ml != 'Signature_pole_ml']
+            ind_max <- which(max(lite[i, cols_ml_this]) == lite[i,])
+            categs[[i]] <- gsub(paste0(colnames(lite)[ind_max], collapse = ':'),
+                              pattern = '_ml',
+                              replace = '')
+        
+          }
+        }
+     }
+     else{
+       for(i in seq_len(dim(lite)[[1]])){
+          if(lite$pass_ml[[i]])
+            categs[[i]] <- 'Signature_3 (No MVA)'
           else{
             cols_ml_this <- cols_ml[cols_ml != 'Signature_3_ml' & cols_ml != 'Signature_msi_ml' & cols_ml != 'Signature_pole_ml']
             ind_max <- which(max(lite[i, cols_ml_this]) == lite[i,])
