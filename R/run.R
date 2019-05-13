@@ -56,7 +56,7 @@ run <- function(genome_file,
 
   # give a warning if weight_cf is TRUE but the sequencing platform
   # is not a panel
-  if(data != 'msk') weight_cf = T
+  if((data == 'seqcap' | data == "seqcap_probe") & do_assign & do_mva) weight_cf = T
   
   # if a custom output file is not defined 
   # use the input file name
@@ -71,9 +71,29 @@ run <- function(genome_file,
                                             "_cf", as.integer(weight_cf),
                                             ".csv"))
 
-  if((tumor_type == "medullo" | tumor_type == "bone_other") & data == "msk")
-    stop('tumor_type medullo and bone_other cannot be used msk data setting
-          use seqcap or wgs data options instead')
+  # There are trained MVA models for tumor_type "eso", "osteo", "ovary",
+  # "panc_ad", "panc_en", "prost", "stomach", "uterus", "breast", "bladder" 
+  # for other tumor types do_mva should be FALSE
+  # Signature 3 likelihood and all other variables can still be calculated 
+  # by setting add_sig3 = T
+  if(data == "msk" & do_mva & sum(tumor_type == names(gbms_msk)) == 0){
+    stop('No built-in MVA models for the tumor_type selected for
+          targetted gene panels for "medullo" or "bone_other" whole
+          exome sequencing is available for others set do_mva to FALSE')
+  }
+  if(data == "seqcap" & do_mva & sum(tumor_type == names(gbms_exome)) == 0){
+    stop('No built-in MVA models for the tumor_type selected for whole
+          exome sequencing set do_mva to FALSE')
+  }
+  if(data == "seqcap_probe" & do_mva & sum(tumor_type == names(gbms_seqcap_probe)) == 0){
+    stop('No built-in MVA models for the tumor_type selected for whole
+          exome sequencing set do_mva to FALSE')
+  }
+
+  if(!add_sig3 & do_assign & sum(grepl('Signature_3', signames_per_tissue[tumor_type])) == 0){
+     add_sig3 <- T
+  }
+  
 
   genomes <- read.csv(genome_file)
 
@@ -111,7 +131,7 @@ run <- function(genome_file,
   methods <- c("median_catalog", "cosine_simil", "decompose")
 
   # signature catalogs to be used for each method
-  sig_catalogs <- c("average", "cosmic", "cosmic_tissue")
+  sig_catalogs <- c("average", "cosmic_tissue", "cosmic_tissue")
 
   # first the samples are assumed to be mss and later msi 
   # calculations are done
@@ -265,7 +285,7 @@ run <- function(genome_file,
                               weight_cf)
       }
     }
-    
+
     # calculates the pass/fail boolean from MVA score or likelihood
 
     if(do_assign & 

@@ -15,7 +15,7 @@
 #' @param data sequencing platform that as in run(), used for setting
 #' the maximum number of signatures that is allowed in the decomposition
 
-decompose <- function(spect, signatures, data){
+decompose <- function(spect, signatures, data, nloop_user = NULL){
 
   # calculates frobenius error
   error <- function(spect, signatures, exposures){
@@ -37,18 +37,23 @@ decompose <- function(spect, signatures, data){
                 error = error))
   }
 
-  min_error <- 1
+  min_error <- 1000000
   min_indices <- NULL
   min_exposures <- NULL
 
-  nloop <- min(dim(signatures)[[2]], 6)
-  # increasing nloop to too large values causes overfitting
-  # maximum 5 signatures are considered for panels and WES
-  if(data == "msk" | data == "found" | data == "seqcap")
-    nloop <- min(nloop, 5)
+  if(!is.null(nloop_user)) nloop <- min(dim(signatures)[[2]], nloop_user)
+  else{
+    nloop <- min(dim(signatures)[[2]], 6)
+    # increasing nloop to too large values causes overfitting
+    # maximum 5 signatures are considered for panels and WES
+    if(data == "msk" | data == "found" | data == "seqcap")
+      nloop <- min(nloop, 5)
+  }
 
   if(nloop < 2)
     stop('linear decomposition requires at least 2 signatures')
+
+
   for(i in 1:(dim2 - nloop + 1)){
     for(j in (i+1):(dim2 - nloop + 2)){
       if(nloop >= 3){
