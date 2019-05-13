@@ -97,8 +97,9 @@ ui <- fluidPage(
             ),
             checkboxGroupInput("other_settings", "Options:",
                                choiceNames = c("Check for microsattelite instability",
+                                               "Run without MVA",
                                                "Lite data format"),
-                               choiceValues = c("check_msi", "lite_format")),
+                               choiceValues = c("check_msi", "without_mva", "lite_format")),
             actionButton("do_run", "Run")
           ),
           align = "center"
