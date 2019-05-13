@@ -71,8 +71,8 @@ server <- function(input, output, session){
       check_input <- function(file){
         if(input$file_type == "maf"){
           header <- readLines(file, n = 1)
-          if(!(grepl('Reference_Allele', header) & grepl('Tumor_Seq_Allele1|Tumor_Seq_Allele2', header) & grepl('Start_position|Start_Position', header) & grepl('End_position|End_Position', header) & grepl('Chromosome', header))){
-            error_message <- 'Not a maf file'
+          if(sum(grepl('Reference_Allele', header) & grepl('Tumor_Seq_Allele1|Tumor_Seq_Allele2', header) & grepl('Start_position|Start_Position', header) & grepl('End_position|End_Position', header) & grepl('Chromosome', header) & grepl('Position', header)) == 0){
+            error_message <- 'Reference_Allele, Tumor_Seq_Allele1/2, Start_Position, End_Position, Chromosome and Position columns are required'
             showNotification(error_message, type = 'error',
                              action = a(href = "javascript:location.reload();", "Reload page"), duration = NULL)
             return(F)
@@ -108,20 +108,44 @@ server <- function(input, output, session){
               quote = F)
       ind <- which(as.character(tissue_names) == input$tumor_type)
       tumor_type = names(tissue_names)[[ind]]
-    
+
+  
       ind <- which(as.character(platform_names) == input$data)
       data = names(platform_names)[[ind]]
     
       check_msi <- F
       lite_format <- F
+      do_mva <- T
       if(sum(grepl('check_msi', input$other_settings)) > 0){
         check_msi <- T
+      }
+      if(sum(grepl('without_mva', input$other_settings)) > 0){
+        do_mva <- F
+      }
+     
+      if(data == "msk" & sum(tumor_type == names(gbms_msk)) == 0 & do_mva){
+        error_message <- 'No MVA model for this tumor type for targetted gene panels select Without MVA option'
+        showNotification(error_message, type = 'error',
+                         action = a(href = "javascript:location.reload();", "Reload page"), duration = NULL)
+        return(F)
+      }
+      if(data == "seqcap" & sum(tumor_type == names(gbms_exome)) == 0 & do_mva){
+        error_message <- 'No MVA model for this tumor type for whole exome sequencing select Without MVA option'
+        showNotification(error_message, type = 'error',
+                         action = a(href = "javascript:location.reload();", "Reload page"), duration = NULL)
+        return(F)
+      }
+      if(data == "seqcap_probe" & sum(tumor_type == names(gbms_seqcap_probe)) == 0 & do_mva){
+        error_message <- 'No MVA model for this tumor type for whole exome sequencing select Without MVA option'
+        showNotification(error_message, type = 'error',
+                         action = a(href = "javascript:location.reload();", "Reload page"), duration = NULL)
+        return(F)
       }
 
       output_file <- run(genomes_file, 
                          tumor_type = tumor_type,
                          data = data,
-                         do_mva = T,
+                         do_mva = do_mva,
                          do_assign = T, 
                          check_msi = check_msi)
       print('Finished running SigMA')
@@ -154,7 +178,11 @@ server <- function(input, output, session){
 
   # make summary figure
   plot <- reactive({
-      return(myplot(plot_summary(output_file())))
+    do_mva <- T
+    if(sum(grepl('without_mva', input$other_settings)) > 0){
+      do_mva <- F
+    }
+    return(myplot(plot_summary(output_file(), do_mva)))
   })
   
   output$plot2 <- renderPlot({
@@ -167,11 +195,22 @@ server <- function(input, output, session){
     df <- read.csv(output_file())
     df_lite <- lite_df(df)
     df_lite$name <- paste0('tumor', 1:dim(df_lite)[[1]])
-    df_lite <- df_lite[order(-df_lite$Signature_3_mva),]
-    df_lite$Signature_3_mva <- round(df_lite$Signature_3_mva, digit = 4)
-    df2 <- df_lite[, c('name', 'tumor', 'Signature_3_mva', 'categ')]
-    colnames(df2) <- c('tag', 'filename', 'score', 'categ')
-
+    do_mva <- T
+    if(sum(grepl('without_mva', input$other_settings)) > 0){
+      do_mva <- F
+    }
+    if(do_mva){
+      df_lite <- df_lite[order(-df_lite$Signature_3_mva),]
+      df_lite$Signature_3_mva <- round(df_lite$Signature_3_mva, digit = 4)
+      df2 <- df_lite[, c('name', 'tumor', 'Signature_3_mva', 'categ')]
+      colnames(df2) <- c('tag', 'filename', 'score', 'categ')
+    }
+    else{
+      df_lite <- df_lite[order(-df_lite$Signature_3_ml),]
+      df_lite$Signature_3_ml <- round(df_lite$Signature_3_ml, digit = 4)
+      df2 <- df_lite[, c('name', 'tumor', 'Signature_3_ml', 'categ')]
+      colnames(df2) <- c('tag', 'filename', 'score', 'categ')
+    }
     buttons <- character(dim(df2)[[1]])
     
     for(i in 1:dim(df2)[[1]]){
