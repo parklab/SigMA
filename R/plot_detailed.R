@@ -7,9 +7,13 @@ plot_detailed <- function(file = NULL, sample = NULL){
   text_size = 10
 
   df <- read.csv(file)
+  if(sum(grepl('Signature_N', colnames(df))) > 0){
+    df <- df[, -grep('Signature_N', colnames(df))]
+  }
 
-  df <- df[, -grep('Signature_N', colnames(df))]
-  df <- df[, -grep('Signature_17v2', colnames(df))]
+  if(sum(grepl('Signature_17v2', colnames(df))) > 0){
+    df <- df[, -grep('Signature_17v2', colnames(df))]
+  }
 
   tumor_type <- unlist(strsplit(unlist(strsplit(file,
                        split = 'tumortype_'))[[2]],
@@ -20,7 +24,7 @@ plot_detailed <- function(file = NULL, sample = NULL){
                      split = '.csv'))[[1]]
   
   signames <- signames_per_tissue[[tumor_type]]
-
+  
   this <- df[df$tumor == sample,]
 ###cosine simil################################################################################################## 
   # strip cosine similarity values
