@@ -38,10 +38,15 @@ plot_detailed <- function(file = NULL, sample = NULL){
   cos_vals_tt <- cos_vals_tt[, order(-cos_vals_tt[1,])]
   nsig_tt <- dim(cos_vals_tt)[[2]]
 
-  cos_vals_ntt <- cos_vals[, -match(paste0(signames, '_c'), colnames(cos_vals))]
-  cos_vals_ntt <- cos_vals_ntt[, order(-cos_vals_ntt[1,])]
+  if(nsig_tt < dim(cos_vals)[[2]]){
+    cos_vals_ntt <- cos_vals[, -match(paste0(signames, '_c'), colnames(cos_vals))]
+    cos_vals_ntt <- cos_vals_ntt[, order(-cos_vals_ntt[1,])]
+    cos_vals <- cbind(cos_vals_tt, cos_vals_ntt)  
+  }
+  else{
+    cos_vals <- cos_vals_tt
+  }
 
-  cos_vals <- cbind(cos_vals_tt, cos_vals_ntt)  
   signame_cos <- gsub(gsub(colnames(cos_vals),
                            pattern = '_c',
                            replace = ''),

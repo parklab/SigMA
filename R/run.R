@@ -192,7 +192,7 @@ run <- function(genome_file,
     }
 
     if(sig_catalog == "cosmic_tissue"){
-      if(step == "mss"){
+      if(step == "mss" & method != "cosine_simil"){
         signatures <- cosmic_catalog[, signames_per_tissue[[tumor_type]]]
       }else{
         signatures <- cosmic_catalog[, c(signames_per_tissue[[tumor_type]],
