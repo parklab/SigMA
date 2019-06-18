@@ -92,6 +92,17 @@ lite <- lite_df(df)
 ```
 or by setting `lite_format = T` in the settings of `run()`.
 
+In the lite file:
+* `total_snvs` indicates the number of SNVs in that sample
+* columns ending with `_ml` indicate the total likelihood of clusters which are high in that signature, e.g. `Signature_3_ml` is the total likelihood of clusters with Signature 3
+* `Signature_3_c` is the cosine similarity to Signature 3
+* `exp_sig3` is the exposure of Signature 3 calculated with NNLS
+* `Signature_3_l_rat` is the likelihood ratio of the NNLS decomposition with Signature 3 considering the possibility of an alternative decompositions without Signature 3. A value of 0.5 indicate that an NNLS decomposition without Signature 3 is as likely.
+* `Signature_3_mva` is the SigMA score indicating the presence of Signature 3 estimated by the gradient boosting classifier implemented in SigMA
+* `pass_mva` and `pass_mva_strict` are booleans indicating the presence of Signature 3 with the looser and strict selection thresholds that corresponds to 10% FPR and 1-5% FPR respectively
+* `sigs_all` and `exps_all` are the names of signatures included in NNLS calculation and the exposures.
+* `categ` is the general category the sample falls into according to the dominant signatures. The `Signature_3_hc` indicates that the sample passes the strict threshold and hc stands for high confidence, and `Signature_3_lc` indicates that the sample passes the looser threshold but not the strict threshold.
+
 <a name="tissue"></a>
 
 ### 7. Tumor type tags
