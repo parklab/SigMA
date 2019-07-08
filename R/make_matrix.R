@@ -208,12 +208,16 @@ conv_snv_matrix_to_df <- function(genomes_matrix){
     chrom_nums <- as.vector(GenomicRanges::seqnames(gr_context))
   }
 
-  if(sum(grepl('MT', chrom_nums)) > 0){ 
-    seq_start <- seq_start[!grepl('MT', chrom_nums)]
-    seq_end <- seq_end[!grepl('MT', chrom_nums)]
-    ref_vector <- ref_vector[!grepl('MT', chrom_nums)]
-    alt_vector <- alt_vector[!grepl('MT', chrom_nums)]
-    chrom_nums <- chrom_nums[!grepl('MT', chrom_nums)]
+  if(length(chrom_nums) > 0){
+    inds <- unlist(lapply(chrom_nums,
+                   function(x){
+                     sum(grepl(paste0(paste0('chr', c(as.character(1:22), 'X', 'Y')), collapse = '|'), x)) > 0
+                   }))
+    seq_start <- seq_start[inds]
+    seq_end <- seq_end[inds]
+    ref_vector <- ref_vector[inds]
+    alt_vector <- alt_vector[inds]
+    chrom_nums <- chrom_nums[inds]
   }
 
   context_seq <- VariantAnnotation::getSeq(ref_genome, 
