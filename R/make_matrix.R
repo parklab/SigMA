@@ -110,9 +110,18 @@ conv_snv_matrix_to_df <- function(genomes_matrix){
     }else{
       ref <- .flip_base(ref)
       alt <- .flip_base(substr(snv, 2, 2))
-      prime5 <- .flip_base(substr(snv, 3, 3))
-      prime3 <- .flip_base(substr(snv, 4, 4))
-      comb_out[[isnv]] <- paste0(ref, alt, prime3, prime5)
+      l <- (nchar(snv) - 2)
+      comb_out_this <- character()
+      for(i in 1:l){
+        ind <- l - i + 3
+        print(ind)
+        comb_out_this <- paste0(comb_out_this, .flip_base(substr(snv, ind, ind)))
+      }
+      
+      comb_out[[isnv]] <- paste0(ref, alt, comb_out_this)
+#      prime5 <- .flip_base(substr(snv, 3, 3))
+#      prime3 <- .flip_base(substr(snv, 4, 4))
+#      comb_out[[isnv]] <- paste0(ref, alt, prime3, prime5)
     }
   }
   return(comb_out)
@@ -130,8 +139,8 @@ conv_snv_matrix_to_df <- function(genomes_matrix){
     stop('dimensions of context ref alt are different')
   if(nsnv == 0) 
     stop('empty snv array')
-  
- 
+   
+
   range <- nchar(context[[1]])
   if(range %% 2 == 0)
     stop('context should be an odd number')
@@ -172,15 +181,42 @@ conv_snv_matrix_to_df <- function(genomes_matrix){
   components <- c('a', 'c', 'g', 't')
   base_in <- ''
   if(nstrand == 1) base_in <- c('c', 't')
-  else base_in <- components  
+  else base_in <- components
+
   types <- rep('', 6*4^(ncontext -1)*nstrand )
   index <- 1
+  if(ncontext %% 2 != 1) stop('ncontext needs to be an odd number')
+  if(ncontext > 9) stop('ncontext needs to be smaller than 9')
+  n_prime <- (ncontext - 1)/2
+
   for(base in base_in){
     for(alt in components[!grepl(base,components)]){
       for(prime5 in components){
-        for(prime3 in components){     
-          types[[index]] <- paste0(base, alt, prime5, prime3)
-           index <- index + 1
+        for(prime3 in components){
+          if(n_prime == 1){
+            types[[index]] <- paste0(base, alt, prime5, prime3)
+            index <- index + 1
+          }
+          else if(n_prime == 2){
+            for(prime5_2 in components){
+              for(prime3_2 in components){
+                types[[index]] <- paste0(base, alt, prime5, prime5_2, prime3, prime3_2)
+                index <- index + 1
+              }
+            }
+          }
+          else if(n_prime == 3){
+            for(prime5_2 in components){
+              for(prime3_2 in components){
+                for(prime5_3 in components){
+                  for(prime3_3 in components){
+                    types[[index]] <- paste0(base, alt, prime5, prime5_2, prime5_3, prime3, prime3_2, prime3_3)
+                    index <- index + 1
+                  }
+                }
+              }
+            }
+          }
         }
       }
     }
@@ -218,6 +254,17 @@ conv_snv_matrix_to_df <- function(genomes_matrix){
     ref_vector <- ref_vector[inds]
     alt_vector <- alt_vector[inds]
     chrom_nums <- chrom_nums[inds]
+  }
+
+  if(length(ref_vector) > 0){
+    ref_vector <- as.character(ref_vector)
+    alt_vector <- as.character(alt_vector)
+    inds <- which(nchar(ref_vector) == 1 & nchar(alt_vector) == 1)
+    ref_vector <- ref_vector[inds]
+    alt_vector <- alt_vector[inds]
+    chrom_nums <- chrom_nums[inds]
+    seq_start <- seq_start[inds]
+    seq_end <- seq_end[inds]
   }
 
   context_seq <- VariantAnnotation::getSeq(ref_genome, 
@@ -282,11 +329,10 @@ conv_snv_matrix_to_df <- function(genomes_matrix){
 
   if(dim(maf)[[1]] == 0) return(rep(0, 96))
 
-
   maf <- maf[maf$Variant_Type == "SNP",]
   maf$Tumor_Seq_Allele1[maf$Tumor_Seq_Allele1 == "TRUE"] <- "T"
   maf <-  maf[maf$Chromosome != "MT",]
-
+ 
   if(dim(maf)[[1]] == 0) return(rep(0, 96))
 
   ind_sp <- which(colnames(maf) == "Start_Position")
@@ -299,7 +345,7 @@ conv_snv_matrix_to_df <- function(genomes_matrix){
   ref_vector <- maf$Reference_Allele
   alt_vector <- maf$Tumor_Seq_Allele1
 
-  if(identical(ref_vector, alt_vector)){
+  if(identical(as.character(ref_vector), as.character(alt_vector))){
     alt_vector <- maf$Tumor_Seq_Allele2
   }
  
@@ -382,7 +428,6 @@ conv_snv_matrix_to_df <- function(genomes_matrix){
     if(length(tumors) > 1){
       matrix_snvs <- matrix(0, 6*4^(ncontext - 1)*nstrand, length(tumors))
       for(itumor in 1:length(tumors)){
-        
         maf_this <- maf[maf$Tumor_Sample_Barcode == tumors[[itumor]],]
         count_vector <- .make_vector_from_maf(maf_file = maf_files[[1]],
                                               ref_genome = ref_genome, 
