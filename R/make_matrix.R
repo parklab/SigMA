@@ -114,7 +114,6 @@ conv_snv_matrix_to_df <- function(genomes_matrix){
       comb_out_this <- character()
       for(i in 1:l){
         ind <- l - i + 3
-        print(ind)
         comb_out_this <- paste0(comb_out_this, .flip_base(substr(snv, ind, ind)))
       }
       
