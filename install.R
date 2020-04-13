@@ -25,3 +25,5 @@ if(getRversion() < "3.6.0" & getRversion() >= "3.5.0"){
   source("https://bioconductor.org/biocLite.R")
   biocLite(packages)
 }
+
+install.packages("shinyccsloaders")
