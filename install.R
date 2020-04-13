@@ -1,17 +1,16 @@
-source("https://bioconductor.org/biocLite.R")
-biocLite(c("BSgenome",
+BiocManager::install(version = "3.10")
+biocManager::install(c("BSgenome",
 "BSgenome.Hsapiens.UCSC.hg19",
 "devtools",
 "DT",
 "GenomicRanges",
 "ggplot2",
 "gbm",
-"grid",
 "gridExtra",
 "IRanges",
 "nnls",
 "pheatmap",
 "reshape2",
 "Rmisc",
-"shinycssloaders",
 "VariantAnnotation"))
+install.packages("shinycssloaders")
