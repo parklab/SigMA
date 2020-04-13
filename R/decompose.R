@@ -15,8 +15,7 @@
 #' @param data sequencing platform that as in run(), used for setting
 #' the maximum number of signatures that is allowed in the decomposition
 
-decompose <- function(spect, signatures, data, nloop_user = NULL){
-
+decompose <- function(spect, signatures, data, nloop_user = NULL, delta=0){
   # calculates frobenius error
   error <- function(spect, signatures, exposures){
     reco <- (as.matrix(signatures) %*% exposures)
@@ -37,16 +36,30 @@ decompose <- function(spect, signatures, data, nloop_user = NULL){
                 error = error))
   }
 
-  min_error <- 1000000
+  min_error <- 10000000
   min_indices <- NULL
   min_exposures <- NULL
 
   if(!is.null(nloop_user)) nloop <- min(dim(signatures)[[2]], nloop_user)
   else{
-    nloop <- min(dim(signatures)[[2]], 6)
+    nloop <- min(dim(signatures)[[2]], 8) 
     # increasing nloop to too large values causes overfitting
-    # maximum 5 signatures are considered for panels and WES
-    if(data == "msk" | data == "found" | data == "seqcap")
+    # maximum 5 signatures are considered for panels and WES 
+    if(data == "wgs_pancan"){ 
+       nloop <- 6
+    }
+    else if(data == "tcga_mc3"){
+      if(dim(signatures)[[2]] > 10){ 
+        nloop <- 8
+      }
+      else{
+        nloop <- min(dim(signatures)[[2]], 7)
+      }
+    }
+    else if(data == "seqcap" | data == "seqcap_probe"){
+      nloop <- min(dim(signatures)[[2]], 5)
+    }
+    else if(data == "msk" | data == "found")
       nloop <- min(nloop, 5)
   }
 
@@ -64,18 +77,56 @@ decompose <- function(spect, signatures, data, nloop_user = NULL){
                 for(m in (l+1):(dim2 - nloop + 5)){
                   if(nloop >= 6){
                     for(n in (m+1):(dim2 - nloop + 6)){
-                      exposures <- coef(nnls::nnls(as.matrix(signatures[,c(i, j, k, l, m, n)]), spect))
-                      error_this <- error(spect, as.matrix(signatures[, c(i, j, k, l, m, n)]), exposures)
-                      if(error_this < min_error){
-                        min_error <- error_this
-                        min_indices <- c(i, j, k, l, m, n)
-                        min_exposures <- exposures
+                      if(nloop >= 7){
+                        for(o in (n+1):(dim2 - nloop + 7)){
+                          if(nloop >= 8){
+                            for(p in (o+1):(dim2 - nloop + 8)){
+                              if(nloop >= 9){
+                                for(r in (p+1):(dim2 - nloop + 9)){
+                                  exposures <- coef(nnls::nnls(as.matrix(signatures[,c(i, j, k, l, m, n, o, p, r)]), spect))
+                                  error_this <- error(spect, as.matrix(signatures[, c(i, j, k, l, m, n, o, p, r)]), exposures)
+                                  if(error_this < min_error - delta){
+                                    min_error <- error_this
+                                    min_indices <- c(i, j, k, l, m, n, o, p, r)
+                                    min_exposures <- exposures
+                                  }
+                                }
+                              }
+                              else{
+                              exposures <- coef(nnls::nnls(as.matrix(signatures[,c(i, j, k, l, m, n, o, p)]), spect))
+                              error_this <- error(spect, as.matrix(signatures[, c(i, j, k, l, m, n, o, p)]), exposures)
+                              if(error_this < min_error - delta){
+                                min_error <- error_this
+                                min_indices <- c(i, j, k, l, m, n, o, p)
+                                min_exposures <- exposures
+                              }
+                              }
+                            }
+                          }
+                          else{
+                            exposures <- coef(nnls::nnls(as.matrix(signatures[,c(i, j, k, l, m, n, o)]), spect))
+                            error_this <- error(spect, as.matrix(signatures[, c(i, j, k, l, m, n, o)]), exposures)
+                            if(error_this < min_error - delta){
+                              min_error <- error_this
+                              min_indices <- c(i, j, k, l, m, n, o)
+                              min_exposures <- exposures
+                            }
+                          }
+                        }
+                      }else{
+                        exposures <- coef(nnls::nnls(as.matrix(signatures[,c(i, j, k, l, m, n)]), spect))
+                        error_this <- error(spect, as.matrix(signatures[, c(i, j, k, l, m, n)]), exposures)
+                        if(error_this < min_error - delta){
+                          min_error <- error_this
+                          min_indices <- c(i, j, k, l, m, n)
+                          min_exposures <- exposures
+                        }
                       }
                     }
                   }else{
                     exposures <- coef(nnls::nnls(as.matrix(signatures[,c(i, j, k, l, m)]), spect))
                     error_this <- error(spect, as.matrix(signatures[, c(i, j, k, l, m)]), exposures)
-                    if(error_this < min_error){
+                    if(error_this < min_error - delta){
                       min_error <- error_this
                       min_indices <- c(i, j, k, l, m)
                       min_exposures <- exposures
@@ -85,7 +136,7 @@ decompose <- function(spect, signatures, data, nloop_user = NULL){
               }else{
                 exposures <- coef(nnls::nnls(as.matrix(signatures[,c(i, j, k, l)]), spect))
                 error_this <- error(spect, as.matrix(signatures[, c(i, j, k, l)]), exposures)
-                if(error_this < min_error){
+                if(error_this < min_error - delta){
                   min_error <- error_this
                   min_indices <- c(i, j, k, l)
                   min_exposures <- exposures
@@ -95,7 +146,7 @@ decompose <- function(spect, signatures, data, nloop_user = NULL){
           }else{
             exposures <- coef(nnls::nnls(as.matrix(signatures[,c(i, j, k)]), spect))
             error_this <- error(spect, as.matrix(signatures[, c(i, j, k)]), exposures)
-            if(error_this < min_error){
+            if(error_this < min_error - delta){
               min_error <- error_this
               min_indices <- c(i, j, k)
               min_exposures <- exposures
@@ -105,7 +156,7 @@ decompose <- function(spect, signatures, data, nloop_user = NULL){
       }else{
         exposures <- coef(nnls::nnls(as.matrix(signatures[,c(i, j)]), spect))
         error_this <- error(spect, as.matrix(signatures[, c(i, j)]), exposures)
-        if(error_this < min_error){
+        if(error_this < min_error - delta){
           min_error <- error_this
           min_indices <- c(i, j)
           min_exposures <- exposures

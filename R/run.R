@@ -52,12 +52,13 @@ run <- function(genome_file,
                 check_msi = F, 
                 weight_cf = F,
                 lite_format = F,
-                add_sig3 = F){
-
+                add_sig3 = F,
+                norm96 = NULL,
+                custom = F){
   # give a warning if weight_cf is TRUE but the sequencing platform
   # is not a panel
   if((data == 'seqcap' | data == "seqcap_probe") & do_assign & do_mva) weight_cf = T
-  
+
   # if a custom output file is not defined 
   # use the input file name
   if(is.null(output_file))
@@ -122,10 +123,14 @@ run <- function(genome_file,
     }
   }
 
-  message(paste0("You are running SigMA for ", dim(genomes)[[1]], 
-                 " ", tissue_names[[tumor_type]],  "(s) sequenced by ", 
-                 platform_names[[data]]))
-
+  if(!custom){
+    message(paste0("You are running SigMA for ", dim(genomes)[[1]], 
+                   " ", tissue_names[[tumor_type]],  "(s) sequenced by ", 
+                   platform_names[[data]]))
+  }else{
+    message(paste0("You are running SigMA for ", dim(genomes)[[1]], 
+                   " ", tissue_names[[tumor_type]]))
+  }
 
   # method names to calculate different features
   methods <- c("median_catalog", "cosine_simil", "decompose")
@@ -210,13 +215,23 @@ run <- function(genome_file,
     }
 
     # scale for the tri-nucleotide context
-    if(data == "seqcap" | data == "seqcap_probe"){
-      signatures <- weight_exome*signatures
-    }else if(data == "msk"){
-      signatures <- weight_msk*signatures
-    }else if(data == "fo"){
-      signatures <- weight_fo*signatures
+    if(data != "wgs" & data != "wgs_pancan"){
+      if(!is.null(norm96)){ 
+        signatures <- norm96*signatures
+      }
+      else{
+        if(data == "seqcap" | data == "seqcap_probe" | data == "tcga_mc3"){
+          signatures <- weight_exome*signatures
+        }else if(data == "msk"){
+          signatures <- weight_msk*signatures
+        }else if(data == "fo"){
+          signatures <- weight_fo*signatures
+        }else{
+          stop('choose a built-in model or provide trinucleotide normalization')
+        }
+      }
     }
+
     signatures_norm <- t(t(signatures)/colSums(signatures))
     colnames(signatures_norm) <- colnames(signatures)
     signatures <- signatures_norm 
@@ -275,14 +290,16 @@ run <- function(genome_file,
                               signames[[imethod]], 
                               data, 
                               tumor_type, 
-                              weight_cf)
+                              weight_cf,
+                              custom)
       }
       else{ 
         output <- predict_mva(genomes, 
                               signames[[imethod]], 
                               data, 
                               tumor_type, 
-                              weight_cf)
+                              weight_cf,
+                              custom)
       }
     }
 
@@ -296,7 +313,7 @@ run <- function(genome_file,
                                 signame = signames[[imethod]],
                                 data = data, 
                                 tumor_type = tumor_type, 
-                                weight_cf = weight_cf)
+                                weight_cf = weight_cf) 
       output <- cbind(output, assignments)
     }
 
