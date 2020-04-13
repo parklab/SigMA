@@ -11,8 +11,8 @@ before_script:
   
 script:
   # Run test scripts inside of container
-  - docker exec -it $CONTAINER_ID Rscript test.R
-  - docker exec -it $CONTAINER_ID Rscript test_maf.R
+  - docker exec -it $CONTAINER_ID Rscript examples/test.R
+  - docker exec -it $CONTAINER_ID Rscript examples/test_maf.R
 
 after_success:
   - tag_push() { echo "Tagging into $2"; docker tag $1 $2; docker push $2; }
