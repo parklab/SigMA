@@ -1,5 +1,6 @@
-BiocManager::install(version = "3.10")
-biocManager::install(c("BSgenome",
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install(c("BSgenome",
 "BSgenome.Hsapiens.UCSC.hg19",
 "devtools",
 "DT",
