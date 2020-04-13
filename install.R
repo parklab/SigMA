@@ -12,6 +12,6 @@ BiocManager::install(c("BSgenome",
 "nnls",
 "pheatmap",
 "reshape2",
+"shinyccsloaders",
 "Rmisc",
 "VariantAnnotation"))
-install.packages("shinycssloaders")
