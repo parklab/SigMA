@@ -11,7 +11,6 @@ packages <- c("BSgenome",
     "pheatmap",
     "reshape2",
     "Rmisc",
-    "shinycssloaders",
     "VariantAnnotation")
 
 if(getRversion() > "3.6.0"){
