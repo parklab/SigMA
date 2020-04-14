@@ -10,7 +10,6 @@ packages <- c("BSgenome",
     "nnls",
     "pheatmap",
     "reshape2",
-    "shinyccsloaders",
     "Rmisc",
     "VariantAnnotation")
 
