@@ -22,4 +22,5 @@ Imports:
     nnls,
     reshape2,
     Rmisc,
+    shinycssloaders,
     VariantAnnotation
