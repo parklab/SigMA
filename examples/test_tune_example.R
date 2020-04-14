@@ -69,20 +69,17 @@ simul_file_output <- run(simul_file,
 message('tuning')
 message(simul_file_output)
 # Using the imulations tune a new Gradient Boosting Machine
-gbm_model <- tune_new_gbm(simul_file_output, 
-                          tumor_type = tumor_type, 
-                          data = data,
-                          run_SigMA = T, 
-                          rda_file = 'test.rda')
+tune_new_gbm(simul_file_output, 
+             tumor_type = tumor_type, 
+             data = data,
+             run_SigMA = T, 
+             rda_file = 'test.rda')
 
 message('tuned')
 load('test.rda')
 
-message('predicting')
-# Using the new model predict the signature 3 scores
-df_predict <- predict_prob(file = simul_file_output,
-                           gbm_model = gbm_model)
-
+df_predict <- read.csv(gsub(simul_file_output, pattern = '.csv', replace = '_predictions.csv'))
+tumor_type <- 'breast'
 
 # Get thresholds for given false positive rate
 limits_fpr <- c(0.1, 0.05) 
@@ -97,6 +94,7 @@ sen <- thresh$sen
 fpr <- thresh$fpr
 sen_strict <- thresh_strict$sen
 fpr_strict <- thresh_strict$fpr
+
                       
 # then we add the new gbm model in the system files together with the
 # cutoffs we determined so that these can be used in the future for
