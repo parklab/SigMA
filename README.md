@@ -2,6 +2,13 @@
 
 Copyright (c) 2019 - President and Fellows of Harvard College. All rights reserved.
 
+## How to use
+
+See the [wiki](https://github.com/parklab/SigMA/wiki) page for local installation and usage of the package 
+
+You can also use the web based interface
+[http://compbio.med.harvard.edu/sigma/](http://compbio.med.harvard.edu/sigma/)
+
 ## Contact
 Requests for use of the Software for or on behalf of for-profit entities or for any commercial purposes, please contact:
 
@@ -14,10 +21,3 @@ Telephone: (617) 495-3067
 E-mail: otd@harvard.edu  
 
 ![Image description](https://github.com/parklab/SigMA/blob/master/shiny/www/workflow.png)
-
-## How to use
-
-See the [wiki](https://github.com/parklab/SigMA/wiki) page for local installation and usage of the package 
-
-You can also use the web based interface
-[http://compbio.med.harvard.edu/sigma/](http://compbio.med.harvard.edu/sigma/)
