@@ -38,9 +38,9 @@ get_trinuc_counts <- function(bed_file, do_MC_sampling = F,
                          'TAC', 'GAC', 'CAC', 'AAC',
                          'TAA', 'GAA', 'CAA', 'AAA')
                          
-   
   bed <- read.table(bed_file,header=F)
-  colnames(bed) <- c('chr','start','end','id')
+  
+  colnames(bed) <- c('chr','start','end','id')[1:dim(bed)[[2]]]
   context_seq_vec <- character()
 
   if(!grepl('chr', bed$chr[[1]])) bed$chr <- paste0('chr', bed$chr)

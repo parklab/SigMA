@@ -25,4 +25,3 @@ if(getRversion() < "3.6.0" & getRversion() >= "3.5.0"){
   biocLite(packages)
 }
 
-install.packages("shinyccsloaders")

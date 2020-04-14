@@ -1,6 +1,4 @@
 library('DT')
-library(shinycssloaders)
-
 devtools::load_all(path = "../R")
 
 myplot <- function(x) {
@@ -226,7 +224,7 @@ server <- function(input, output, session){
     return(df2)
   })
 
-  output$sorted_samples <- renderDataTable(
+  output$sorted_samples <- DT::renderDataTable(
                              datatable(sorted_samples()[, -grep("tagname|filename", colnames(sorted_samples()))], 
                                        escape = F, 
                                        rownames = F,
@@ -280,11 +278,11 @@ server <- function(input, output, session){
              
           column(5, style = "background-color: #eaf1fc",
             h4("Click to see sample-specific information"),
-            dataTableOutput("sorted_samples") %>% withSpinner(color="#dee9fc")
+            dataTableOutput("sorted_samples") 
           ),
           column(7, h4("Summary") ,
             downloadButton("save_file", "Save data file"),
-            plotOutput("plot2", width = "90%", height = "750px") %>% withSpinner(color="#dee9fc")
+            plotOutput("plot2", width = "90%", height = "750px") 
           )
         )
       ),
@@ -309,7 +307,7 @@ server <- function(input, output, session){
                              margin-bottom:15px;",
           column(6, 
             fluidRow(
-              plotOutput("plotd2", width = "90%", height = "400px") %>% withSpinner(color="#dee9fc")
+              plotOutput("plotd2", width = "90%", height = "400px")
             )
           )
         )
