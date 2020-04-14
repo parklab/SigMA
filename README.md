@@ -105,18 +105,21 @@ In the lite file:
 
 <a name="tissue"></a>
 
-### 7. Tumor type tags
+### 7. Tumor type and data tags
 
-Tags and descriptions of performance of SigMA for signature 3 detection. The exploratory tumor types should be used with `do_mva = F` and `do_assign = F` settings for the `run()` function.
+Using `list_tumor_types()` function you can see the options for `tumor_type` parameter for the `run()` function, similarly use `list_data_options()` to see the available `data` parameters. You can see if the SNV counts in your data aggrees with the mutation counts in the datasets for tuning the gradient boosting classifiers by running info(data, tumor_type). If the values disagree the cutoffs on the score listed in `Signature_3_mva` column of SigMA output needs to be optimized or a new model needs to be tuned. 
+ 
+Tags and descriptions of performance of SigMA for signature 3 detection. The exploratory tumor types should be used with `do_mva = F` and `do_assign = F` settings for the `run()` function for these tumor types if you want to investigate presence of Signature_3 set `add_sig3 = T` which will then allow assignment of Signature 3 to the tumors even if this signature was not discovered by NMF in the WGS data for these tumor types.
  
 
 | Tumor type                           | Tag           | Details     | Platform        |
 | ------------------------------------ | ------------- | ----------- | --------------- |
-| Ewing Sarcoma                        | bone_other    | Tested      | Exome/WGS       |
+| Rare bone sarcomas/chondrosarcoma    | bone_other    | Tested      | Exome/WGS       |
 | Urothelial Bladder Cancer            | bladder       | Exploratory | Panel/Exome/WGS |
 | Breast Cancer                        | breast        | Tested      | Panel/Exome/WGS |
 | Colorectal Adenocarcinoma            | crc           | Exploratory | Panel/Exome/WGS |
 | Oesophageal Carcinoma                | eso           | Tested      | Panel/Exome/WGS |
+| Ewing Sarcoma                        | ewing         | Tested      | Exome/WGS       |
 | Glioblastoma                         | gbm           | Exploratory | Panel/Exome/WGS |
 | Lung Adenocarcinoma                  | lung          | Exploratory | Panel/Exome/WGS |
 | Lymphoma                             | lymph         | Exploratory | Panel/Exome/WGS |
@@ -129,4 +132,3 @@ Tags and descriptions of performance of SigMA for signature 3 detection. The exp
 | Stomach Adenocarcinoma               | stomach       | Tested      | Panel/Exome/WGS |
 | Thyroid Cancer                       | thy           | Exploratory | Panel/Exome/WGS |
 | Uterine corpus endometrial carcinoma | uterus        | Tested      | Panel/Exome/WGS |
-
