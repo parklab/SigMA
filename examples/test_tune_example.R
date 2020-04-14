@@ -5,19 +5,21 @@
 # threshold for an existing model (follow test_determine_cutoff.R
 # but a new tune would perform better.
 
-file_name <- 'matrix_96dim_tcga_brca.csv'
-tumor_type <- 'breast'
 
 devtools::load_all()
-if(0){
-m <- make_matrix('tcga_mc3_brca.maf', file_type='maf')
+
+data_file <- system.file("extdata/examples/tcga_mc3_brca.maf", package="SigMA")
+
+m <- make_matrix(data_file, file_type='maf')
 df <- conv_snv_matrix_to_df(m)
 
+file_name <- 'matrix_96dim_tcga_brca.csv'
+tumor_type <- 'breast'
 
 write.table(df, file_name, row.names = F, sep = ',', quote = F)
 
 # First run the built in model
-output_file_built_in <- run('matrix_96dim_tcga_brca.csv',
+output_file_built_in <- run(file_name,
                             data = 'tcga_mc3',
                             tumor_type = tumor_type, 
                             do_mva = T,
@@ -25,8 +27,6 @@ output_file_built_in <- run('matrix_96dim_tcga_brca.csv',
                             check_msi = T)
 
 
-#file_name_out <- 'matrix_96dim_tcga_brca_output_tumortype_breast_platform_TCGAMC3mutationcalls_cf0.csv'
-output_file_built_in <- 'matrix_96dim_tcga_brca_output_tumortype_breast_platform_TCGAMC3mutationcalls_cf0.csv'
 
 # then assuming that we do not have the model let's try to tune
 # a new model for our data and we will then compare to the
@@ -36,13 +36,13 @@ output_file_built_in <- 'matrix_96dim_tcga_brca_output_tumortype_breast_platform
 # indicates the sequencing platform, to use 
 
 #remove MSI samples
-m <- read.csv('matrix_96dim_tcga_brca_output_tumortype_breast_platform_TCGAMC3mutationcalls_cf0.csv')
+m <- read.csv(output_file_built_in)
 lite <- lite_df(m)
 m <- m[lite$categ != "Signature_msi" & lite$categ != "Signature_pole",]
-write.table(m[,1:97], 'matrix_96dim_tcga_brca_msi_removed.csv', row.names = F, sep  = ',', quote = F)
+write.table(m[,1:97], file_name, row.names = F, sep  = ',', quote = F)
 
 
-data <- find_data_setting(input_file = 'matrix_96dim_tcga_brca_msi_removed.csv', 
+data <- find_data_setting(input_file = file_name, 
                           tumor_type = tumor_type,
                           remove_msi_pole = F) # since we removed these samples above otherwise has to be T
 
@@ -54,18 +54,13 @@ data <- find_data_setting(input_file = 'matrix_96dim_tcga_brca_msi_removed.csv',
 # simulate a new dataset from WGS data for which 
 # the sig3 is known from WGS analysis and is more
 # reliable
-simul_file <- quick_simulation('matrix_96dim_tcga_brca_msi_removed.csv', 
+simul_file <- quick_simulation(file_name, 
                                tumor_type = 'breast', 
                                data = data,
                                run_SigMA = T, 
                                remove_msi_pole = F) #since we removed these samples above otherwise has to be T
 
-}
-
-data <- 'tcga_mc3'
-
-simul_file <- 'matrix_96dim_tcga_brca_msi_removedsimulation.csv'
-simul_file_output <- run('matrix_96dim_tcga_brca_msi_removedsimulation.csv', 
+simul_file_output <- run(simul_file, 
                          data = data,
                          tumor_type = tumor_type,
                          do_mva = F,
@@ -90,8 +85,12 @@ df_predict <- predict_prob(file = simul_file_output,
 
 
 # Get thresholds for given false positive rate
-thresh <- get_threshold(df_predict, 0.1, var = 'prob', cut_var = 'fpr') # FPR < 0.1
-thresh_strict <- get_threshold(df_predict, 0.05, var = 'prob', cut_var = 'fpr') #FPR < 0.05
+limits_fpr <- c(0.1, 0.05) 
+cut_var <- 'fpr' # you can alternatively use 'sen' to select on specific sensitivity value
+
+
+thresh <- get_threshold(df_predict, limits_fpr[[1]], var = 'prob', cut_var = cut_var) # FPR < 0.1
+thresh_strict <- get_threshold(df_predict, limits_fpr[[2]], var = 'prob', cut_var = cut_var) #FPR < 0.05
 cutoff <- thresh$cutoff 
 cutoff_strict <- thresh_strict$cutoff
 sen <- thresh$sen 
@@ -108,7 +107,10 @@ add_gbm_model('example_gbm',
               cutoff  = cutoff, 
               cutoff_strict = cutoff_strict)
     
-weight_this <- get_trinuc_norm('../../../SeqCap_EZ_Exome/primary_targets/SeqCap_EZ_Exome_v3_hg19_primary_targets.bed')
+# example bed file:
+bed_file <- system.file("extdata/examples/SeqCap_EZ_Exome_v3_hg19_capture_targets", package="SigMA")
+
+norm96 <- get_trinuc_norm(bed_file)
 
 # then imagine we received a new dataset which is in our example
 # the same dataset we analyzed earlier with the built in model
@@ -119,11 +121,13 @@ output_new_tune <- run('matrix_96dim_tcga_brca_msi_removed.csv',
                       do_assign = T, 
                       check_msi = T,
                       custom = T,
-                      norm96 = weight_this)
+                      norm96 = norm96)
 
 df_built_in <- read.csv(output_file_built_in)
 df_new_tune <- read.csv(output_new_tune)
+df_new_tune <- lite_df(df_new_tune)
 
-df_built_in$Signature_3_mva_new <- df_new_tune$Signature_3_mva[match(df_built_in$tumor, df_new_tune$tumor)]
+df_new_tune$built_in_mva <- df_new_tune$built_in_mva[match(df_new_tune$tumor, df_built_in_mva$tumor)]
 
-ggplot(df_built_in, aes(x = Signature_3_mva, y = Signature_3_mva_new)) + geom_point()
+plot <- ggplot(df_new_tune, aes(x = Signature_3_mva, y = built_in_mva)) + geom_point(aes(color = categ)) + theme_def
+ggsave(plot, 'compare_old_tune_new_tune.pdf', width = 9.8/2.4, height = 9.8/2.4)
