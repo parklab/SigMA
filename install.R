@@ -11,6 +11,7 @@ packages <- c("BSgenome",
     "pheatmap",
     "reshape2",
     "Rmisc",
+    "shinycssloaders",
     "VariantAnnotation")
 
 if(getRversion() > "3.6.0"){
@@ -25,4 +26,3 @@ if(getRversion() < "3.6.0" & getRversion() >= "3.5.0"){
   biocLite(packages)
 }
 
-install.packages("shinyccsloaders")
