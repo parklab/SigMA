@@ -258,13 +258,15 @@ conv_snv_matrix_to_df <- function(genomes_matrix){
   if(length(ref_vector) > 0){
     ref_vector <- as.character(ref_vector)
     alt_vector <- as.character(alt_vector)
-    inds <- which(nchar(ref_vector) == 1 & nchar(alt_vector) == 1)
+    inds <- which(nchar(ref_vector) == 1 & nchar(alt_vector) == 1 & ref_vector != "-" & alt_vector != "-")
     ref_vector <- ref_vector[inds]
     alt_vector <- alt_vector[inds]
     chrom_nums <- chrom_nums[inds]
     seq_start <- seq_start[inds]
     seq_end <- seq_end[inds]
   }
+  
+  if(length(alt_vector) == 0) return(rep(0, 96))
 
   context_seq <- VariantAnnotation::getSeq(ref_genome, 
                         names = chrom_nums, 
@@ -329,7 +331,13 @@ conv_snv_matrix_to_df <- function(genomes_matrix){
   if(dim(maf)[[1]] == 0) return(rep(0, 96))
 
   maf <- maf[maf$Variant_Type == "SNP",]
+
+  maf$Tumor_Seq_Allele1 <- as.character(maf$Tumor_Seq_Allele1)
+  maf$Reference_Allele <- as.character(maf$Reference_Allele)
+
   maf$Tumor_Seq_Allele1[maf$Tumor_Seq_Allele1 == "TRUE"] <- "T"
+  maf$Reference_Allele[maf$Reference_Alle == "TRUE"] <- "T"
+  
   maf <-  maf[maf$Chromosome != "MT",]
  
   if(dim(maf)[[1]] == 0) return(rep(0, 96))
@@ -345,6 +353,8 @@ conv_snv_matrix_to_df <- function(genomes_matrix){
   alt_vector <- maf$Tumor_Seq_Allele1
 
   if(identical(as.character(ref_vector), as.character(alt_vector))){
+    maf$Tumor_Seq_Allele2 <- as.character(maf$Tumor_Seq_Allele2)
+    maf$Tumor_Seq_Allele2[maf$Tumor_Seq_Allele2 == "TRUE"] <- "T"
     alt_vector <- maf$Tumor_Seq_Allele2
   }
  
