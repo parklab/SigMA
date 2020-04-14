@@ -6,9 +6,7 @@ devtools::load_all()
 # for data that is a single maf file rather than a directory with
 # multiple files, data_dir can be replaced by the character containing
 # the path to the file
-data_dir <- system.file("extdata/examples/test_mutations_50sample.maf", package="SigMA")
-
-data_file <- 'test_mutations_50sample.maf'
+data_file <- system.file("extdata/examples/test_mutations_50sample.maf", package="SigMA")
 
 genomes_matrix <- make_matrix(data_file, file_type = 'maf')
 genomes <- conv_snv_matrix_to_df(genomes_matrix)
