@@ -1,0 +1,62 @@
+##fileformat=VCFv4.1
+##ContEST=0.1
+##BAMQCStars=5
+##TumourInNormalEstimate=0
+##INFO=<ID=1000genomes_AF,Number=1,Type=Float,Description="Thousand Genomes phase 3 occurance fraction if found: ALL.wgs.phase3_shapeit2_mvncall_integrated_v5b.20130502.sites.vcf.gz">
+##INFO=<ID=1000genomes_ID,Number=1,Type=String,Description="Thousand Genomes phase 3 ID if found: ALL.wgs.phase3_shapeit2_mvncall_integrated_v5b.20130502.sites.vcf.gz">
+##INFO=<ID=Callers,Number=.,Type=String,Description="Callers that made this call">
+##INFO=<ID=NumCallers,Number=1,Type=Integer,Description="Number of callers that made this call">
+##INFO=<ID=VAF,Number=1,Type=Float,Description="VAF from mutect read filter if available">
+##INFO=<ID=cosmic,Number=1,Type=String,Description="(first) cosmic ID if found, COSMICv76">
+##INFO=<ID=dbsnp,Number=1,Type=String,Description="(first) dbSNP ID if found, build 147, All_20160408.vcf.gz">
+##INFO=<ID=repeat_masker,Number=1,Type=String,Description="Repeat masker region if in one">
+##INFO=<ID=t_alt_count,Number=1,Type=Integer,Description="Tumour alt count from mutect read filter if available">
+##INFO=<ID=t_ref_count,Number=1,Type=Integer,Description="Tumour reference count from mutect read filter if available">
+##INFO=<ID=dbsnp_somatic,Number=.,Type=Flag,Description="Known-somatic dbSNP variant">
+##INFO=<ID=signature_R1,Number=0,Type=Flag,Description="Sanger Tower: Possible Artifact">
+##INFO=<ID=signature_R2,Number=0,Type=Flag,Description="Suspected C>A oxo-guanine signature in some samples">
+##INFO=<ID=signature_N3,Number=0,Type=Flag,Description="T>A mutation often in bleed through context">
+##INFO=<ID=snv_near_indel,Number=0,Type=Flag,Description="SNV is located near indel">
+##INFO=<ID=Variant_Classification,Number=1,Type=String,Description="Variant Classification">
+##FILTER=<ID=LOWSUPPORT,Description="Not called by enough callers in ensemble">
+##FILTER=<ID=OXOGFAIL,Description="Failed OXOG oxidative artifact filter">
+##FILTER=<ID=bSeq,Description="Sequencing Bias">
+##FILTER=<ID=bPcr,Description="PCR Bias">
+##FILTER=<ID=GERM1000G,Description="1000Genome variant with insufficient somatic evidence">
+##FILTER=<ID=GERMOVLP,Description="Overlaps germline Haplotype call">
+##FILTER=<ID=NORMALPANEL,Description="Presence in Panel of Normals">
+##FILTER=<ID=REMAPFAIL,Description="Variant no longer seen under remapping">
+##FILTER=<ID=SEXF,Description="Likely artifact or call in PAR region: Y-chromosome variant in female donor">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO
+1	16260482	.	G	T	.	.	Callers=broad,dkfz,muse,sanger;NumCallers=4;VAF=0.1875;cosmic=COSM424410;t_alt_count=12;t_ref_count=52;Variant_Classification=Nonsense_Mutation
+1	71861859	.	C	G	.	.	Callers=broad,dkfz,muse,sanger;NumCallers=4;VAF=0.1356;repeat_masker=T-rich;t_alt_count=8;t_ref_count=51;Variant_Classification=3'UTR
+11	118344572	.	C	T	.	.	Callers=broad,dkfz,muse,sanger;NumCallers=4;VAF=0.2542;cosmic=COSM428496;t_alt_count=15;t_ref_count=44;Variant_Classification=Nonsense_Mutation
+12	18573885	.	C	G	.	.	Callers=broad,dkfz,muse,sanger;NumCallers=4;VAF=0.2615;cosmic=COSM5211000;t_alt_count=17;t_ref_count=48;Variant_Classification=Missense_Mutation
+12	46245928	.	C	G	.	.	Callers=broad,dkfz,muse,sanger;NumCallers=4;VAF=0.2078;cosmic=COSM431130;t_alt_count=16;t_ref_count=61;Variant_Classification=Nonsense_Mutation
+12	56487147	.	G	C	.	.	Callers=broad,dkfz,muse,sanger;NumCallers=4;VAF=0.1296;cosmic=COSM5211005;t_alt_count=7;t_ref_count=47;Variant_Classification=Missense_Mutation
+12	58146165	.	G	C	.	.	Callers=broad,dkfz,muse,sanger;NumCallers=4;VAF=0.0833;t_alt_count=8;t_ref_count=88;Variant_Classification=5'UTR
+15	45003751	.	C	T	.	.	Callers=broad,dkfz,muse,sanger;NumCallers=4;VAF=0.2353;cosmic=COSM3932100;dbsnp=rs765817584;t_alt_count=8;t_ref_count=26;Variant_Classification=Missense_Mutation
+15	91352454	.	C	T	.	.	Callers=broad,dkfz,muse,sanger;NumCallers=4;VAF=0.2564;cosmic=COSM434546;t_alt_count=10;t_ref_count=29;Variant_Classification=Missense_Mutation
+17	7578235	.	T	C	.	.	Callers=broad,dkfz,muse,sanger;NumCallers=4;VAF=0.3333;cosmic=COSM99631;t_alt_count=14;t_ref_count=28;Variant_Classification=Missense_Mutation
+17	66526358	.	C	G	.	.	Callers=broad,dkfz,muse,sanger;NumCallers=4;VAF=0.2545;cosmic=COSN18509626;t_alt_count=14;t_ref_count=41;Variant_Classification=Intron
+17	70120527	.	G	C	.	.	Callers=broad,dkfz,muse,sanger;NumCallers=4;VAF=0.1429;cosmic=COSM437265;t_alt_count=6;t_ref_count=36;Variant_Classification=Nonstop_Mutation
+19	2230247	.	C	T	.	.	Callers=broad,dkfz,muse,sanger;NumCallers=4;VAF=0.2;t_alt_count=4;t_ref_count=16;Variant_Classification=IGR
+19	7113972	.	C	T	.	.	Callers=broad,dkfz,muse,sanger;NumCallers=4;VAF=0.2308;t_alt_count=12;t_ref_count=40;Variant_Classification=IGR
+20	30252622	.	G	A	.	.	Callers=broad,dkfz,muse,sanger;NumCallers=4;VAF=0.2222;t_alt_count=12;t_ref_count=42;Variant_Classification=3'UTR
+3	47165587	.	G	C	.	.	Callers=broad,dkfz,muse,sanger;NumCallers=4;VAF=0.2821;cosmic=COSM446618;t_alt_count=11;t_ref_count=28;Variant_Classification=Nonsense_Mutation
+3	52668737	.	C	G	.	.	Callers=broad,dkfz,muse,sanger;NumCallers=4;VAF=0.1739;cosmic=COSM446844;t_alt_count=8;t_ref_count=38;Variant_Classification=Missense_Mutation
+4	66187494	.	C	T	.	.	Callers=broad,dkfz,muse,sanger;NumCallers=4;VAF=0.2647;t_alt_count=18;t_ref_count=50;Variant_Classification=3'UTR
+4	66201769	.	C	T	.	.	Callers=broad,dkfz,muse,sanger;NumCallers=4;VAF=0.2586;cosmic=COSM448025;t_alt_count=15;t_ref_count=43;Variant_Classification=Missense_Mutation
+4	106196474	.	C	T	.	.	Callers=broad,dkfz,muse,sanger;NumCallers=4;VAF=0.2542;cosmic=COSM211738;t_alt_count=15;t_ref_count=44;Variant_Classification=Nonsense_Mutation
+5	176519704	.	G	A	.	.	Callers=broad,muse;NumCallers=2;VAF=0.1111;cosmic=COSM449372;dbsnp=rs143108014;t_alt_count=4;t_ref_count=32;Variant_Classification=Missense_Mutation
+6	410937	.	G	C	.	.	Callers=broad,dkfz,muse,sanger;NumCallers=4;VAF=0.2167;t_alt_count=13;t_ref_count=47;Variant_Classification=3'UTR
+6	26250619	.	A	G	.	.	Callers=broad,dkfz,muse,sanger;NumCallers=4;VAF=0.1875;cosmic=COSM451031;t_alt_count=6;t_ref_count=26;Variant_Classification=Missense_Mutation
+7	151945354	.	C	T	.	.	Callers=broad,dkfz,muse,sanger;NumCallers=4;VAF=0.1875;cosmic=COSM452729;t_alt_count=12;t_ref_count=52;Variant_Classification=Missense_Mutation
+9	4985366	.	C	T	.	.	Callers=dkfz,sanger;NumCallers=2;VAF=0.5;t_alt_count=4;t_ref_count=4;Variant_Classification=5'UTR
+9	5466805	.	G	C	.	.	Callers=broad,dkfz,muse,sanger;NumCallers=4;VAF=0.1642;cosmic=COSM456003;dbsnp=rs752493356;t_alt_count=11;t_ref_count=56;Variant_Classification=Missense_Mutation
+9	8485307	.	G	C	.	.	Callers=broad,dkfz,muse,sanger;NumCallers=4;VAF=0.25;cosmic=COSM1490166;t_alt_count=14;t_ref_count=42;Variant_Classification=Missense_Mutation
+9	36923468	.	G	A	.	.	Callers=broad,dkfz,muse,sanger;NumCallers=4;VAF=0.2174;cosmic=COSM455948;t_alt_count=10;t_ref_count=36;Variant_Classification=Missense_Mutation
+X	66949271	.	G	C	.	.	Callers=broad,dkfz,muse,sanger;NumCallers=4;VAF=0.1698;t_alt_count=9;t_ref_count=44;Variant_Classification=3'UTR
+X	70352039	.	G	C	.	.	Callers=broad,dkfz,muse,sanger;NumCallers=4;VAF=0.2364;cosmic=COSM457961;t_alt_count=13;t_ref_count=42;Variant_Classification=Missense_Mutation
+X	76763369	.	G	C	.	.	Callers=broad,dkfz,muse,sanger;NumCallers=4;VAF=0.1667;t_alt_count=12;t_ref_count=60;Variant_Classification=3'UTR
+X	123094614	.	C	G	.	.	Callers=broad,dkfz,muse,sanger;NumCallers=4;VAF=0.1739;t_alt_count=8;t_ref_count=38;Variant_Classification=5'Flank
