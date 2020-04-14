@@ -108,7 +108,7 @@ add_gbm_model('example_gbm',
               cutoff_strict = cutoff_strict)
     
 # example bed file:
-bed_file <- system.file("extdata/examples/SeqCap_EZ_Exome_v3_hg19_capture_targets", package="SigMA")
+bed_file <- system.file("extdata/examples/seqcap_capture.bed", package="SigMA")
 
 norm96 <- get_trinuc_norm(bed_file)
 
