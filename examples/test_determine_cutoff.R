@@ -20,7 +20,7 @@ data_val <- find_data_setting(input_file,
 
 # OR if you know which data setting you will be using set it 
 # to the preferred value by putting in the line below
-data_val <- 'seqcap' 
+# data_val <- 'seqcap' 
 
 
 # to determine the optimal cutoff for the data setting
@@ -49,15 +49,18 @@ output_simul <- run(simul_file,
 # specific false positive rate or sensitivity values can be 
 # obtained
 cut_var <- 'fpr'
-fpr_limits <- c(0.1, 0.05, 0.0149)
+limits <- c(0.1, 0.05, 0.0149)
 
 df <- read.csv(output_simul)
-thresh <- get_threshold(df, fpr_limits, var = 'Signature_3_mva', cut_var = cut_var)
+thresh <- get_threshold(df, limits, var = 'Signature_3_mva', cut_var = cut_var)
 
 cutoffs <- thresh$cutoff
 sens <- thresh$sen
 fprs <- thresh$fpr
 fdrs <- thresh$fdr
+
+df_sen_fpr <- data.frame(cutoffs = cutoffs, sens = sens, fprs = fprs, fdrs = fdrs)
+write.table(df_sen_fpr, 'df_sen_fpr_example.csv', row.names = F, sep = ',', quote = F)
 
 # the algorithm is run on the actual dataset and 
 output_file <- run('tmp.csv', 
@@ -68,18 +71,34 @@ output_file <- run('tmp.csv',
                    weight_cf = T) 
 
 df <- read.csv(output_file)
-message(paste0('file saved to ', output_file))
 
-message('assignments with limits')
+message('\nassignments with limits')
 df <- cbind(df, assignment(df,
                           method = 'mva',
                           cut_var = cut_var,
                           cutoffs = cutoffs,
-                          limits = fpr_limits))
+                          limits = limits))
 
 write.table(df, output_file, row.names = F, sep = ',', quote = F)
 
-message(paste0('See pass_mva_fpr_X.XX columns for predictions with specific FPR thresholds in ', output_file))
-for(i in 1:length(fpr_limits)){
-  message(paste0('cutoff for ', round(fpr_limits[[i]], digit = 2), ' FPR is ', round(cutoffs[[i]], digit = 3), ' corresponding to sensitivity ', round(sens[[i]], digit = 2)))
+message(paste0('See pass_mva_', cut_var, '_X.XX columns for predictions with specific FPR thresholds in ', output_file))
+for(i in 1:length(limits)){
+  message(paste0('cutoff for ', round(limits[[i]], digit = 2), ' FPR is ', round(fprs[[i]], digit = 3), ' corresponding to sensitivity ', round(sens[[i]], digit = 2)))
 }
+
+if(cut_var == 'fpr' | cut_var == 'fdr'){
+  strict_limit <- min(limits)
+  loose_limit <- max(limits)
+}else if(cut_var == 'sen'){
+  strict_limit <- max(limits)
+  loose_limit <- min(limits)
+}else{
+  stop('cut_var can be sen, fpr or fdr')
+}
+
+colnames(df)[colnames(df) == paste0('pass_mva_', cut_var, '_', round(strict_limit, digit = 2))] <- 'pass_mva_strict'
+colnames(df)[colnames(df) == paste0('pass_mva_', cut_var, '_', round(loose_limit, digit = 2))] <- 'pass_mva'
+
+df_lite <- lite_df(df)
+write.table(df_lite, file = gsub(output_file, pattern = '.csv', replace = '_lite.csv'), row.names = F, sep = ',', quote = F)
+message(paste0('\n lite file written to ', gsub(output_file, pattern = '.csv', replace = '_lite.csv')))
