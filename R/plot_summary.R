@@ -3,7 +3,6 @@
 #' @param file the csv file produced by SigMA
 
 plot_summary <- function(file = NULL, do_mva = T){
-  print(file)
   df <- read.csv(file)
 
   if(do_mva) df$pass <- df$pass_mva

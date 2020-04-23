@@ -33,9 +33,13 @@ assignment <- function(df_in,
                        weight_cf = F,
                        cut_var = NULL,
                        limits = NULL, 
-                       cutoffs = NULL, 
-                       custom = F){
+                       cutoffs_custom = NULL, 
+                       custom_model = F){
 
+  print(limits)
+  print(cutoffs_custom) 
+  print(cut_var)
+  limits_custom <- F
   if(method == 'median_catalog'){
     matching = 'ml'
     if(length(grep(signame, colnames(df_in))) > 1)
@@ -44,50 +48,65 @@ assignment <- function(df_in,
       pass <- df_in[, grep(signame, colnames(df_in))] > 0.5
     df_out <- data.frame(pass_ml = pass)
   }
-  if(sum(grepl('tcga_mc3|msk|seqcap|seqcap_probe|wgs|wgs_pancan', data)) > 0){
-    if(method == 'mva'){
-      matching = 'mva'
-      if(data == "msk"){
-        if(weight_cf){
-          cutoffs_strict <- cutoffs_msk_strict_cf
-          cutoffs <- cutoffs_msk_cf
-        }else{
-          cutoffs_strict <- cutoffs_msk_strict
-          cutoffs <- cutoffs_msk     
+  if(method == 'mva'){
+    if((data %in% names(cutoffs)) | custom_model){
+      if(is.null(cutoffs_custom)){
+        matching = 'mva'
+        if(data == "msk" & weight_cf){
+          cutoffs_strict_this <- cutoffs_msk_strict_cf[[tumor_type]]
+          cutoffs_this <- cutoffs_msk_cf[[tumor_type]]
+          if(!(tumor_type %in% names(cutoffs_this))) stop('tumor_type not available for the data setting')
+
         }
-      }else if(data == "tcga_mc3"){
-        cutoffs_strict <- cutoffs_mc3_strict
-        cutoffs <- cutoffs_mc3 
-      }else if(data == "seqcap"){
-        cutoffs_strict <- cutoffs_exome_strict
-        cutoffs <- cutoffs_exome 
-      }else if(data == "seqcap_probe"){
-        cutoffs_strict <- cutoffs_seqcap_probe_strict
-        cutoffs <- cutoffs_seqcap_probe
-      }else if(data == "wgs_pancan"){ 
-        cutoffs_strict <- cutoffs_wgs_strict
-        cutoffs <- cutoffs_wgs
-      }else if(data == "wgs"){ 
-        cutoffs_strict <- cutoffs_wgs_tumor_type_strict
-        cutoffs <- cutoffs_wgs_tumor_type
-      }else if(custom){
-        file_path <- system.file(paste0("extdata/gbm_models/", data, ".rda"),
-                             package="SigMA")
-        load(file_path)
+        else if(custom_model){
+          file_path <- system.file(paste0("extdata/gbm_models/", data, ".rda"),
+                               package="SigMA")
+          load(file_path)
+        
+          cutoffs_this <- cutoffs_custom[[tumor_type]]
+          cutoffs_strict_this <- cutoffs_strict_custom[[tumor_type]]
+          if(!(tumor_type %in% names(cutoffs_this))) stop('tumor_type not available for the data setting')
+
+        }
+        else if(data %in% names(cutoffs)){
+          cutoffs_this <- cutoffs[[data]][[tumor_type]]
+          cutoffs_strict_this <- cutoffs_strict[[data]][[tumor_type]]
+        }
+        else{
+          stop('invalid data selection')
+        }
       }
       else{
-        stop('invalid data selection')
-      }
-      if(is.null(tumor_type)) stop('tumor_type not provided')
-      pass <- (df_in[, paste0(signame, '_mva')] >= cutoffs[[tumor_type]])     
-      pass_strict <- (df_in[, paste0(signame, '_mva')] >= cutoffs_strict[[tumor_type]])
+         print(limits)
+         print( c(0.01,0.1))
+         print(match(limits, c(0.01,0.1)))
 
-      df_out <- data.frame(pass_mva = pass)
-      df_out$pass_mva_strict <- pass_strict
+        if(sum(is.na(match(limits, c(0.01,0.1)))) == 0){
+          cutoffs_strict_this <- cutoffs_custom[limits == 0.01]  
+          cutoffs_this <- cutoffs_custom[limits == 0.1]
+          print(cutoffs_this)
+          print(cutoffs_strict_this)
+        }else{
+          print('limits_custom')
+          limits_custom <- T
+        }
+      }
+      if(!limits_custom){
+        pass <- (df_in[, paste0(signame, '_mva')] >= cutoffs_this)     
+        pass_strict <- (df_in[, paste0(signame, '_mva')] >= cutoffs_strict_this)
+
+        df_out <- data.frame(pass_mva = pass)
+        df_out$pass_mva_strict <- pass_strict
+        print(str(df_out))
+      }
     }
   }
 
-  if(!is.null(cutoffs) & !is.null(limits) & !is.null(cut_var)){
+  if(limits_custom){
+    print(cutoffs_custom)
+    print(limits)
+    print(cut_var)
+
     if(method == "mva"){
       matching <- 'mva'
       variable <- paste0(signame, '_', matching)
@@ -98,9 +117,9 @@ assignment <- function(df_in,
     }
     for(i in 1:length(limits)){
       if(exists('df_out'))
-        df_out$new <- df_in[,variable] > cutoffs[[i]] 
+        df_out$new <- df_in[,variable] > cutoffs_custom[[i]] 
       else
-        df_out <- data.frame(new = df_in[,variable] > cutoffs[[i]])
+        df_out <- data.frame(new = df_in[,variable] > cutoffs_custom[[i]])
       colnames(df_out)[colnames(df_out) == "new"] <- paste0('pass_', matching, '_', cut_var, '_', round(limits[[i]], digit = 2))
     }
   }

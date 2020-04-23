@@ -244,10 +244,10 @@ conv_snv_matrix_to_df <- function(genomes_matrix){
   }
 
   if(length(chrom_nums) > 0){
-    inds <- unlist(lapply(chrom_nums,
+    inds <- which(unlist(lapply(chrom_nums,
                    function(x){
                      sum(grepl(paste0(paste0('chr', c(as.character(1:22), 'X', 'Y')), collapse = '|'), x)) > 0
-                   }))
+                   })))
     seq_start <- seq_start[inds]
     seq_end <- seq_end[inds]
     ref_vector <- ref_vector[inds]
@@ -258,6 +258,7 @@ conv_snv_matrix_to_df <- function(genomes_matrix){
   if(length(ref_vector) > 0){
     ref_vector <- as.character(ref_vector)
     alt_vector <- as.character(alt_vector)
+
     inds <- which(nchar(ref_vector) == 1 & nchar(alt_vector) == 1 & ref_vector != "-" & alt_vector != "-")
     ref_vector <- ref_vector[inds]
     alt_vector <- alt_vector[inds]
