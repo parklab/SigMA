@@ -76,8 +76,6 @@ adjust_cutoff <- function(input_df, data, tumor_type){
   
   this <- dynamic_cutoff[[data]][[tumor_type]]
 
-  print(median_data)
-  print(this$median_total_snvs)
   if(sum(this$median_total_snvs == median_data) == 0) return(NULL)
 
   cutoff_strict = this$cutoff[this$median_total_snvs == median_data & this$limit == 0.01]

@@ -36,9 +36,6 @@ assignment <- function(df_in,
                        cutoffs_custom = NULL, 
                        custom_model = F){
 
-  print(limits)
-  print(cutoffs_custom) 
-  print(cut_var)
   limits_custom <- F
   if(method == 'median_catalog'){
     matching = 'ml'
@@ -77,17 +74,11 @@ assignment <- function(df_in,
         }
       }
       else{
-         print(limits)
-         print( c(0.01,0.1))
-         print(match(limits, c(0.01,0.1)))
 
         if(sum(is.na(match(limits, c(0.01,0.1)))) == 0){
           cutoffs_strict_this <- cutoffs_custom[limits == 0.01]  
           cutoffs_this <- cutoffs_custom[limits == 0.1]
-          print(cutoffs_this)
-          print(cutoffs_strict_this)
         }else{
-          print('limits_custom')
           limits_custom <- T
         }
       }
@@ -97,16 +88,11 @@ assignment <- function(df_in,
 
         df_out <- data.frame(pass_mva = pass)
         df_out$pass_mva_strict <- pass_strict
-        print(str(df_out))
       }
     }
   }
 
   if(limits_custom){
-    print(cutoffs_custom)
-    print(limits)
-    print(cut_var)
-
     if(method == "mva"){
       matching <- 'mva'
       variable <- paste0(signame, '_', matching)
