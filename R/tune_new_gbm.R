@@ -130,7 +130,7 @@ add_gbm_model <- function(name_model,
   if(!exists('cutoffs_custom')) cutoffs_custom <- list()
   cutoffs_custom[[tumor_type]] <- cutoff
   if(!exists('cutoffs_strict_custom')) cutoffs_strict_custom <- list()
-  cutoffs_strict_custom[[tumor_type]] <- cutoff_strict_custom
+  cutoffs_strict_custom[[tumor_type]] <- cutoff_strict
   save(gbm_models_custom, cutoffs_custom, cutoffs_strict_custom, file = paste0(file_path, '/', name_model, '.rda'))
 }
 
