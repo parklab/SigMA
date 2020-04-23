@@ -69,19 +69,13 @@ tune_new_gbm <- function(input_file,
 
 tune_gbm_model <- function(file){
   df <- read.csv(file)
-  features_gbm <- features_gbm[!is.na(match(features_gbm, colnames(df)))]
-  features_gbm <- c(features_gbm, 'rat_sig3', 'Signature_3_ml')
-  inds <- na.omit(match(paste0('Signature_3_c', 1:10, '_ml'), colnames(df)))
-  if(length(inds) > 1)
-    df$Signature_3_ml <- rowSums(df[, inds])
-  if(length(inds) == 1)
-    df$Signature_3_ml <- df$Signature_3_c1_ml
  
-  df$rat_sig3 <- df$exp_sig3/df$total_snvs
+  features_gbm <- c(features_gbm, 'Signature_UV_c1_ml')
+  features_gbm <- features_gbm[!is.na(match(features_gbm, colnames(df)))]
 
   gbm_model <- gbm::gbm(formula = is_sig3 ~ .,
                    distribution = 'bernoulli',
-                   data = na.omit(df[, c(features_gbm, 'is_sig3')]),
+                   data = na.omit(df[df$total_snvs >= 3, c(features_gbm, 'is_sig3')]),
                    n.trees = 5000, 
                    shrinkage = 0.01,
                    bag.fraction = 0.2, 
@@ -90,7 +84,7 @@ tune_gbm_model <- function(file){
   bestTreeForPrediction = gbm::gbm.perf(gbm_model)
   gbm_model <- gbm::gbm(formula = is_sig3 ~ .,
                    distribution = 'bernoulli',
-                   data = na.omit(df[, c(features_gbm, 'is_sig3')]),
+                   data = na.omit(df[df$total_snvs >= 3, c(features_gbm, 'is_sig3')]),
                    n.trees = bestTreeForPrediction, 
                    shrinkage = 0.01,
                    bag.fraction = 0.2, 
@@ -99,7 +93,7 @@ tune_gbm_model <- function(file){
   features <- names(rel_infs)[rel_infs/sum(rel_infs) > 0.005]
   gbm_model <- gbm::gbm(formula = is_sig3 ~ .,
                    distribution = 'bernoulli',
-                   data = na.omit(df[, c(features, 'is_sig3')]),
+                   data = na.omit(df[df$total_snvs >= 3, c(features, 'is_sig3')]),
                    n.trees = bestTreeForPrediction, 
                    shrinkage = 0.01,
                    bag.fraction = 0.2, 
@@ -109,19 +103,11 @@ tune_gbm_model <- function(file){
 
 predict_prob <- function(file, gbm_model){
   df <- read.csv(file)
-  df$rat_sig3 <- df$exp_sig3/df$total_snvs
-
-  inds <- na.omit(match(paste0('Signature_3_c', 1:10, '_ml'), colnames(df)))
-  if(length(inds) > 1)
-    df$Signature_3_ml <- rowSums(df[, inds])
-  if(length(inds) == 1)
-    df$Signature_3_ml <- df$Signature_3_c1_ml
-
   prediction = predict(object = gbm_model,
                        newdata = df, 
                        n.trees = gbm_model$n.trees, 
                        type = "response")
-  
+  prediction[df$total_snvs < 5] <- 0
   df$prob <- prediction
   return(df)
 }
@@ -133,18 +119,19 @@ add_gbm_model <- function(name_model,
                           cutoff = NULL, 
                           cutoff_strict = NULL){
 
-  file_path <- system.file(paste0("extdata/gbm_models/"),
+  file_path <- system.file("extdata/gbm_models/",
                            package="SigMA")
 
   if(file.exists(paste0(file_path, '/', name_model, '.rda')))
     load(paste0(file_path, '/', name_model, '.rda'))
-  if(!exists('gbm_models')) gbm_models <- list()
-  gbm_models[[tumor_type]] <- gbm_model
-  if(!exists('cutoffs')) cutoffs <- list()
-  cutoffs[[tumor_type]] <- cutoff
-  if(!exists('cutoffs_strict')) cutoffs_strict <- list()
-  cutoffs_strict[[tumor_type]] <- cutoff_strict
-  save(gbm_models, cutoffs, cutoffs_strict, file = paste0(file_path, '/', name_model, '.rda'))
+  if(!exists('gbm_models_custom')) gbm_models_custom <- list()
+
+  gbm_models_custom[[tumor_type]] <- gbm_model
+  if(!exists('cutoffs_custom')) cutoffs_custom <- list()
+  cutoffs_custom[[tumor_type]] <- cutoff
+  if(!exists('cutoffs_strict_custom')) cutoffs_strict_custom <- list()
+  cutoffs_strict_custom[[tumor_type]] <- cutoff_strict
+  save(gbm_models_custom, cutoffs_custom, cutoffs_strict_custom, file = paste0(file_path, '/', name_model, '.rda'))
 }
 
 # remove a specific model if the tumor_type is 
@@ -161,10 +148,10 @@ remove_gbm_model <- function(name_model,
   else{
     load(file_path)
     ind <- which(names(gbm_models_custom[[name_model]]) == tumor_type)
-    gbm_models <- gbm_models[[-ind]]
-    cutoffs <- cutoffs[[-ind]]
-    cutoffs_strict <- cutoffs_strict[[-ind]]
-    save(gbm_models, cutoffs, cutoffs_strict, file = file_path)
+    gbm_models_custom <- gbm_models_custom[[-ind]]
+    cutoffs_custom <- cutoffs_custom[[-ind]]
+    cutoffs_strict_custom <- cutoffs_strict_custom[[-ind]]
+    save(gbm_models_custom, cutoffs_custom, cutoffs_strict_custom, file = file_path)
   }
 }
 
@@ -203,6 +190,7 @@ sen_fpr <- function(df, var, signal = 'is_sig3'){
 # as a lower bound and for FPR and FDR as an upper bound
 get_threshold <- function(df, limits, var = 'prob', 
                           signal = 'is_sig3', cut_var = 'fpr'){
+
   df_sen_fpr <- sen_fpr(df, var, signal)
   sen_cutoff <- numeric()
   fpr_cutoff <- numeric()
@@ -210,21 +198,26 @@ get_threshold <- function(df, limits, var = 'prob',
   cutoff_vec <- numeric() 
   for(limit in limits){
     if(cut_var == "fpr" | cut_var == "fdr"){
-      cutoff <- min(df_sen_fpr$value[df_sen_fpr[, cut_var] <= limit])
+      cutoff <- min(df_sen_fpr$value[df_sen_fpr[, cut_var] <= limit], na.rm = T)
+      if(length(cutoff) == 0)
+        limit <- min(df_sen_fpr[,cut_var], na.rm = T)
     }
     else if(cut_var == "sen"){ 
-      cutoff <- max(df_sen_fpr$value[df_sen_fpr[,cut_var] >= limit])
+      cutoff <- max(df_sen_fpr$value[df_sen_fpr[,cut_var] >= limit], na.rm = T)
+      if(length(cutoff) == 0)
+        limit <- max(df_sen_fpr[,cut_var], na.rm = T)
     }
     else{
       stop('cut var can be fpr, fdr or sen')
     }  
+
     cutoff_vec <- c(cutoff_vec, cutoff)
     sen_cutoff <- c(sen_cutoff, 
-                   df_sen_fpr$sen[df_sen_fpr$value == cutoff])
+                   max(df_sen_fpr$sen[df_sen_fpr$value > cutoff]))
     fpr_cutoff <- c(fpr_cutoff, 
-                    df_sen_fpr$fpr[df_sen_fpr$value == cutoff])
+                    max(df_sen_fpr$fpr[df_sen_fpr$value > cutoff]))
     fdr_cutoff <- c(fdr_cutoff, 
-                    df_sen_fpr$fdr[df_sen_fpr$value == cutoff])
+                    max(df_sen_fpr$fdr[df_sen_fpr$value > cutoff]))
   }
   return(list(cutoff = cutoff_vec, 
               sen = sen_cutoff, 

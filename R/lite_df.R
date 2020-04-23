@@ -6,6 +6,8 @@ lite_df <- function(merged_output){
   lite <- merged_output[, c('tumor', 'total_snvs')]
   merged_output$exps_all <- as.character(merged_output$exps_all)
   merged_output$sigs_all <- as.character(merged_output$sigs_all)
+  if(sum(colnames(merged_output) == "Signature_3_ml") > 0) 
+     merged_output <- merged_output[, -which(colnames(merged_output) ==  "Signature_3_ml")]
 
   all_cols <- colnames(merged_output)
 

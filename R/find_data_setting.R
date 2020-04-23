@@ -11,16 +11,28 @@
 #' not contain hypermutated samples it can be set to FALSE to speed
 #' up the calculation 
 
-find_data_setting <- function(input_file, tumor_type, best_model = NULL, remove_msi_pole = T){
-  if(!is.null(best_model)){
-    output_file <- run(input_file, tumor_type = tumor_type, data = best_model, do_mva = F, do_assign = F, check_msi = T)
-    df <- read.csv(output_file)
-    df$Signature_msi_ml <- rowSums(df[,grepl('Signature_msi_c', colnames(df))])
-    df <- df[!((df$Signature_pole_c1_ml_msi > 0.999 | df$Signature_msi_ml > 0.99) & df$total_snvs > median(df$total_snvs, na.rm = T)),]
+find_data_setting <- function(input_file = NULL, tumor_type, best_model = NULL, remove_msi_pole = T, input_df = NULL){
+  if(!is.null(input_file) & is.null(input_df)){
+    if(!is.null(best_model)){
+      output_file <- run(input_file, tumor_type = tumor_type, data = best_model, do_mva = F, do_assign = F, check_msi = T, input_df = input_df)
+      df <- read.csv(output_file)
+      df$Signature_msi_ml <- rowSums(df[,grepl('Signature_msi_c', colnames(df))])
+      df <- df[!((df$Signature_pole_c1_ml_msi > 0.999 | df$Signature_msi_ml > 0.99) & df$total_snvs > median(df$total_snvs, na.rm = T)),]
+    } 
+    else{
+      df <- read.csv(input_file)
+    }
+  }
+  else if(is.null(input_file) & !is.null(input_df)){
+    df <- input_df
+  }
+  else if(!is.null(input_file) & !is.null(input_df)){
+    stop('both input_file and input_df is provided only one is needed')
   }
   else{
-    df <- read.csv(input_file)
+    stop('both input_file and input_df is NULL')
   }
+
 
   if(sum(grepl('total_snvs', colnames(df))) == 0){
     df$total_snvs <- rowSums(df[,1:96])
@@ -53,3 +65,21 @@ find_data_setting <- function(input_file, tumor_type, best_model = NULL, remove_
   }
 }
 
+adjust_cutoff <- function(input_df, data, tumor_type){
+
+  if(sum(names(dynamic_cutoff) == data) == 0) return(NULL)
+  else if(sum(names(dynamic_cutoff[[data]]) == tumor_type) == 0) return(NULL)
+
+  median_data <- median(input_df$total_snvs, na.rm = T)
+  sd_data <- median(input_df$total_snvs, na.rm = T)
+  median_data <- median(input_df$total_snvs[input_df$total_snvs < median_data + 3*sd_data], na.rm = T)
+  
+  this <- dynamic_cutoff[[data]][[tumor_type]]
+
+  if(sum(this$median_total_snvs == median_data) == 0) return(NULL)
+
+  cutoff_strict = this$cutoff[this$median_total_snvs == median_data & this$limit == 0.01]
+  cutoff = this$cutoff[this$median_total_snvs == median_data & this$limit == 0.1]
+  
+  return(list(cutoffs = c(cutoff, cutoff_strict), limits = c(0.1, 0.01), cut_var = 'fpr'))
+}
