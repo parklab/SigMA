@@ -37,7 +37,6 @@ C implementation of [get_trinuc_norm.R](https://github.com/parklab/SigMA/blob/ma
         real	4m12.611s
         user	4m2.172s
         sys	0m7.739s
-        
         ```
 
 5. Output (seqcap_capture_b37.bed)
