@@ -74,10 +74,7 @@ assignment <- function(df_in,
         }
       }
       else{
-        print(limits) 
-        print(match(limits, c(0.01, 0.1)))
         if(sum(is.na(match(limits, c(0.01,0.1)))) == 0){
-          print('here')
           cutoffs_strict_this <- cutoffs_custom[limits == 0.01]  
           cutoffs_this <- cutoffs_custom[limits == 0.1]
         }else{
