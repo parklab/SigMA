@@ -69,7 +69,8 @@ run <- function(genome_file = NULL,
                 custom = F,
                 readjust = F,
                 return_df = F,
-                input_df = NULL){
+                input_df = NULL,
+                snv_cutoff = NULL){
 
   # when readjust is set to FALSE the parameters below are not used
 
@@ -80,12 +81,14 @@ run <- function(genome_file = NULL,
   # only if readjust is set to TRUE the data setting is controlled
   # against other options to pick the best option and overwritten
   best_model <- NULL
+  below_cutoff <- NULL
 
   if(!check_msi & readjust){  
     best_model <- find_data_setting(input_file = genome_file,
                                     remove_msi_pole = F,
                                     tumor_type = tumor_type,
                                     input_df = input_df)
+
     if(best_model != data){
       warning(paste0('best data setting differs from the data setting 
               used so the setting was changed to: ', best_model))
@@ -133,23 +136,31 @@ run <- function(genome_file = NULL,
     genomes <- genomes[!is.na(rowSums(genomes[, 1:96])), ]
   }
   if(sum(rowSums(genomes[, 1:96]) == 0) > 0){
+    if(readjust)
+      below_cutoff <- genomes[is.na(rowSums(genomes[,1:96])),]
     genomes <- genomes[which(rowSums(genomes[, 1:96]) > 0), ]
   }
 
   # lower cutoff on number mutations for SigMA
   if(do_assign | do_mva){
     if(data == "msk"){
-      if(tumor_type == "prost")
-        genomes <- genomes[which(rowSums(genomes[, 1:96]) >= 4), ]
-      else if(tumor_type == "osteo" | tumor_type == "panc_en")
-        genomes <- genomes[which(rowSums(genomes[, 1:96]) >= 3), ]
-      else
-        genomes <- genomes[which(rowSums(genomes[, 1:96]) >= 5), ]      
-    }else{ # for exomes and wgs a larger lower cutoff is applied
-      if(tumor_type == "bone_other" | tumor_type == "medullo")
-        genomes <- genomes[which(rowSums(genomes[, 1:96]) >= 5), ]
-      else
-        genomes <- genomes[which(rowSums(genomes[, 1:96]) >= 10), ]
+      if(tumor_type == "prost") snv_cutoff <- 4
+      else if(tumor_type == "osteo" | tumor_type == "panc_en") snv_cutoff <- 3
+      else snv_cutoff <- 5
+    }else if(data %in% names(platform_names)){ # for exomes and wgs a larger lower cutoff is applied
+      if(tumor_type == "bone_other" | tumor_type == "medullo") snv_cutoff <- 5
+      else snv_cutoff <- 10
+    }
+    if(!is.null(snv_cutoff)){
+      if(readjust){
+        if(is.null(below_cutoff))
+          below_cutoff <- genomes[rowSums(genomes[,1:96]) < snv_cutoff,]
+        else{
+          below_cutoff <- rbind(below_cutoff, 
+                                genomes[rowSums(genomes[,1:96]) < snv_cutoff,])
+        }
+      }
+      genomes <- genomes[rowSums(genomes[,1:96]) >= snv_cutoff,]
     }
   }
 
@@ -361,7 +372,7 @@ run <- function(genome_file = NULL,
             input_df = input_df)
       }
       else{
-        adjusted_cutoff <- adjust_cutoff(df_no_msi_pole, data, tumor_type)
+        adjusted_cutoff <- adjust_cutoff(df_no_msi_pole, data, tumor_type, below_cutoff)
         if(!is.null(adjusted_cutoff)){
           custom <- T
           cut_var <- adjusted_cutoff$cut_var
@@ -375,7 +386,8 @@ run <- function(genome_file = NULL,
                                        data = best_model,
                                        remove_msi_pole = F, 
                                        return_df = T,
-                                       run_SigMA = F)
+                                       run_SigMA = F,
+                                       below_cutoff = below_cutoff)
 
           # algorithm is run on simulations
           output_simul_df <- run(genome_file = NULL,
