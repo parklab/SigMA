@@ -355,6 +355,7 @@ run <- function(genome_file = NULL,
       }
       if(best_model != data){
         if(exists('merged_output')) rm('merged_output')
+        if(exists('output')) rm('output')
         SigMA_output <- run(genome_file = genome_file, 
             output_file = output_file, 
             data = best_model, 
@@ -418,6 +419,7 @@ run <- function(genome_file = NULL,
     # calculates the pass/fail boolean from MVA score or likelihood
     if(do_assign & 
        (method == "median_catalog" | method == "mva")){
+
       output_comb <- cbind(genomes, output)
       assignments <- assignment(output_comb, 
                                 method = method, 
@@ -432,10 +434,9 @@ run <- function(genome_file = NULL,
       output <- cbind(output, assignments)
     }
 
-
     if(!exists("merged_output")) merged_output <- output
     else merged_output <- cbind(merged_output, output)
-    
+
     if(!('rat_sig3' %in% colnames(merged_output))){
       if('exp_sig3' %in% colnames(merged_output)){
         merged_output$rat_sig3 <- merged_output$exp_sig3/genomes$total_snvs
