@@ -27,7 +27,8 @@ tune_new_gbm <- function(input_file,
                          tumor_type = NULL, 
                          data = NULL, 
                          norm96 = NULL, 
-                         run_SigMA = T){
+                         run_SigMA = T,
+                         snv_cutoff = 5){
 
  
   if(is.null(tumor_type) & !run_SigMA){
@@ -67,15 +68,15 @@ tune_new_gbm <- function(input_file,
   else return(gbm_model)
 }
 
-tune_gbm_model <- function(file){
+tune_gbm_model <- function(file, snv_cutoff){
   df <- read.csv(file)
- 
+  df <- df[df$total_snvs >= snv_cutoff,]
   features_gbm <- c(features_gbm, 'Signature_UV_c1_ml')
   features_gbm <- features_gbm[!is.na(match(features_gbm, colnames(df)))]
 
   gbm_model <- gbm::gbm(formula = is_sig3 ~ .,
                    distribution = 'bernoulli',
-                   data = na.omit(df[df$total_snvs >= 3, c(features_gbm, 'is_sig3')]),
+                   data = na.omit(df[, c(features_gbm, 'is_sig3')]),
                    n.trees = 5000, 
                    shrinkage = 0.01,
                    bag.fraction = 0.2, 
@@ -84,7 +85,7 @@ tune_gbm_model <- function(file){
   bestTreeForPrediction = gbm::gbm.perf(gbm_model)
   gbm_model <- gbm::gbm(formula = is_sig3 ~ .,
                    distribution = 'bernoulli',
-                   data = na.omit(df[df$total_snvs >= 3, c(features_gbm, 'is_sig3')]),
+                   data = na.omit(df[, c(features_gbm, 'is_sig3')]),
                    n.trees = bestTreeForPrediction, 
                    shrinkage = 0.01,
                    bag.fraction = 0.2, 
@@ -93,7 +94,7 @@ tune_gbm_model <- function(file){
   features <- names(rel_infs)[rel_infs/sum(rel_infs) > 0.005]
   gbm_model <- gbm::gbm(formula = is_sig3 ~ .,
                    distribution = 'bernoulli',
-                   data = na.omit(df[df$total_snvs >= 3, c(features, 'is_sig3')]),
+                   data = na.omit(df[, c(features, 'is_sig3')]),
                    n.trees = bestTreeForPrediction, 
                    shrinkage = 0.01,
                    bag.fraction = 0.2, 

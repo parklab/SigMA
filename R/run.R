@@ -69,7 +69,8 @@ run <- function(genome_file = NULL,
                 custom = F,
                 readjust = F,
                 return_df = F,
-                input_df = NULL){
+                input_df = NULL,
+                snv_cutoff = NULL){
 
   # when readjust is set to FALSE the parameters below are not used
 
@@ -80,12 +81,14 @@ run <- function(genome_file = NULL,
   # only if readjust is set to TRUE the data setting is controlled
   # against other options to pick the best option and overwritten
   best_model <- NULL
+  below_cutoff <- NULL
 
   if(!check_msi & readjust){  
     best_model <- find_data_setting(input_file = genome_file,
                                     remove_msi_pole = F,
                                     tumor_type = tumor_type,
                                     input_df = input_df)
+
     if(best_model != data){
       warning(paste0('best data setting differs from the data setting 
               used so the setting was changed to: ', best_model))
@@ -93,6 +96,7 @@ run <- function(genome_file = NULL,
     }
   }
  
+
   if((data == 'seqcap' | data == "seqcap_probe") &  do_mva & !weight_cf){
     warning('weight_cf was set to FALSE but the seqcap and seqcap_probe requires
     weight_cf to be TRUE, so this setting was change to TRUE')
@@ -100,7 +104,6 @@ run <- function(genome_file = NULL,
   }else if(data %in% c('wgs', 'wgs_pancan', 'tcga_mc3')){
     weight_cf = F
   }
-
 
   # There are trained MVA models for tumor_type "eso", "osteo", "ovary",
   # "panc_ad", "panc_en", "prost", "stomach", "uterus", "breast", "bladder" 
@@ -133,23 +136,31 @@ run <- function(genome_file = NULL,
     genomes <- genomes[!is.na(rowSums(genomes[, 1:96])), ]
   }
   if(sum(rowSums(genomes[, 1:96]) == 0) > 0){
+    if(readjust)
+      below_cutoff <- genomes[is.na(rowSums(genomes[,1:96])),]
     genomes <- genomes[which(rowSums(genomes[, 1:96]) > 0), ]
   }
 
   # lower cutoff on number mutations for SigMA
   if(do_assign | do_mva){
     if(data == "msk"){
-      if(tumor_type == "prost")
-        genomes <- genomes[which(rowSums(genomes[, 1:96]) >= 4), ]
-      else if(tumor_type == "osteo" | tumor_type == "panc_en")
-        genomes <- genomes[which(rowSums(genomes[, 1:96]) >= 3), ]
-      else
-        genomes <- genomes[which(rowSums(genomes[, 1:96]) >= 5), ]      
-    }else{ # for exomes and wgs a larger lower cutoff is applied
-      if(tumor_type == "bone_other" | tumor_type == "medullo")
-        genomes <- genomes[which(rowSums(genomes[, 1:96]) >= 5), ]
-      else
-        genomes <- genomes[which(rowSums(genomes[, 1:96]) >= 10), ]
+      if(tumor_type == "prost") snv_cutoff <- 4
+      else if(tumor_type == "osteo" | tumor_type == "panc_en") snv_cutoff <- 3
+      else snv_cutoff <- 5
+    }else if(data %in% names(platform_names)){ # for exomes and wgs a larger lower cutoff is applied
+      if(tumor_type == "bone_other" | tumor_type == "medullo") snv_cutoff <- 5
+      else snv_cutoff <- 10
+    }
+    if(!is.null(snv_cutoff)){
+      if(readjust){
+        if(is.null(below_cutoff))
+          below_cutoff <- genomes[rowSums(genomes[,1:96]) < snv_cutoff,]
+        else{
+          below_cutoff <- rbind(below_cutoff, 
+                                genomes[rowSums(genomes[,1:96]) < snv_cutoff,])
+        }
+      }
+      genomes <- genomes[rowSums(genomes[,1:96]) >= snv_cutoff,]
     }
   }
 
@@ -297,7 +308,6 @@ run <- function(genome_file = NULL,
                                    method = method, 
                                    data = data, 
                                    cluster_fractions = cluster_fractions_this)
-        
       }else{
         output <- match_to_catalog(genomes, 
                                    signatures,  
@@ -344,7 +354,9 @@ run <- function(genome_file = NULL,
         warning(paste0('Changed to the best data setting is:', best_model))
       }
       if(best_model != data){
-        run(genome_file = genome_file, 
+        if(exists('merged_output')) rm('merged_output')
+        if(exists('output')) rm('output')
+        SigMA_output <- run(genome_file = genome_file, 
             output_file = output_file, 
             data = best_model, 
             tumor_type = tumor_type, 
@@ -359,9 +371,10 @@ run <- function(genome_file = NULL,
             readjust = readjust,
             return_df = return_df,
             input_df = input_df)
+        return(SigMA_output)
       }
       else{
-        adjusted_cutoff <- adjust_cutoff(df_no_msi_pole, data, tumor_type)
+        adjusted_cutoff <- adjust_cutoff(df_no_msi_pole, data, tumor_type, below_cutoff)
         if(!is.null(adjusted_cutoff)){
           custom <- T
           cut_var <- adjusted_cutoff$cut_var
@@ -375,7 +388,8 @@ run <- function(genome_file = NULL,
                                        data = best_model,
                                        remove_msi_pole = F, 
                                        return_df = T,
-                                       run_SigMA = F)
+                                       run_SigMA = F,
+                                       below_cutoff = below_cutoff)
 
           # algorithm is run on simulations
           output_simul_df <- run(genome_file = NULL,
@@ -388,7 +402,7 @@ run <- function(genome_file = NULL,
                                 return_df = T)
 
           cut_var <- 'fpr'
-          limits <- c(0.1, 0.0149)
+          limits <- c(0.1, 0.01)
        
           thresh <- get_threshold(output_simul_df,
                                 limits, var = 'Signature_3_mva', cut_var = cut_var)
@@ -405,6 +419,7 @@ run <- function(genome_file = NULL,
     # calculates the pass/fail boolean from MVA score or likelihood
     if(do_assign & 
        (method == "median_catalog" | method == "mva")){
+
       output_comb <- cbind(genomes, output)
       assignments <- assignment(output_comb, 
                                 method = method, 
@@ -419,10 +434,9 @@ run <- function(genome_file = NULL,
       output <- cbind(output, assignments)
     }
 
-
     if(!exists("merged_output")) merged_output <- output
     else merged_output <- cbind(merged_output, output)
-    
+
     if(!('rat_sig3' %in% colnames(merged_output))){
       if('exp_sig3' %in% colnames(merged_output)){
         merged_output$rat_sig3 <- merged_output$exp_sig3/genomes$total_snvs
@@ -443,6 +457,7 @@ run <- function(genome_file = NULL,
   # signatures other than Signature 3 it keeps likelihoods with respect to
   # cluster averages, but combines the different clusters in different 
   # categories together
+
   if(return_df) return(merged_output)
   else{
     if(!is.null(best_model)) data = best_model

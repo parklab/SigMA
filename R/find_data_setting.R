@@ -48,7 +48,13 @@ find_data_setting <- function(input_file = NULL, tumor_type, best_model = NULL, 
 
   data1 <- stat_this$data[which(mean_diff == min(mean_diff))]
   data2 <- stat_this$data[which(median_diff == min(median_diff))]
-
+  if(data1 == "msk_with_zeros") data1 <- 'msk'
+  if(data2 == "msk_with_zeros") data2 <- 'msk'
+ 
+  if(length(data2) > 1){
+    if(length(data1) == 1) data2 <- data1
+    else data2 <- data2[[1]]
+  }
 
   if(is.null(best_model) & remove_msi_pole){
     find_data_setting(input_file, tumor_type, best_model = data1)
@@ -65,14 +71,20 @@ find_data_setting <- function(input_file = NULL, tumor_type, best_model = NULL, 
   }
 }
 
-adjust_cutoff <- function(input_df, data, tumor_type){
+adjust_cutoff <- function(input_df, data, tumor_type, below_cutoff){
+  message('adjusting cutoff for MVA score')
+  if(!is.null(below_cutoff)){
+    message('there are samples below SNV cutoff which are taken into account')
+    input_df <- rbind(input_df[,1:96], below_cutoff[,1:96])
+    input_df$total_snvs <- rowSums(input_df[,1:96])
+  }
 
   if(sum(names(dynamic_cutoff) == data) == 0) return(NULL)
   else if(sum(names(dynamic_cutoff[[data]]) == tumor_type) == 0) return(NULL)
 
   median_data <- median(input_df$total_snvs, na.rm = T)
   sd_data <- median(input_df$total_snvs, na.rm = T)
-  median_data <- median(input_df$total_snvs[input_df$total_snvs < median_data + 3*sd_data], na.rm = T)
+  median_data <- median(input_df$total_snvs[input_df$total_snvs < median_data + 5*sd_data], na.rm = T)
   
   this <- dynamic_cutoff[[data]][[tumor_type]]
 
@@ -80,6 +92,7 @@ adjust_cutoff <- function(input_df, data, tumor_type){
 
   cutoff_strict = this$cutoff[this$median_total_snvs == median_data & this$limit == 0.01]
   cutoff = this$cutoff[this$median_total_snvs == median_data & this$limit == 0.1]
+  
   
   return(list(cutoffs = c(cutoff, cutoff_strict), limits = c(0.1, 0.01), cut_var = 'fpr'))
 }
