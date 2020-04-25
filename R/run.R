@@ -96,6 +96,7 @@ run <- function(genome_file = NULL,
     }
   }
  
+
   if((data == 'seqcap' | data == "seqcap_probe") &  do_mva & !weight_cf){
     warning('weight_cf was set to FALSE but the seqcap and seqcap_probe requires
     weight_cf to be TRUE, so this setting was change to TRUE')
@@ -103,7 +104,6 @@ run <- function(genome_file = NULL,
   }else if(data %in% c('wgs', 'wgs_pancan', 'tcga_mc3')){
     weight_cf = F
   }
-
 
   # There are trained MVA models for tumor_type "eso", "osteo", "ovary",
   # "panc_ad", "panc_en", "prost", "stomach", "uterus", "breast", "bladder" 
@@ -308,7 +308,6 @@ run <- function(genome_file = NULL,
                                    method = method, 
                                    data = data, 
                                    cluster_fractions = cluster_fractions_this)
-        
       }else{
         output <- match_to_catalog(genomes, 
                                    signatures,  
@@ -355,7 +354,8 @@ run <- function(genome_file = NULL,
         warning(paste0('Changed to the best data setting is:', best_model))
       }
       if(best_model != data){
-        run(genome_file = genome_file, 
+        if(exists('merged_output')) rm('merged_output')
+        SigMA_output <- run(genome_file = genome_file, 
             output_file = output_file, 
             data = best_model, 
             tumor_type = tumor_type, 
@@ -370,6 +370,7 @@ run <- function(genome_file = NULL,
             readjust = readjust,
             return_df = return_df,
             input_df = input_df)
+        return(SigMA_output)
       }
       else{
         adjusted_cutoff <- adjust_cutoff(df_no_msi_pole, data, tumor_type, below_cutoff)
@@ -400,7 +401,7 @@ run <- function(genome_file = NULL,
                                 return_df = T)
 
           cut_var <- 'fpr'
-          limits <- c(0.1, 0.0149)
+          limits <- c(0.1, 0.01)
        
           thresh <- get_threshold(output_simul_df,
                                 limits, var = 'Signature_3_mva', cut_var = cut_var)
@@ -455,6 +456,7 @@ run <- function(genome_file = NULL,
   # signatures other than Signature 3 it keeps likelihoods with respect to
   # cluster averages, but combines the different clusters in different 
   # categories together
+
   if(return_df) return(merged_output)
   else{
     if(!is.null(best_model)) data = best_model
