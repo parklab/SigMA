@@ -59,7 +59,7 @@ decompose <- function(spect, signatures, data, nloop_user = NULL, delta=0){
     else if(data == "seqcap" | data == "seqcap_probe"){
       nloop <- min(dim(signatures)[[2]], 5)
     }
-    else if(data == "msk" | data == "found")
+    else if(data == "msk" | data == "fo" | data == "op")
       nloop <- min(nloop, 5)
   }
 

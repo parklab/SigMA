@@ -28,8 +28,13 @@ tune_new_gbm <- function(input_file,
                          data = NULL, 
                          norm96 = NULL, 
                          run_SigMA = T,
-                         snv_cutoff = 5){
-
+                         snv_cutoff = 5,
+                         feature_cutoff = 0.01,
+                         gbm_parameters = list(n.trees = 5000,
+                                               shrinkage = 0.001,
+                                               bag.fraction = 0.2,
+                                               n.minobsinnode = 3,
+                                               cv.fold = 5)){
  
   if(is.null(tumor_type) & !run_SigMA){
     if(!grepl('tumor_type', input_file)) stop('tumor_type not provided')
@@ -55,7 +60,7 @@ tune_new_gbm <- function(input_file,
     output_file <- input_file
   }
 
-  gbm_model <- tune_gbm_model(output_file) 
+  gbm_model <- tune_gbm_model(output_file, snv_cutoff, feature_cutoff, gbm_parameters) 
 
   output_table <- predict_prob(output_file, gbm_model)  
   write.table(output_table, 
@@ -68,37 +73,43 @@ tune_new_gbm <- function(input_file,
   else return(gbm_model)
 }
 
-tune_gbm_model <- function(file, snv_cutoff){
+tune_gbm_model <- function(file, snv_cutoff, feature_cutoff, gbm_parameters){
   df <- read.csv(file)
   df <- df[df$total_snvs >= snv_cutoff,]
   features_gbm <- c(features_gbm, 'Signature_UV_c1_ml')
   features_gbm <- features_gbm[!is.na(match(features_gbm, colnames(df)))]
 
+  n.trees = gbm_parameters$n.trees
+  shrinkage = gbm_parameters$shrinkage
+  bag.fraction = gbm_parameters$bag.fraction
+  n.minobsinnode = gbm_parameters$n.minobsinnode
+  cv.fold = gbm_parameters$cv.fold
   gbm_model <- gbm::gbm(formula = is_sig3 ~ .,
                    distribution = 'bernoulli',
                    data = na.omit(df[, c(features_gbm, 'is_sig3')]),
-                   n.trees = 5000, 
-                   shrinkage = 0.01,
-                   bag.fraction = 0.2, 
-                   n.minobsinnode= 3,
-                   cv.fold = 5)
+                   n.trees = n.trees, 
+                   shrinkage = shrinkage,
+                   bag.fraction = bag.fraction, 
+                   n.minobsinnode= n.minobsinnode,
+                   cv.fold = cv.fold)
   bestTreeForPrediction = gbm::gbm.perf(gbm_model)
   gbm_model <- gbm::gbm(formula = is_sig3 ~ .,
                    distribution = 'bernoulli',
                    data = na.omit(df[, c(features_gbm, 'is_sig3')]),
                    n.trees = bestTreeForPrediction, 
-                   shrinkage = 0.01,
-                   bag.fraction = 0.2, 
-                   n.minobsinnode= 3)
+                   shrinkage = shrinkage,
+                   bag.fraction = bag.fraction, 
+                   n.minobsinnode= n.minobsinnode)
   rel_infs <- gbm::relative.influence(gbm_model)
-  features <- names(rel_infs)[rel_infs/sum(rel_infs) > 0.005]
+
+  features <- names(rel_infs)[rel_infs/sum(rel_infs) > feature_cutoff]
   gbm_model <- gbm::gbm(formula = is_sig3 ~ .,
                    distribution = 'bernoulli',
                    data = na.omit(df[, c(features, 'is_sig3')]),
                    n.trees = bestTreeForPrediction, 
-                   shrinkage = 0.01,
-                   bag.fraction = 0.2, 
-                   n.minobsinnode= 3)
+                   shrinkage = shrinkage,
+                   bag.fraction = bag.fraction, 
+                   n.minobsinnode= n.minobsinnode)
   return(gbm_model)
 }
 

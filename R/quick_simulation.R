@@ -76,13 +76,11 @@ quick_simulation <- function(input_file,
  
   if(data == "wgs" | data == "wgs_pancan") sens <- 1
   else if(data == "seqcap" | data == "tcga_mc3" | data == "seqcap_probe") sens <- 0.9
-  else if(data == "msk") sens <- 0.5
+  else if(data == "msk") sens <- 0.7
   else sens <- 1
 
-  n_pos <- round(Sig3_frac * sens * dim(df)[[1]], digit = 0)
- 
+  n_pos <- round(Sig3_frac * sens * dim(df)[[1]], digit = 0) 
   val_cutoff <- sort(df[,var])[dim(df)[[1]] - n_pos]
-
   df$pass <- df[,var] > val_cutoff
 
   if(data == "seqcap_probe" | data == "tcga_mc3")
@@ -125,7 +123,7 @@ determine_scale <- function(df, m_ref, tumor_type, below_cutoff){
       scale_neg <- (total_snvs_neg - median_neg_built_in)/median_neg_built_in
     }
   
-    if(!is.null(scale_plus) & !is.null(scale_neg)){
+    if(!is.null(scale_plus) & !is.null(scale_neg)){      
 
       if( abs(2*(scale_plus - scale_neg)/(scale_plus + scale_neg)) > 0.5 ){
         warning('The scales for positive and negative group disagree')
@@ -261,7 +259,7 @@ simulate_from_wgs <- function(df, tumor_type, data, below_cutoff){
     if(data == "seqcap" | data == "seqcap_probe"){
       m_extra <- get_base_matrix(df, tumor_type, 'wgs', below_cutoff = below_cutoff)
     }
-    if(data == "msk"){ 
+    if(data == "msk" | data == "op"){ 
       m_extra <- get_base_matrix(df, tumor_type, 'seqcap', below_cutoff = below_cutoff)
     }
 
