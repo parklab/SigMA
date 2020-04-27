@@ -41,14 +41,17 @@ has_model <- function(data, tumor_type){
     else return(FALSE)
   }
   else{
+    file_path <- system.file("extdata/gbm_models/",
+                             package="SigMA")
+    filename <- paste0(file_path, data, '.rda')
     if(file.exists(filename)){
       load(filename)
       tumor_types <- names(gbm_model)
       if(!is.na(match(tumor_type, tumor_types))) return(TRUE)
       else return(FALSE)
     } 
-    else{
-      stop('data setting is not valid')
+    else{ 
+      return(FALSE)
     }
   }
 }
