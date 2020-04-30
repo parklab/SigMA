@@ -31,7 +31,7 @@ tune_new_gbm <- function(input_file,
                          snv_cutoff = 5,
                          feature_cutoff = 0.01,
                          gbm_parameters = list(n.trees = 5000,
-                                               shrinkage = 0.001,
+                                               shrinkage = 0.01,
                                                bag.fraction = 0.2,
                                                n.minobsinnode = 3,
                                                cv.fold = 5)){
@@ -54,7 +54,8 @@ tune_new_gbm <- function(input_file,
                        norm96 = norm96, 
                        do_assign = F,  
                        check_msi = F,
-                       do_mva = F)
+                       do_mva = F, 
+                       snv_cutoff = snv_cutoff)
   }
   else{
     output_file <- input_file
@@ -76,7 +77,6 @@ tune_new_gbm <- function(input_file,
 tune_gbm_model <- function(file, snv_cutoff, feature_cutoff, gbm_parameters){
   df <- read.csv(file)
   df <- df[df$total_snvs >= snv_cutoff,]
-  features_gbm <- c(features_gbm, 'Signature_UV_c1_ml')
   features_gbm <- features_gbm[!is.na(match(features_gbm, colnames(df)))]
 
   n.trees = gbm_parameters$n.trees

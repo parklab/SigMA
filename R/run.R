@@ -143,14 +143,6 @@ run <- function(genome_file = NULL,
 
   # lower cutoff on number mutations for SigMA
   if(do_assign | do_mva){
-    if(data == "msk" | data == "op" | data == "fo"){
-      if(tumor_type == "prost") snv_cutoff <- 4
-      else if(tumor_type == "osteo" | tumor_type == "panc_en") snv_cutoff <- 3
-      else snv_cutoff <- 5
-    }else if(data %in% names(platform_names)){ # for exomes and wgs a larger lower cutoff is applied
-      if(tumor_type == "bone_other" | tumor_type == "medullo") snv_cutoff <- 5
-      else snv_cutoff <- 10
-    }
     if(!is.null(snv_cutoff)){
       if(readjust){
         if(is.null(below_cutoff))
@@ -161,6 +153,16 @@ run <- function(genome_file = NULL,
         }
       }
       genomes <- genomes[rowSums(genomes[,1:96]) >= snv_cutoff,]
+    }
+    else{
+      if(data == "msk" | data == "op" | data == "fo"){
+        if(tumor_type == "prost") snv_cutoff <- 4
+        else if(tumor_type == "osteo" | tumor_type == "panc_en") snv_cutoff <- 3
+        else snv_cutoff <- 5
+      }else if(data %in% names(platform_names)){ # for exomes and wgs a larger lower cutoff is applied
+        if(tumor_type == "bone_other" | tumor_type == "medullo") snv_cutoff <- 5
+        else snv_cutoff <- 10
+      }
     }
   }
 

@@ -29,17 +29,26 @@ quick_simulation <- function(input_file,
                              run_SigMA = T,
                              input_df = NULL, 
                              return_df = F, 
+                             snv_cutoff = 5,
                              below_cutoff = NULL){
 
   if(run_SigMA){
+    if(!is.null(input_file)) df_in <- read.csv(input_file)
+    else df_in <- input_df 
+
     df <- run(input_file,
               tumor_type = tumor_type,
               data = data,
               check_msi = remove_msi_pole, 
               do_mva = has_model(data, tumor_type),
               do_assign = T, 
+              snv_cutoff = snv_cutoff,
               input_df = input_df,
               return_df = T)
+
+    inds <- match(df_in$tumor, df$tumor)
+    if(sum(is.na(inds)) != 0) 
+      below_cutoff <- df_in[is.na(inds),]
   }
   else{
     if(!is.null(input_file) & is.null(input_df)){
@@ -79,7 +88,13 @@ quick_simulation <- function(input_file,
   else if(data == "msk") sens <- 0.7
   else sens <- 1
 
-  n_pos <- round(Sig3_frac * sens * dim(df)[[1]], digit = 0) 
+  if(is.null(below_cutoff)){
+    n_pos <- round(Sig3_frac * sens * dim(df)[[1]], digit = 0) 
+  }
+  else{
+    n_pos <- round(Sig3_frac * sens * (dim(df)[[1]] + dim(below_cutoff)[[1]]), digit = 0) 
+  }
+  
   val_cutoff <- sort(df[,var])[dim(df)[[1]] - n_pos]
   df$pass <- df[,var] > val_cutoff
 
@@ -104,9 +119,8 @@ quick_simulation <- function(input_file,
 
 # adjusts the snv count based on the differences in the
 # median SNV counts in the downsampled simulation and data
-determine_scale <- function(df, m_ref, tumor_type, below_cutoff){
+determine_scale <- function(df, m_ref, tumor_type, below_cutoff, scale_separately = F){
   # calculate the scale to match the data to simulations 
-
   if(sum(grepl(tumor_type, tumor_types_HRD)) > 0 & sum(df$pass, na.rm = T) > 0){
     scale_plus <- NULL
     scale_neg <- NULL
@@ -124,7 +138,6 @@ determine_scale <- function(df, m_ref, tumor_type, below_cutoff){
     }
   
     if(!is.null(scale_plus) & !is.null(scale_neg)){      
-
       if( abs(2*(scale_plus - scale_neg)/(scale_plus + scale_neg)) > 0.5 ){
         warning('The scales for positive and negative group disagree')
         match_total_snvs_combined <- T
@@ -135,17 +148,19 @@ determine_scale <- function(df, m_ref, tumor_type, below_cutoff){
       }
     }
     if(!is.null(scale_plus) & is.null(scale_neg)){
-      match_total_snvs_combined <- F
+      match_total_snvs_combined <- F 
+      scale_separately <- F
       scale <- scale_plus
     }
     if(is.null(scale_plus) & !is.null(scale_neg)){
       match_total_snvs_combined <- F
+      scale_separately <- F
       scale <- scale_neg
     }
   }
   else{
     match_total_snvs_combined <- T
-  }
+  } 
 
   if(match_total_snvs_combined){
     total_snvs <- median(rowSums(df[,1:96]), na.rm = T)
@@ -155,7 +170,12 @@ determine_scale <- function(df, m_ref, tumor_type, below_cutoff){
     median_total_snvs <- median(rowSums(m_ref[,1:96]), na.rm = T) 
     scale <- (total_snvs - median_total_snvs)/median_total_snvs
   }
+ 
   m_ref$scale <- scale
+  if(scale_separately){
+    m_ref$scale[m_ref$is_sig3] <- scale_plus
+    m_ref$scale[!m_ref$is_sig3] <- scale_neg
+  }
   return(m_ref)
 }
  
@@ -195,7 +215,6 @@ get_inter_tt_suppl <- function(tumor_type, data, matrices_96dim){
 # Get the 96-dimensional matrix that will be used in the 
 # simulation based on the tumor_type 
 get_base_matrix <- function(df, tumor_type, data,  below_cutoff = NULL, main = F){
-
   data_dir <- system.file("extdata/matrices/matrices_96dim.rda", package="SigMA")
   load(data_dir)
   m_out <- matrices_96dim[[data]][[tumor_type]]
