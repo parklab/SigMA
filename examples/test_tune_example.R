@@ -38,14 +38,14 @@ output_file_built_in <- run(file_name,
 #remove MSI samples
 m <- read.csv(output_file_built_in)
 lite <- lite_df(m)
-m <- m[lite$categ != "Signature_msi" & lite$categ != "Signature_pole",]
+m <- m[!(lite$categ %in% c("Signature_msi", "Signature_pole", 'MMRD', 'POLE')),]
 write.table(m[,1:97], file_name, row.names = F, sep  = ',', quote = F)
-
 
 data <- find_data_setting(input_file = file_name, 
                           tumor_type = tumor_type,
                           remove_msi_pole = F) # since we removed these samples above otherwise has to be T
 
+message(paste0('Best data option is ', data))
 
 # Once this is identified it allows us to get an 
 # estimate of the total snv counts in Sig3+ and Sig3-
@@ -60,16 +60,11 @@ simul_file <- quick_simulation(file_name,
                                run_SigMA = T, 
                                remove_msi_pole = F) #since we removed these samples above otherwise has to be T
 
-simul_file_output <- run(simul_file, 
-                         data = data,
-                         tumor_type = tumor_type,
-                         do_mva = F,
-                         do_assign = F)
 
 message('tuning')
-message(simul_file_output)
+message(simul_file)
 # Using the imulations tune a new Gradient Boosting Machine
-tune_new_gbm(simul_file_output, 
+tune_new_gbm(simul_file, 
              tumor_type = tumor_type, 
              data = data,
              run_SigMA = T, 
@@ -78,22 +73,17 @@ tune_new_gbm(simul_file_output,
 message('tuned')
 load('test.rda')
 
-df_predict <- read.csv(gsub(simul_file_output, pattern = '.csv', replace = '_predictions.csv'))
-tumor_type <- 'breast'
+simul_file_output <- gsub(simul_file, pattern = '.csv', replace = '_predictions.csv')
+df_predict <- read.csv(simul_file_output)
 
 # Get thresholds for given false positive rate
 limits_fpr <- c(0.1, 0.05) 
 cut_var <- 'fpr' # you can alternatively use 'sen' to select on specific sensitivity value
 
 
-thresh <- get_threshold(df_predict, limits_fpr[[1]], var = 'prob', cut_var = cut_var) # FPR < 0.1
-thresh_strict <- get_threshold(df_predict, limits_fpr[[2]], var = 'prob', cut_var = cut_var) #FPR < 0.05
-cutoff <- thresh$cutoff 
-cutoff_strict <- thresh_strict$cutoff
-sen <- thresh$sen 
-fpr <- thresh$fpr
-sen_strict <- thresh_strict$sen
-fpr_strict <- thresh_strict$fpr
+thresh <- get_threshold(df_predict, limits_fpr, var = 'prob', cut_var = cut_var) # FPR < 0.1
+cutoff <- thresh$cutoff[[1]] 
+cutoff_strict <- thresh$cutoff[[2]]
 
                       
 # then we add the new gbm model in the system files together with the
@@ -106,26 +96,17 @@ add_gbm_model('example_gbm',
               cutoff_strict = cutoff_strict)
     
 # example bed file:
-bed_file <- system.file("extdata/examples/seqcap_capture.bed", package="SigMA")
-
-norm96 <- get_trinuc_norm(bed_file)
+# bed_file <- system.file("extdata/examples/truseq.bed", package="SigMA")
+# norm96 <- get_trinuc_norm(bed_file)
 
 # then imagine we received a new dataset which is in our example
 # the same dataset we analyzed earlier with the built in model
-output_new_tune <- run('matrix_96dim_tcga_brca_msi_removed.csv', 
+output_new_tune <- run('matrix_96dim_tcga_brca.csv', 
                       data = 'example_gbm',
                       tumor_type = 'breast',
                       do_mva = T, 
                       do_assign = T, 
                       check_msi = T,
-                      custom = T,
-                      norm96 = norm96)
+                      custom = T,  
+                      norm96 = weight_3Nfreq$seqcap)
 
-df_built_in <- read.csv(output_file_built_in)
-df_new_tune <- read.csv(output_new_tune)
-df_new_tune <- lite_df(df_new_tune)
-
-df_new_tune$built_in_mva <- df_new_tune$built_in_mva[match(df_new_tune$tumor, df_built_in_mva$tumor)]
-
-plot <- ggplot(df_new_tune, aes(x = Signature_3_mva, y = built_in_mva)) + geom_point(aes(color = categ)) + theme_def
-ggsave(plot, 'compare_old_tune_new_tune.pdf', width = 9.8/2.4, height = 9.8/2.4)

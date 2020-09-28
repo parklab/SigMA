@@ -17,6 +17,7 @@
 
 decompose <- function(spect, signatures, data, nloop_user = NULL, delta=0){
   # calculates frobenius error
+
   error <- function(spect, signatures, exposures){
     reco <- (as.matrix(signatures) %*% exposures)
     error_frac <- sqrt(sum(diag((spect - reco) %*% t(spect - reco))))/sqrt(sum(diag(spect %*% t(spect))))
@@ -39,6 +40,7 @@ decompose <- function(spect, signatures, data, nloop_user = NULL, delta=0){
   min_error <- 10000000
   min_indices <- NULL
   min_exposures <- NULL
+
 
   if(!is.null(nloop_user)) nloop <- min(dim(signatures)[[2]], nloop_user)
   else{
@@ -66,6 +68,23 @@ decompose <- function(spect, signatures, data, nloop_user = NULL, delta=0){
   if(nloop < 2)
     stop('linear decomposition requires at least 2 signatures')
 
+  exps <- coef(nnls::nnls(as.matrix(signatures), spect))
+  cosines <- unlist(apply(signatures, 2, function(x, spect){cosine(x, spect)}, spect = spect))
+
+  if(sum(exps > 0) < nloop){
+    signames_pos <- colnames(signatures)[exps > 0]
+    
+    signames_zero <- colnames(signatures)[exps == 0]
+    cosines_zero <- cosines[match(signames_zero, colnames(signatures))]
+    signames_extra <- signames_zero[order(-cosines_zero)]
+    signames_extra <- signames_extra[1:(nloop - length(signames_pos))]
+    
+    signatures <- signatures[,c(signames_pos, signames_extra)]
+    dim2 <- dim(signatures)[[2]]
+  }else{
+    signatures <- signatures[,exps > 0]
+    dim2 <- dim(signatures)[[2]]
+  }
 
   for(i in 1:(dim2 - nloop + 1)){
     for(j in (i+1):(dim2 - nloop + 2)){
@@ -164,6 +183,7 @@ decompose <- function(spect, signatures, data, nloop_user = NULL, delta=0){
       }
     }
   }
+  
   return(list(signatures = colnames(signatures)[min_indices],
               exposures = min_exposures,
               error = min_error))

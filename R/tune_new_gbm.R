@@ -77,6 +77,7 @@ tune_new_gbm <- function(input_file,
 tune_gbm_model <- function(file, snv_cutoff, feature_cutoff, gbm_parameters){
   df <- read.csv(file)
   df <- df[df$total_snvs >= snv_cutoff,]
+  features_gbm <- unique(c(features_gbm, colnames(df)[grepl('Signature_', colnames(df)) & grepl('_ml', colnames(df))]))
   features_gbm <- features_gbm[!is.na(match(features_gbm, colnames(df)))]
 
   n.trees = gbm_parameters$n.trees

@@ -30,17 +30,21 @@ quick_simulation <- function(input_file,
                              input_df = NULL, 
                              return_df = F, 
                              snv_cutoff = 5,
-                             below_cutoff = NULL){
+                             below_cutoff = NULL,
+                             maf_percent = NULL){
 
   if(run_SigMA){
     if(!is.null(input_file)) df_in <- read.csv(input_file)
     else df_in <- input_df 
+ 
+    if(grepl('op_', data)) data_this <- 'op'
+    else data_this <- data
 
     df <- run(input_file,
               tumor_type = tumor_type,
-              data = data,
+              data = data_this,
               check_msi = remove_msi_pole, 
-              do_mva = has_model(data, tumor_type),
+              do_mva = F, #has_model(data, tumor_type),
               do_assign = T, 
               snv_cutoff = snv_cutoff,
               input_df = input_df,
@@ -85,7 +89,7 @@ quick_simulation <- function(input_file,
  
   if(data == "wgs" | data == "wgs_pancan") sens <- 1
   else if(data == "seqcap" | data == "tcga_mc3" | data == "seqcap_probe") sens <- 0.9
-  else if(data == "msk") sens <- 0.7
+  else if(grepl('op_', data) | data == "msk") sens <- 0.7
   else sens <- 1
 
   if(is.null(below_cutoff)){
@@ -103,7 +107,7 @@ quick_simulation <- function(input_file,
   else
     data_matrix <- data
 
-  df_simul <- simulate_from_wgs(df, tumor_type = tumor_type, data = data_matrix, below_cutoff)
+  df_simul <- simulate_from_wgs(df, tumor_type = tumor_type, data = data_matrix, below_cutoff, maf_percent)
    
   if(return_df) return(df_simul)
   else{
@@ -167,10 +171,11 @@ determine_scale <- function(df, m_ref, tumor_type, below_cutoff, scale_separatel
     if(!is.null(below_cutoff)){
       total_snvs <- median(c(rowSums(df[,1:96]), rowSums(below_cutoff[,1:96])), na.rm = T)
     }
+
     median_total_snvs <- median(rowSums(m_ref[,1:96]), na.rm = T) 
     scale <- (total_snvs - median_total_snvs)/median_total_snvs
   }
- 
+  
   m_ref$scale <- scale
   if(scale_separately){
     m_ref$scale[m_ref$is_sig3] <- scale_plus
@@ -184,28 +189,24 @@ determine_scale <- function(df, m_ref, tumor_type, below_cutoff, scale_separatel
 # tumor types are supplemented in the base matrix
 # but with adjusted SNV counts to account for the tissue
 # specific differences in SNV load in tumors
-get_inter_tt_suppl <- function(tumor_type, data, matrices_96dim){
-
+get_inter_tt_suppl <- function(tumor_type, data, matrices_96dim, maf_percent = NULL){
+  
   data_dir <- system.file("extdata/matrices/matrices_96dim.rda", package="SigMA")
   load(data_dir)
-
-  names(inter_tt_suppl)
+  if(is.null(maf_percent)) matrices_96dim <- matrices_96dim[['matched_normal']] 
+  else matrices_96dim <- matrices_96dim[[paste0('maf_', maf_percent)]]
   
   additional_tts <- names(inter_tt_suppl[[tumor_type]])
   if(is.null(additional_tts)) return(NULL)
-
   if(exists('m_comb')) rm(m_comb)
   for(tt in additional_tts){
     tumors <- inter_tt_suppl[[tumor_type]][[tt]] 
     m_this <- matrices_96dim[[data]][[tt]]
-
     m_this$tumor_type <- tt
     m_this <- m_this[na.omit(match(tumors, m_this$tumor)),]
-
     if(exists('m_comb')) m_comb <- rbind(m_comb, m_this)
     else m_comb <- m_this
   }
-  
   if(!exists('m_comb')) return(NULL)
   else{
     return(m_comb)
@@ -214,15 +215,19 @@ get_inter_tt_suppl <- function(tumor_type, data, matrices_96dim){
 
 # Get the 96-dimensional matrix that will be used in the 
 # simulation based on the tumor_type 
-get_base_matrix <- function(df, tumor_type, data,  below_cutoff = NULL, main = F){
+get_base_matrix <- function(df, tumor_type, data,  below_cutoff = NULL, main = F, maf_percent = NULL){
+
   data_dir <- system.file("extdata/matrices/matrices_96dim.rda", package="SigMA")
   load(data_dir)
+  if(is.null(maf_percent)) matrices_96dim <- matrices_96dim[['matched_normal']]
+  else matrices_96dim <- matrices_96dim[[paste0('maf_', maf_percent)]]
+   
   m_out <- matrices_96dim[[data]][[tumor_type]]
-  if(main){
+  if(main){ 
     m_out <- determine_scale(df, m_out, tumor_type, below_cutoff)
   }
   m_out$main <- T
-  m_out_suppl <- get_inter_tt_suppl(tumor_type, data, matrices_96dim) 
+  m_out_suppl <- get_inter_tt_suppl(tumor_type, data, matrices_96dim, maf_percent) 
   if(!is.null(m_out_suppl)){
     m_out_suppl$main <- F
     if(main){
@@ -230,8 +235,12 @@ get_base_matrix <- function(df, tumor_type, data,  below_cutoff = NULL, main = F
         for(tt in unique(m_out_suppl$tumor_type)){
           this <- m_out_suppl[m_out_suppl$tumor_type == tt,]
           this <- determine_scale(df, this, tumor_type, below_cutoff)
-          if(exists('m_out_suppl_tmp')) m_out_suppl_tmp <- rbind(m_out_suppl_tmp, this)
-          else m_out_suppl_tmp <- this
+          if(exists('m_out_suppl_tmp')){
+            m_out_suppl_tmp <- rbind(m_out_suppl_tmp, this)
+          }
+          else{
+            m_out_suppl_tmp <- this
+          }
         }
         m_out_suppl <- m_out_suppl_tmp
         rm('m_out_suppl_tmp')
@@ -240,23 +249,24 @@ get_base_matrix <- function(df, tumor_type, data,  below_cutoff = NULL, main = F
         m_out_suppl <- determine_scale(df, m_out_suppl, tumor_type, below_cutoff)
       }
     }
-    if(sum(colnames(m_out_suppl) == "tumor_type") > 0){
+    if(sum(colnames(m_out_suppl) == tumor_type) > 0){
       m_out_suppl <- m_out_suppl[, -which(colnames(m_out_suppl) == "tumor_type")]
       m_out <- rbind(m_out, m_out_suppl) 
     }
-    else
-      m_out <- rbind(m_out, m_out_suppl)
+    else{
+      m_out <- rbind(m_out, m_out_suppl[,na.omit(match(colnames(m_out), colnames(m_out_suppl)))]) 
+    }
   }
   return(m_out)
 }
 
 # The simulations are generated by adjusting the SNV count with
 # MC simulations
-simulate_from_wgs <- function(df, tumor_type, data, below_cutoff){
+simulate_from_wgs <- function(df, tumor_type, data, below_cutoff, maf_percent){
   if(data == "wgs"){
-    m_main <- get_base_matrix(df, tumor_type, 'wgs', main = T)
+    m_main <- get_base_matrix(df = df, tumor_type = tumor_type, data = 'wgs', main = T, maf_percent = maf_percent)
     if(sum(m_main$scale < 0 & !m_main$main) > 0){
-     inds <- which(m_main$scale < 0 & !m_main$main)
+      inds <- which(m_main$scale < 0 & !m_main$main)
       m_main[inds,] <- adjust_snvs(m_main[inds,])
     } 
     if(sum(m_main$scale > 0 & !m_main$main) > 0){
@@ -269,17 +279,17 @@ simulate_from_wgs <- function(df, tumor_type, data, below_cutoff){
   # if data is not specified wgs is downsampled
   if(is.null(data)) data = 'wgs'
 
-  m_main <- get_base_matrix(df, tumor_type, data, main = T, below_cutoff = below_cutoff)
-  
+  m_main <- get_base_matrix(df = df, tumor_type = tumor_type, data = data, main = T, below_cutoff = below_cutoff, maf_percent = maf_percent)
+
   if(max(m_main$scale) < 0){
     m_main <- adjust_snvs(m_main)
   }
   else{
     if(data == "seqcap" | data == "seqcap_probe"){
-      m_extra <- get_base_matrix(df, tumor_type, 'wgs', below_cutoff = below_cutoff)
+      m_extra <- get_base_matrix(df = df, tumor_type = tumor_type, data = 'wgs', below_cutoff = below_cutoff, maf_percent = maf_percent)
     }
-    if(data == "msk" | data == "op"){ 
-      m_extra <- get_base_matrix(df, tumor_type, 'seqcap', below_cutoff = below_cutoff)
+    if(data == "msk" | data == "op" | data == "op_test"){ 
+      m_extra <- get_base_matrix(df = df, tumor_type = tumor_type, data = 'seqcap', below_cutoff = below_cutoff, maf_percent = maf_percent)
     }
 
     message('adjusting SNVs')
