@@ -11,7 +11,7 @@
 #' is returned. If set to FALSE the merged data table is saved 
 #' in the input file, file_SBS, replacing the old file
 
-combine_SBS_indel <- function(file_SBS, file_overlap_repeat, mut_bed_file, return_df = FALSE){
+combine_SBS_indel <- function(file_SBS, file_overlap_repeat, mut_bed_file, return_df = FALSE, msisensor_file = NULL){
   df <- read.csv(file_SBS)
   df <- df[, !(colnames(df) %in% c('nins', 'ndel', 'nmsi_ins', 'nmsi_del'))]
   df_repeat <- read.csv(file_overlap_repeat)
@@ -33,6 +33,11 @@ combine_SBS_indel <- function(file_SBS, file_overlap_repeat, mut_bed_file, retur
   df$nmsi_del[is.na(df$nmsi_del)] <- 0
   df$nins[is.na(df$nins)] <- 0
   df$ndel[is.na(df$ndel)] <- 0
+
+  if(!is.null(msisensor_file)){
+    df_msisensor <- read.csv(msisensor_file)
+    df$msisensor <- df_msisensor$msisensor[match(df$tumor, df_msisensor$tumor)]
+  }
 
   if(return_df)  return(df)
   else{
