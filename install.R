@@ -13,12 +13,10 @@ packages <- c("BSgenome",
     "Rmisc",
     "VariantAnnotation")
 
-if(getRversion() > "3.6.0"){
-  if(grepl('3.6', getRversion())){
-    if (!requireNamespace("BiocManager", quietly = TRUE))
-      install.packages("BiocManager")
-    BiocManager::install(packages)
-  }
+if(getRversion() >= "3.6.0"){
+  if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager", repos = "http://cran.us.r-project.org")
+  BiocManager::install(packages)
 }
 if(getRversion() < "3.6.0" & getRversion() >= "3.5.0"){
   source("https://bioconductor.org/biocLite.R")
