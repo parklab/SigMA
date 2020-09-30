@@ -25,7 +25,7 @@ match_to_catalog <- function(genomes, signatures, data, cluster_fractions = NULL
   
   signature_names <- colnames(signatures)
   genome_matrix <- genomes[, 1:ntype]
-
+  
   names_comb <- rep('', dim(genome_matrix)[[1]])
   combined_simil <- rep(0, dim(genome_matrix)[[1]])
 

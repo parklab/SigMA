@@ -70,7 +70,13 @@ run <- function(genome_file = NULL,
                 readjust = F,
                 return_df = F,
                 input_df = NULL,
-                snv_cutoff = NULL){
+                snv_cutoff = NULL,
+                cosmic_version = "v2"){
+
+  if(cosmic_version == "v3") 
+    cosmic_catalog <- pcawg_catalog
+  if(cosmic_version == "v2")
+    cosmic_catalog <- cosmic_catalog_v2
 
   # when readjust is set to FALSE the parameters below are not used
 
@@ -111,7 +117,7 @@ run <- function(genome_file = NULL,
   # Signature 3 likelihood and all other variables can still be calculated 
   # by setting add_sig3 = T
 
-  if(do_mva & sum(tumor_type == names(gbm_models[[data]])) == 0){
+  if(do_mva & !custom & sum(tumor_type == names(gbm_models[[data]])) == 0){
     stop('No built-in MVA models for the tumor_type selected for
           targetted gene panels for "medullo" or "ewing" whole
           exome sequencing is available for others set do_mva to FALSE')
@@ -143,14 +149,6 @@ run <- function(genome_file = NULL,
 
   # lower cutoff on number mutations for SigMA
   if(do_assign | do_mva){
-    if(data == "msk" | data == "op" | data == "fo"){
-      if(tumor_type == "prost") snv_cutoff <- 4
-      else if(tumor_type == "osteo" | tumor_type == "panc_en") snv_cutoff <- 3
-      else snv_cutoff <- 5
-    }else if(data %in% names(platform_names)){ # for exomes and wgs a larger lower cutoff is applied
-      if(tumor_type == "bone_other" | tumor_type == "medullo") snv_cutoff <- 5
-      else snv_cutoff <- 10
-    }
     if(!is.null(snv_cutoff)){
       if(readjust){
         if(is.null(below_cutoff))
@@ -161,6 +159,16 @@ run <- function(genome_file = NULL,
         }
       }
       genomes <- genomes[rowSums(genomes[,1:96]) >= snv_cutoff,]
+    }
+    else{
+      if(data == "msk" | data == "op" | data == "fo"){
+        if(tumor_type == "prost") snv_cutoff <- 4
+        else if(tumor_type == "osteo" | tumor_type == "panc_en") snv_cutoff <- 3
+        else snv_cutoff <- 5
+      }else if(data %in% names(platform_names)){ # for exomes and wgs a larger lower cutoff is applied
+        if(tumor_type == "bone_other" | tumor_type == "medullo") snv_cutoff <- 5
+        else snv_cutoff <- 10
+      }
     }
   }
 
@@ -236,18 +244,21 @@ run <- function(genome_file = NULL,
       if(step == "mss" & method != "cosine_simil"){
         signatures <- cosmic_catalog[, signames_per_tissue[[tumor_type]]]
       }else{
-        signatures <- cosmic_catalog[, c(signames_per_tissue[[tumor_type]],
+        signatures <- cosmic_catalog[, unique(c(signames_per_tissue[[tumor_type]],
                                        signames_per_tissue[["msi"]],
-                                       signames_per_tissue[["pole"]])]
+                                       signames_per_tissue[["pole"]]))]
       }
       if(add_sig3) signatures$Signature_3 <- cosmic_catalog$Signature_3
     }
 
     if(sig_catalog == "average"){
+      signatures_msi <- all_catalogs[["msi"]]
+
       if(step == "mss") signatures <- average_catalog
       else signatures <- cbind(average_catalog, 
-                               all_catalogs[["msi"]],
+                               signatures_msi,
                                all_catalogs[["pole"]])
+      signatures <- unique(signatures)
     }
 
     # scale for the tri-nucleotide context
@@ -256,14 +267,8 @@ run <- function(genome_file = NULL,
         signatures <- norm96*signatures
       }
       else{
-        if(data == "seqcap" | data == "seqcap_probe" | data == "tcga_mc3"){
-          signatures <- weight_exome*signatures
-        }else if(data == "msk"){
-          signatures <- weight_msk*signatures
-        }else if(data == "op"){
-          signatures <- weight_op*signatures
-        }else if(data == "fo"){
-          signatures <- weight_fo*signatures
+        if(data %in% names(weight_3Nfreq)){
+          signatures <- unlist(weight_3Nfreq[data]) * signatures
         }else{
           stop('choose a built-in model or provide trinucleotide normalization')
         }

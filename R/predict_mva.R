@@ -13,7 +13,7 @@
 
 predict_mva <- function(input, signame, data, tumor_type, weight_cf, custom){  
   predictions <- rep(0, dim(input)[[1]])
-  
+
   if(data == "msk" & weight_cf){
     model <- gbms_msk_cf[[tumor_type]] 
   }
@@ -29,6 +29,7 @@ predict_mva <- function(input, signame, data, tumor_type, weight_cf, custom){
     file_path <- system.file(paste0("extdata/gbm_models/", data, ".rda"),
                              package="SigMA")
     load(file_path)
+
     model <- gbm_models_custom[[tumor_type]]
   }
   else stop('the data option selected which indicates the sequencing platform is not valid')

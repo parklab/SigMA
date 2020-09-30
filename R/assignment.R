@@ -61,10 +61,9 @@ assignment <- function(df_in,
                                package="SigMA")
           load(file_path)
         
+          if(!(tumor_type %in% names(cutoffs_custom))) stop('tumor_type not available for the data setting')
           cutoffs_this <- cutoffs_custom[[tumor_type]]
           cutoffs_strict_this <- cutoffs_strict_custom[[tumor_type]]
-          if(!(tumor_type %in% names(cutoffs_this))) stop('tumor_type not available for the data setting')
-
         }
         else if(data %in% names(cutoffs)){
           cutoffs_this <- cutoffs[[data]][[tumor_type]]
