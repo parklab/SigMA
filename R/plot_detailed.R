@@ -193,8 +193,6 @@ plot_detailed <- function(file = NULL, sample = NULL){
   lay <- rbind(c(1, 1, 1, 1, 1),
                c(3,4, 2, 2, 2))
 
-#  plot_arr <- gridExtra::grid.arrange(tribase, plot_cos, plot_ml, plot_exp)
-  return(list(tribase = tribase, plot_cos = plot_cos, stats = ggpubr::ggarrange(plot_ml, plot_exp, nrow = 1)))
-#  return(tribase)
+  return(list(tribase = tribase, plot_cos = plot_cos, plot_ml = plot_ml, plot_exp = plot_exp))
   
 }

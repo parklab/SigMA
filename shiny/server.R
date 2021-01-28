@@ -282,9 +282,13 @@ server <- function(input, output, session){
     if(this_sample$sample != '')
       myplot(plot_detailed(output_file(), this_sample$sample)$plot_cos)
   })
-  plotd_stat <- reactive({
+  plotd_ml <- reactive({
     if(this_sample$sample != '')
-      myplot(plot_detailed(output_file(), this_sample$sample)$stats)
+      myplot(plot_detailed(output_file(), this_sample$sample)$plot_ml)
+  })
+  plotd_exp <- reactive({
+    if(this_sample$sample != '')
+      myplot(plot_detailed(output_file(), this_sample$sample)$plot_exp)
   })
 
 
@@ -294,9 +298,13 @@ server <- function(input, output, session){
   })
   output$plotd3 <- renderPlot({
     if(this_sample$sample != '')
-      print(plotd_stat())
+      print(plotd_ml())
   })
   output$plotd4 <- renderPlot({
+    if(this_sample$sample != '')
+      print(plotd_exp())
+  })
+  output$plotd5 <- renderPlot({
     if(this_sample$sample != '')
       print(plotd_cos())
   })
@@ -359,7 +367,8 @@ server <- function(input, output, session){
             fluidRow(
               plotOutput("plotd2", width = "90%", height = "200px"),
               plotOutput("plotd3", width = "90%", height = "200px"),
-              plotOutput("plotd4", width = "90%", height = "200px")
+              plotOutput("plotd4", width = "90%", height = "200px"),
+              plotOutput("plotd5", width = "90%", height = "200px")
             )
           )
         )
