@@ -121,20 +121,8 @@ server <- function(input, output, session){
         do_mva <- F
       }
      
-      if(data == "msk" & sum(tumor_type == names(gbms_msk)) == 0 & do_mva){
+      if(!has_model(data = data, tumor_type = tumor_type)){
         error_message <- 'No MVA model for this tumor type for targetted gene panels select Without MVA option'
-        showNotification(error_message, type = 'error',
-                         action = a(href = "javascript:location.reload();", "Reload page"), duration = NULL)
-        return(F)
-      }
-      if(data == "seqcap" & sum(tumor_type == names(gbms_exome)) == 0 & do_mva){
-        error_message <- 'No MVA model for this tumor type for whole exome sequencing select Without MVA option'
-        showNotification(error_message, type = 'error',
-                         action = a(href = "javascript:location.reload();", "Reload page"), duration = NULL)
-        return(F)
-      }
-      if(data == "seqcap_probe" & sum(tumor_type == names(gbms_seqcap_probe)) == 0 & do_mva){
-        error_message <- 'No MVA model for this tumor type for whole exome sequencing select Without MVA option'
         showNotification(error_message, type = 'error',
                          action = a(href = "javascript:location.reload();", "Reload page"), duration = NULL)
         return(F)
@@ -174,17 +162,60 @@ server <- function(input, output, session){
     }
   ) 
 
+
+
   # make summary figure
-  plot <- reactive({
+  plot_trinuc_pos <- reactive({
     do_mva <- T
     if(sum(grepl('without_mva', input$other_settings)) > 0){
       do_mva <- F
     }
-    return(myplot(plot_summary(output_file(), do_mva)))
+    return(myplot(plot_summary(output_file(), do_mva)$trinucleotide_pos))
+  })
+  plot_trinuc_neg <- reactive({
+    do_mva <- T
+    if(sum(grepl('without_mva', input$other_settings)) > 0){
+      do_mva <- F
+    }
+    return(myplot(plot_summary(output_file(), do_mva)$trinucleotide_neg))
+  })
+  plot_c <- reactive({
+    do_mva <- T
+    if(sum(grepl('without_mva', input$other_settings)) > 0){
+      do_mva <- F
+    }
+    return(myplot(plot_summary(output_file(), do_mva)$plot_cos))
+  })
+  plot_m <- reactive({
+    do_mva <- T
+    if(sum(grepl('without_mva', input$other_settings)) > 0){
+      do_mva <- F
+    }
+    return(myplot(plot_summary(output_file(), do_mva)$plot_ml))
+  })
+  plot_s <- reactive({
+    do_mva <- T
+    if(sum(grepl('without_mva', input$other_settings)) > 0){
+      do_mva <- F
+    }
+    return(myplot(plot_summary(output_file(), do_mva)$plot_score))
   })
   
-  output$plot2 <- renderPlot({
-    print(plot())
+
+  output$plot_trinucleotide_pos <- renderPlot({
+    print(plot_trinuc_pos())
+  })
+  output$plot_trinucleotide_neg <- renderPlot({
+    print(plot_trinuc_neg())
+  })
+  output$plot_cos <- renderPlot({
+    print(plot_c())
+  })
+  output$plot_ml <- renderPlot({
+    print(plot_m())
+  })
+  output$plot_score <- renderPlot({
+    print(plot_s())
   })
 
   
@@ -245,12 +276,29 @@ server <- function(input, output, session){
 
   plotd <- reactive({
     if(this_sample$sample != '')
-      myplot(plot_detailed(output_file(), this_sample$sample))
+      myplot(plot_detailed(output_file(), this_sample$sample)$tribase)
   })
+  plotd_cos <- reactive({
+    if(this_sample$sample != '')
+      myplot(plot_detailed(output_file(), this_sample$sample)$plot_cos)
+  })
+  plotd_stat <- reactive({
+    if(this_sample$sample != '')
+      myplot(plot_detailed(output_file(), this_sample$sample)$stats)
+  })
+
 
   output$plotd2 <- renderPlot({
     if(this_sample$sample != '')
       print(plotd())
+  })
+  output$plotd3 <- renderPlot({
+    if(this_sample$sample != '')
+      print(plotd_stat())
+  })
+  output$plotd4 <- renderPlot({
+    if(this_sample$sample != '')
+      print(plotd_cos())
   })
 
 
@@ -282,7 +330,9 @@ server <- function(input, output, session){
           ),
           column(7, h4("Summary") ,
             downloadButton("save_file", "Save data file"),
-            plotOutput("plot2", width = "90%", height = "750px") 
+            plotOutput("plot_trinucleotide_pos", width = "90%", height = "200px"),
+            plotOutput("plot_trinucleotide_neg", width = "90%", height = "150px"),
+            plotOutput("plot_score", width = "90%", height = "200px")
           )
         )
       ),
@@ -307,7 +357,9 @@ server <- function(input, output, session){
                              margin-bottom:15px;",
           column(6, 
             fluidRow(
-              plotOutput("plotd2", width = "90%", height = "400px")
+              plotOutput("plotd2", width = "90%", height = "200px"),
+              plotOutput("plotd3", width = "90%", height = "200px"),
+              plotOutput("plotd4", width = "90%", height = "200px")
             )
           )
         )

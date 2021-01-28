@@ -65,7 +65,16 @@ plot_detailed <- function(file = NULL, sample = NULL){
   plot_cos <- ggplot2::ggplot(df_cos, ggplot2::aes(x = signame, y = cosine)) 
   plot_cos <- plot_cos + ggplot2::geom_bar(stat = 'identity', ggplot2::aes(fill = color))
   plot_cos <- plot_cos + ggplot2::scale_fill_manual(values = as.character(c('#f9bb68', col_pos_neg)))
-  plot_cos <- plot_cos + theme_def + ggplot2::theme(axis.title.x = ggplot2::element_blank(),
+  plot_cos <- plot_cos + ggplot2::theme_bw()
+  plot_cos <- plot_cos + ggplot2::theme(
+                                legend.title = ggplot2::element_blank(),
+                                legend.justification = c(1,1),
+                                legend.text = ggplot2::element_text(size = text_size, face = "bold"),
+                                legend.position="top",
+                                panel.grid.major = ggplot2::element_blank(),
+                                panel.grid.minor = ggplot2::element_blank())
+
+  plot_cos <- plot_cos + ggplot2::theme(axis.title.x = ggplot2::element_blank(),
                                            axis.title.y = ggplot2::element_text(size = text_size),
                                            axis.text.y = ggplot2::element_text(size = text_size),
                                            axis.text.x = ggplot2::element_text(size = text_size, 
@@ -117,7 +126,16 @@ plot_detailed <- function(file = NULL, sample = NULL){
   # plot likelihood
   plot_ml <- ggplot2::ggplot(df_ml, ggplot2::aes(x = group, y = likelihood))
   plot_ml <- plot_ml + ggplot2::geom_bar(stat = 'identity', ggplot2::aes(fill = is_sig3)) 
-  plot_ml <- plot_ml + theme_def + ggplot2::theme(axis.title.x = ggplot2::element_blank(),
+  plot_ml <- plot_ml + ggplot2::theme_bw()
+  plot_ml <- plot_ml + ggplot2::theme(
+                                legend.title = ggplot2::element_blank(),
+                                legend.justification = c(1,1),
+                                legend.text = ggplot2::element_text(size = text_size, face = "bold"),
+                                legend.position="top",
+                                panel.grid.major = ggplot2::element_blank(),
+                                panel.grid.minor = ggplot2::element_blank())
+
+  plot_ml <- plot_ml + ggplot2::theme(axis.title.x = ggplot2::element_blank(),
                                          axis.title.y = ggplot2::element_text(size = text_size),
                                          axis.text.y = ggplot2::element_text(size = text_size),
                                          axis.text.x = ggplot2::element_text(size = text_size,
@@ -147,7 +165,16 @@ plot_detailed <- function(file = NULL, sample = NULL){
 
   plot_exp <- ggplot2::ggplot(df_exp, ggplot2::aes(x = sigs, y = exps)) 
   plot_exp <- plot_exp + ggplot2::geom_bar(stat = 'identity', ggplot2::aes(fill = is_sig3))
-  plot_exp <- plot_exp + theme_def + ggplot2::theme(axis.title.x = ggplot2::element_blank(),
+  plot_exp <- plot_exp + ggplot2::theme_bw()
+  plot_exp <- plot_exp + ggplot2::theme(
+                                legend.title = ggplot2::element_blank(),
+                                legend.justification = c(1,1),
+                                legend.text = ggplot2::element_text(size = text_size, face = "bold"),
+                                legend.position="top",
+                                panel.grid.major = ggplot2::element_blank(),
+                                panel.grid.minor = ggplot2::element_blank())
+
+  plot_exp <- plot_exp + ggplot2::theme(axis.title.x = ggplot2::element_blank(),
                                            axis.title.y = ggplot2::element_text(size = text_size),
                                            axis.text.y = ggplot2::element_text(size = text_size),
                                            axis.text.x = ggplot2::element_text(size = text_size,
@@ -166,8 +193,8 @@ plot_detailed <- function(file = NULL, sample = NULL){
   lay <- rbind(c(1, 1, 1, 1, 1),
                c(3,4, 2, 2, 2))
 
-  plot_arr <- gridExtra::grid.arrange(tribase, plot_cos, plot_ml, plot_exp,
-                           layout_matrix = lay)
-  return(plot_arr)
+#  plot_arr <- gridExtra::grid.arrange(tribase, plot_cos, plot_ml, plot_exp)
+  return(list(tribase = tribase, plot_cos = plot_cos, stats = ggpubr::ggarrange(plot_ml, plot_exp, nrow = 1)))
+#  return(tribase)
   
 }
