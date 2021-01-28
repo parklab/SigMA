@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-REPO=scottx611x/sigma
+REPO=parklab/sigma
 
 export STAMP=`date +"%Y-%m-%d_%H-%M-%S"`
 export DOCKER_IMAGE_TAG="image-$STAMP"

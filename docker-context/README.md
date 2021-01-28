@@ -4,7 +4,7 @@
 - [docker](https://docs.docker.com/engine/installation/)
 
 ### Running the app:
-- `docker run -d -p 3242:3242 scottx611x/sigma`
+- `docker run -d -p 3242:3242 parklab/sigma`
 - Open http://localhost:3242
 - Voila!
 
@@ -13,10 +13,10 @@
 - Run `./build-docker-image.sh` (from the repo root) -> you should get a docker image ID in the console if things built properly
 - `docker run -d -p 3242:3242 <local_image_id_or_tag>`
 - Open http://localhost:3242 and poke around the app
-- If you're satisfied with the changes create a pull request and/or notify @scottx611x
+- If you're satisfied with the changes create a pull request and/or notify @parklab
 
 ### Continuous integration/Deployment:
-- New docker images will be built, tagged, and pushed to: [docker hub](https://hub.docker.com/r/scottx611x/sigma/) if a `PR` or `TAG` are noticed.
+- New docker images will be built, tagged, and pushed to: [docker hub](https://hub.docker.com/r/parklab/sigma/) if a `PR` or `TAG` are noticed.
 - We use [watchtower](https://github.com/v2tec/watchtower) to keep the current deployment up to date. Watchtower will detect new docker images that have been pushed, and update our remote docker gracefully.
 
 
@@ -42,6 +42,6 @@
      SetEnv proxy-nokeepalive 1
   ```  
 - Docker container w/ run command: 
-    + `docker run --restart always -d -p 80:3242 -v /var/log/sigMA_logs/:/var/log/shiny-server/ scottx611x/sigma`
+    + `docker run --restart always -d -p 80:3242 -v /var/log/sigMA_logs/:/var/log/shiny-server/ parklab/sigma`
 - Watchtower command:
     + `docker run -d --name watchtower -v /var/run/docker.sock:/var/run/docker.sock -e "REPO_USER=<dockerhub username>" -e "REPO_PASS=<dockerhub password>" v2tec/watchtower --debug`
