@@ -30,33 +30,21 @@ plot_summary <- function(file = NULL, do_mva = T){
   if(platform == exome_string) data = 'seqcap'
   if(platform == wgs_string) data = 'wgs'
 
-  if(data == 'msk'){
-    cutoff_strict <- cutoffs_msk_strict[[tumor_type]]
-    cutoff <- cutoffs_msk[[tumor_type]]
-  }else if(data == 'seqcap'){
-    cutoff_strict <- cutoffs_exome_strict[[tumor_type]]
-    cutoff <- cutoffs_exome[[tumor_type]]
-  }else if(data == 'wgs'){
-    cutoff_strict <- cutoffs_wgs_strict[[tumor_type]]
-    cutoff <- cutoffs_wgs[[tumor_type]]
-  }
+  cutoff_strict <- cutoffs_strict[[data]][[tumor_type]]
+  cutoff <- cutoffs[[data]][[tumor_type]]
 
   text_size = 10
 
   # 3-base distributions
-  if(sum(df$pass) > 0){ 
-    inds_pos <- which(df$pass)
-    pos_tribase <- plot_tribase_dist(as.data.frame(colSums(df[inds_pos, 1:96])),
+  inds_pos <- which(df$pass)
+  pos_tribase <- plot_tribase_dist(as.data.frame(colSums(df[inds_pos, 1:96])),
                                      signame = paste0('  Aggregated mutations from ', 
                                                       sum(df$pass), ' Sig3+ sample(s)'))
-  }
-  if(sum(!df$pass) > 0){
-    inds_neg <- which(!df$pass)
-    neg_tribase <- plot_tribase_dist(as.data.frame(colSums(df[inds_neg, 1:96])),
-                                     signame = paste0('  Aggregated mutations from ', 
-                                                      sum(df$pass == F), ' Sig3- sample(s)'))
-    neg_tribase <- neg_tribase + ggplot2::theme(legend.position = "none")
-  }
+  inds_neg <- which(!df$pass)
+  neg_tribase <- plot_tribase_dist(as.data.frame(colSums(df[inds_neg, 1:96])),
+                                   signame = paste0('  Aggregated mutations from ', 
+                                                    sum(df$pass == F), ' Sig3- sample(s)'))
+  neg_tribase <- neg_tribase + ggplot2::theme(legend.position = "none")
 
   # cosine density distribution
   colors_cos <- c(col_pos_neg[[2]], col_pos_neg[[1]])
@@ -85,31 +73,33 @@ plot_summary <- function(file = NULL, do_mva = T){
   }
 
   
-  if(sum(counts_cos_pos) > 0){
-    df_cos <- data.frame(cos = bin_center, count = counts_cos_pos, group = 'Sig3+')
-    if(sum(counts_cos_neg) > 0){
-      df_cos <- rbind(df_cos, data.frame( cos = bin_center, count = counts_cos_neg, group = 'Sig3-' ))
-    }
+  df_cos <- data.frame(cos = bin_center, count = counts_cos_pos, group = 'Sig3+')
+  if(sum(counts_cos_neg) > 0){
+    df_cos <- rbind(df_cos, data.frame( cos = bin_center, count = counts_cos_neg, group = 'Sig3-' ))
   }
-  else if(sum(counts_cos_neg) > 0){
-    df_cos <- data.frame( cos = bin_center, count = counts_cos_neg, group = 'Sig3-' )
-  }
-  else{
-    stop('no samples')
-  }
+  df_cos <- data.frame( cos = bin_center, count = counts_cos_neg, group = 'Sig3-' )
 
   plot_cos <- ggplot2::ggplot(df_cos, ggplot2::aes(x = cos, y = count))
-  plot_cos <- plot_cos + ggplot2::geom_bar(stat = 'identity', position = 'dodge', 
+  plot_cos <- plot_cos + ggplot2::geom_bar(stat = 'identity',# position = 'dodge', 
                                            ggplot2::aes(fill = group))
   plot_cos <- plot_cos + ggplot2::scale_fill_manual(values = colors_cos)
-  plot_cos <- plot_cos + theme_def + ggplot2::theme(axis.title.x = ggplot2::element_text(size = text_size),
+  plot_cos <- plot_cos + ggplot2::theme_bw()
+  plot_cos <- plot_cos + ggplot2::theme(
+                                legend.title = ggplot2::element_blank(),
+                                legend.justification = c(1,1),
+                                legend.text = ggplot2::element_text(size = text_size, face = "bold"),
+                                legend.position="top",
+                                panel.grid.major = ggplot2::element_blank(),
+                                panel.grid.minor = ggplot2::element_blank())
+
+  plot_cos <- plot_cos + ggplot2::theme(axis.title.x = ggplot2::element_text(size = text_size),
                                                     axis.title.y = ggplot2::element_text(size = text_size),
                                                     axis.text.x = ggplot2::element_text(size = text_size),
                                                     axis.text.y = ggplot2::element_text(size = text_size))
 
   plot_cos <- plot_cos + ggplot2::xlab('Cos simil of Sig3')
-  plot_cos <- plot_cos + ggplot2::xlim(0, 1)
-
+#  plot_cos <- plot_cos + ggplot2::xlim(0, 1)
+ 
   # likelihood density distribution
   inds <- grep('_ml', colnames(df))
   if(length(grep('_ml_msi', colnames(df))) > 0){
@@ -150,28 +140,28 @@ plot_summary <- function(file = NULL, do_mva = T){
 
     bin_center[[ibin]] <- (ml_bins[[ibin]] + ml_bins[[ibin + 1]])/2
   }
-
-  if(sum(counts_ml_pos) > 0){
-    df_ml_binned <- data.frame(ml = bin_center, count = counts_ml_pos, group = 'Sig3+')
-    if(sum(counts_ml_neg) > 0){
-      df_ml_binned <- rbind(df_ml_binned, data.frame( ml = bin_center, count = counts_ml_neg, group = 'Sig3-' ))
-    }
+  df_ml_binned <- data.frame(ml = bin_center, count = counts_ml_pos, group = 'Sig3+')
+  if(sum(counts_ml_neg) > 0){
+    df_ml_binned <- rbind(df_ml_binned, data.frame( ml = bin_center, count = counts_ml_neg, group = 'Sig3-' ))
   }
-  else if(sum(counts_ml_neg) > 0){
-    df_ml_binned <- data.frame( ml = bin_center, count = counts_ml_neg, group = 'Sig3-' )
-  }
-  else{
-    stop('no samples')
-  }
+  df_ml_binned <- data.frame( ml = bin_center, count = counts_ml_neg, group = 'Sig3-' )
 
   plot_ml <- ggplot2::ggplot(df_ml_binned, ggplot2::aes(x = ml, y = count))
   plot_ml <- plot_ml + ggplot2::geom_bar(stat = 'identity', position = 'dodge', 
                                            ggplot2::aes(fill = group))
   plot_ml <- plot_ml + ggplot2::scale_fill_manual(values = colors_cos) 
   # here add a line to strip away the legend
-  plot_ml <- plot_ml + theme_def + ggplot2::theme(axis.title.x = ggplot2::element_text(size = text_size),
+  plot_ml <- plot_ml + ggplot2::theme_bw()
+  plot_ml <- plot_ml + ggplot2::theme(
+                                legend.title = ggplot2::element_blank(),
+                                legend.justification = c(1,1),
+                                legend.text = ggplot2::element_text(size = text_size, face = "bold"),
+                                legend.position="top",
+                                panel.grid.major = ggplot2::element_blank(),
+                                panel.grid.minor = ggplot2::element_blank())
+  plot_ml <- plot_ml + ggplot2::theme(axis.title.x = ggplot2::element_text(size = text_size),
                                                   axis.title.y = ggplot2::element_text(size = text_size),
-                                                  axis.text.x = ggplot2::element_text(size = text_size),
+                                                  axis.text.x = ggplot2::element_blank(),
                                                   axis.text.y = ggplot2::element_text(size = text_size))
 
 
@@ -210,7 +200,15 @@ plot_summary <- function(file = NULL, do_mva = T){
                                                  stat = 'identity')
     plot_score <- plot_score + ggplot2::scale_fill_manual(values = as.character(df_color$color[match(unique(df_ml$group), 
                                                                                                df_color$group)]))
-    plot_score <- plot_score + theme_def 
+    plot_score <- plot_score + ggplot2::theme_bw()
+    plot_score <- plot_score + ggplot2::theme(
+                                legend.title = ggplot2::element_blank(),
+                                legend.justification = c(1,1),
+                                legend.text = ggplot2::element_text(size = text_size, face = "bold"),
+                                legend.position="top",
+                                panel.grid.major = ggplot2::element_blank(),
+                                panel.grid.minor = ggplot2::element_blank())
+ 
     plot_score <- plot_score + ggplot2::theme(panel.border = ggplot2::element_blank(),
                                               axis.line.y = ggplot2::element_line(size = 0.3, 
                                                                                   linetype = "solid", 
@@ -218,9 +216,7 @@ plot_summary <- function(file = NULL, do_mva = T){
                                               axis.line.x = ggplot2::element_line(size = 0.3, 
                                                                                   linetype = "solid", 
                                                                                   colour = "black"),
-                                              axis.text.x = ggplot2::element_text(size = text_size,
-                                                                                  hjust = 1,
-                                                                                  angle = 45), 
+                                              axis.text.x = ggplot2::element_text(size = text_size), 
                                               axis.title.y = ggplot2::element_text(size = text_size),
                                               axis.text.y = ggplot2::element_text(size = text_size),
                                               legend.position = 'top')
@@ -233,7 +229,7 @@ plot_summary <- function(file = NULL, do_mva = T){
   colors_exp <- colors_cos
   if(length(unique(df$pass[df$exp_sig3 > 0])) == 1){
     if(unique(df$pass[df$exp_sig3 > 0]))
-      colors_exp <- c(colors_cos[[2]], colors_cos[[1]])
+      colors_exp <- colors_cos[seq(from = length(colors_cos), to = 1, by = -1)]
   }
 
   exp_bin_width <- (max(df$exp_sig3) + 1)/10
@@ -275,148 +271,5 @@ plot_summary <- function(file = NULL, do_mva = T){
   }
 
   # combined plot
-  pdf('summary_short_sig3.pdf', width = 1.2*9.8/2.4, 7)
-  if(sum(df$pass) > 0 & sum(!df$pass > 0)){
-    if(sum(counts_exp_pos) > 0 | sum(counts_exp_neg) > 0){
-      lay <- rbind(c(6, 6, 6),
-                   c(3, 4, 5),
-                   c(1, 1, 1),
-                   c(2, 2, 2))
-      lay_no_mva <- rbind(c(3, 4, 5),
-                   c(1, 1, 1),
-                   c(2, 2, 2))
-      if(do_mva){ 
-        plot_arr <- gridExtra::grid.arrange(pos_tribase,
-                                       neg_tribase,
-                                       plot_cos,
-                                       plot_ml,
-                                       plot_exp,
-                                       plot_score,
-                                       layout_matrix = lay, 
-                                       heights = c(1.5, 0.8, 1.1, 0.85))
-      }else{
-         plot_arr <- gridExtra::grid.arrange(pos_tribase,
-                                       neg_tribase,
-                                       plot_cos,
-                                       plot_ml,
-                                       plot_exp,
-                                       layout_matrix = lay_no_mva, 
-                                       heights = c(0.8, 1.1, 0.85))
-    
-      }
- 
-    }else{
-      lay <- rbind(c(5, 5),
-                   c(3, 4),
-                   c(1, 1),
-                   c(2, 2))
-      lay_no_mva <- rbind(c(3, 4),
-                          c(1, 1),
-                          c(2, 2))
-      
-      if(do_mva){
-        plot_arr <- gridExtra::grid.arrange(pos_tribase,
-                                       neg_tribase,
-                                       plot_cos,
-                                       plot_ml,
-                                       plot_score,
-                                       layout_matrix = lay, 
-                                       heights = c(1.5, 0.8, 1.1, 0.85))
-      }
-      else{
-        plot_arr <- gridExtra::grid.arrange(pos_tribase,
-                                       neg_tribase,
-                                       plot_cos,
-                                       plot_ml,
-                                       layout_matrix = lay_no_mva, 
-                                       heights = c(0.8, 1.1, 0.85))
-      }
-    }
-  }else if(sum(df$pass) > 0 & sum(!df$pass == 0)){
-    if(sum(counts_exp_pos) > 0 | sum(counts_exp_neg) > 0){
-      lay <- rbind(c(5, 5, 5),
-                   c(2, 3, 4),
-                   c(1, 1, 1))
-      lay_no_mva <- rbind(c(5, 5, 5),
-                          c(2, 3, 4),
-                          c(1, 1, 1))
-      if(do_mva){
-        plot_arr <- gridExtra::grid.arrange(pos_tribase,
-                                       plot_cos,
-                                       plot_ml,
-                                       plot_exp,
-                                       plot_score,
-                                       layout_matrix = lay, 
-                                       heights = c(1.5, 0.8, 1.1, 0.85))
-      }else{
-        plot_arr <- gridExtra::grid.arrange(pos_tribase,
-                                       plot_cos,
-                                       plot_ml,
-                                       plot_exp,
-                                       layout_matrix = lay_no_mva, 
-                                       heights = c(0.8, 1.1, 0.85))
-      }
-    }else{
-      lay <- rbind(c(4, 4),
-                   c(2, 3),
-                   c(1, 1))
-      lay_no_mva <- rbind(c(2, 3),
-                          c(1, 1))
-      plot_arr <- gridExtra::grid.arrange(pos_tribase,
-                                     plot_cos,
-                                     plot_ml,
-                                     layout_matrix = lay, 
-                                     heights = c(1.5, 0.8, 1.1, 0.85))
-    }
-  }else if(sum(df$pass) == 0 & sum(!df$pass > 0)){
-    if(sum(counts_exp_pos) > 0 | sum(counts_exp_neg) > 0){
-      lay <- rbind(c(5, 5, 5),
-                   c(2, 3, 4),
-                   c(1, 1, 1))
-      lay_no_mva <- rbind(c(2, 3, 4),
-                          c(1, 1, 1))
-      if(do_mva){
-        plot_arr <- gridExtra::grid.arrange(neg_tribase,
-                                       plot_cos,
-                                       plot_ml,
-                                       plot_exp,
-                                       plot_score,
-                                       layout_matrix = lay, 
-                                       heights = c(1.5, 0.8, 1.1, 0.85))
-      }
-      else{
-        plot_arr <- gridExtra::grid.arrange(neg_tribase,
-                                       plot_cos,
-                                       plot_ml,
-                                       plot_exp,
-                                       layout_matrix = lay_no_mva, 
-                                       heights = c(0.8, 1.1, 0.85))
-      }
-    }
-    else{
-      lay <- rbind(c(4, 4),
-                   c(2, 3),
-                   c(1, 1))
-      lay_no_mva <- rbind(c(2, 3),
-                         c(1, 1))
-      if(do_mva){
-        plot_arr <- gridExtra::grid.arrange(neg_tribase,
-                                       plot_cos,
-                                       plot_ml,
-                                       plot_score,
-                                       layout_matrix = lay, 
-                                       heights = c(1.5, 0.8, 1.1, 0.85))
-      }
-      else{
-        plot_arr <- gridExtra::grid.arrange(neg_tribase,
-                                       plot_cos,
-                                       plot_ml,
-                                       layout_matrix = lay, 
-                                       heights = c(0.8, 1.1, 0.85))
-      }
-    }
-  }
-
-  dev.off()                      
-  return(plot_arr)
+  return(list(trinucleotide_pos = pos_tribase, trinucleotide_neg = neg_tribase, plot_cos = plot_cos, plot_ml = plot_ml, plot_score = plot_score))
 }
