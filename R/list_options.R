@@ -8,18 +8,19 @@ list_data_options <- function(){
 }
 
 list_tumor_types <- function(){
-  data_dir <- system.file("extdata/matrices/matrices_96dim.rda", package="SigMA")
-  load(data_dir)
-  for(i in 1:length(tissue_names)){
+  matrices_data <- system.file("extdata/matrices/matrices_96dim.rda", package="SigMA")
+  load(matrices_data)
+  for (i in 1:length(tissue_names)){
     tumor_type <- tissue_names[[i]]
-    message(paste0('tumor_type option \'', names(tissue_names)[[i]], '\' for ', tissue_names[[i]]))  
-    models_avail <- character()
-    for(data in names(gbm_models)){
-      if(tumor_type %in% names(gbm_models[[data]])) 
-        models_avail <- c(models_avail, data)
+    short_name <- names(tissue_names)[[i]]
+    message(paste0('tumor_type option \'', short_name, '\' for ', tumor_type))
+
+    models_avail <- names(gbm_models)[sapply(gbm_models, function(x) short_name %in% names(x))]
+    if (length(models_avail)>0){
+        message(sprintf('models available for %s\n', paste0(models_avail, collapse = ', ')))
+    } else {
+        message('no models available\n')
     }
-    message(paste0('models available for ', paste0(models_avail, collapse = ', ')))
-    message('\n')
   }
 }
 
