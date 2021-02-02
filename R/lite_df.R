@@ -103,7 +103,7 @@ lite_df <- function(merged_output){
         }
       }
       else{
-        cols_ml_this <- cols_ml[!(cols_ml %in% c('Signature_3_ml', 'Signature_msi_ml', 'Signature_pole_ml'))]
+        cols_ml_this <- cols_ml[!(cols_ml %in% c('Signature_msi_ml', 'Signature_pole_ml'))]
         ind_max <- which(max(lite[i, cols_ml_this]) == lite[i,])
         categs[[i]] <- gsub(paste0(colnames(lite)[ind_max], collapse = ':'),
                             pattern = '_ml',
