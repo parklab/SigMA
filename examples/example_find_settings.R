@@ -2,7 +2,7 @@ devtools::load_all()
 
 data_file <- system.file("extdata/examples/test_mutations_50sample.maf", package="SigMA")
 
-genomes_matrix <- make_matrix(data_file, file_type = 'maf')
+genomes_matrix <- make_matrix(data_file, file_type = 'maf', ref_genome_name = 'hg19')
 genomes <- conv_snv_matrix_to_df(genomes_matrix)
 
 genome_file = 'example_maf.csv'

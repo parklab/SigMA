@@ -11,11 +11,11 @@ list_tumor_types <- function(){
   data_dir <- system.file("extdata/matrices/matrices_96dim.rda", package="SigMA")
   load(data_dir)
   for(i in 1:length(tissue_names)){
-    tumor_type <- tissue_names[[i]]
+    tumor_type <- names(tissue_names)[[i]]
     message(paste0('tumor_type option \'', names(tissue_names)[[i]], '\' for ', tissue_names[[i]]))  
     models_avail <- character()
     for(data in names(gbm_models)){
-      if(tumor_type %in% names(gbm_models[[data]])) 
+      if(sum(tumor_type %in% names(gbm_models[[data]]), na.rm = T) > 0) 
         models_avail <- c(models_avail, data)
     }
     message(paste0('models available for ', paste0(models_avail, collapse = ', ')))

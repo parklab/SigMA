@@ -27,20 +27,34 @@
 #' make_matrix(directory = 'input')
 #' make_matrix(directory = 'input', 
 #'             file_type = 'vcf',
-#'             ref_genome = BSgenome.Hsapiens.UCSC.hg19,
+#'             ref_genome_name = 'hg19',
 #'             ncontext = 5,
 #'             nstrand = 2)
+#' 
 
 make_matrix <- function(directory, 
                         file_type = 'vcf', 
-                        is_list = F,
-                        ref_genome = BSgenome.Hsapiens.UCSC.hg19::BSgenome.Hsapiens.UCSC.hg19,
+                        is_list = F, 
+                        ref_genome_name = NULL,
+                        ref_genome = NULL,
                         ncontext = 3, 
                         nstrand = 1, 
                         chrom_colname = NULL, 
                         pos_colname = NULL, 
                         ref_colname = NULL, 
                         alt_colname = NULL){
+
+  if(!is.null(ref_genome_name) & is.null(ref_genome)){
+    if(ref_genome_name == "hg19")
+      ref_genome = BSgenome.Hsapiens.UCSC.hg19::BSgenome.Hsapiens.UCSC.hg19
+    else if(ref_genome_name == "hg38")
+      ref_genome = BSgenome.Hsapiens.UCSC.hg38::BSgenome.Hsapiens.UCSC.hg38
+    else 
+      stop('ref_genome_name can be hg19 or hg38')
+  }
+  else{
+    stop('provide ref_genome or ref_genome_name')
+  }
 
   if(is_list){ 
     file_list <- directory
@@ -330,16 +344,17 @@ conv_snv_matrix_to_df <- function(genomes_matrix){
   }
 
   if(dim(maf)[[1]] == 0) return(rep(0, 96))
-
-  maf <- maf[maf$Variant_Type == "SNP",]
-
+  if("Variant_Type" %in% colnames(maf))
+    maf <- maf[maf$Variant_Type == "SNP",]
+  
   maf$Tumor_Seq_Allele1 <- as.character(maf$Tumor_Seq_Allele1)
   maf$Reference_Allele <- as.character(maf$Reference_Allele)
 
   maf$Tumor_Seq_Allele1[maf$Tumor_Seq_Allele1 == "TRUE"] <- "T"
   maf$Reference_Allele[maf$Reference_Alle == "TRUE"] <- "T"
-  
-  maf <-  maf[maf$Chromosome != "MT",]
+ 
+  nuclear_chroms <- c(as.character(1:23, 'X', 'Y')) # 23 is included to cover some exceptional formats
+  maf <-  maf[maf$Chromosome %in% c(nuclear_chroms, paste0('chr', nuclear_chroms)),]
  
   if(dim(maf)[[1]] == 0) return(rep(0, 96))
 

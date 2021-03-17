@@ -8,7 +8,7 @@ devtools::load_all()
 # the path to the file
 data_file <- system.file("extdata/examples/test_mutations_50sample.maf", package="SigMA")
 
-genomes_matrix <- make_matrix(data_file, file_type = 'maf')
+genomes_matrix <- make_matrix(data_file, file_type = 'maf', ref_genome_name = 'hg19')
 genomes <- conv_snv_matrix_to_df(genomes_matrix)
 
 genome_file = 'example_maf.csv'
@@ -36,4 +36,7 @@ run(genome_file,
     do_mva = T, 
     lite_format = T, 
     check_msi = T)
+
+# Example 50 MSK-IMPACT (Zehir et al. Nat Med (2017)) breast cancer
+# panels for testing the tool on a single maf file input
 

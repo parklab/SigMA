@@ -5,7 +5,7 @@ devtools::load_all()
 # the directory defined by the user
 data_dir <- system.file("extdata/vcf_examples/", package="SigMA")
 
-genomes_matrix <- make_matrix(data_dir, file_type = 'vcf')
+genomes_matrix <- make_matrix(data_dir, file_type = 'vcf', ref_genome_name = 'hg19')
 genomes <- conv_snv_matrix_to_df(genomes_matrix)
 
 genome_file = 'example.csv'
