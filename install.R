@@ -1,5 +1,6 @@
 packages <- c("BSgenome",
     "BSgenome.Hsapiens.UCSC.hg19",
+    "BSgenome.Hsapiens.UCSC.hg38",
     "devtools",
     "DT",
     "GenomicRanges",
