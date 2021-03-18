@@ -15,7 +15,7 @@ list_tumor_types <- function(){
     message(paste0('tumor_type option \'', names(tissue_names)[[i]], '\' for ', tissue_names[[i]]))  
     models_avail <- character()
     for(data in names(gbm_models)){
-      if(sum(tumor_type %in% names(gbm_models[[data]]), na.rm = T) > 0) 
+      if(tumor_type %in% names(gbm_models[[data]])) 
         models_avail <- c(models_avail, data)
     }
     message(paste0('models available for ', paste0(models_avail, collapse = ', ')))
