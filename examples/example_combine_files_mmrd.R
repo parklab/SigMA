@@ -2,7 +2,7 @@
 
 devtools::load_all()
 
-m <- make_matrix('example_muts_mmrd.maf', file_type = 'maf')
+m <- make_matrix('example_muts_mmrd.maf', file_type = 'maf', ref_genome_name = 'hg19')
 df <- conv_snv_matrix_to_df(m)
 
 file_SBS = 'example_mmrd_SBS_matrix.csv'

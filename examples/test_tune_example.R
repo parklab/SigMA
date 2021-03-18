@@ -10,7 +10,7 @@ devtools::load_all()
 
 data_file <- system.file("extdata/examples/tcga_mc3_brca.maf", package="SigMA")
 
-m <- make_matrix(data_file, file_type='maf')
+m <- make_matrix(data_file, file_type='maf', ref_genome_name = 'hg19')
 df <- conv_snv_matrix_to_df(m)
 
 file_name <- 'matrix_96dim_tcga_brca.csv'

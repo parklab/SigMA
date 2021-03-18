@@ -11,7 +11,7 @@ list_tumor_types <- function(){
   data_dir <- system.file("extdata/matrices/matrices_96dim.rda", package="SigMA")
   load(data_dir)
   for(i in 1:length(tissue_names)){
-    tumor_type <- tissue_names[[i]]
+    tumor_type <- names(tissue_names)[[i]]
     message(paste0('tumor_type option \'', names(tissue_names)[[i]], '\' for ', tissue_names[[i]]))  
     models_avail <- character()
     for(data in names(gbm_models)){
