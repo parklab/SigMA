@@ -81,7 +81,7 @@ limits_fpr <- c(0.1, 0.05)
 cut_var <- 'fpr' # you can alternatively use 'sen' to select on specific sensitivity value
 
 
-thresh <- get_threshold(df_predict, limits_fpr, var = 'prob', cut_var = cut_var) # FPR < 0.1
+thresh <- get_threshold(df_predict, limits_fpr, var = 'prob', cut_var = cut_var, signal = 'is_sig3') # FPR < 0.1
 cutoff <- thresh$cutoff[[1]] 
 cutoff_strict <- thresh$cutoff[[2]]
 

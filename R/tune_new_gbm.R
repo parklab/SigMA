@@ -30,12 +30,13 @@ tune_new_gbm <- function(input_file,
                          run_SigMA = T,
                          snv_cutoff = 5,
                          feature_cutoff = 0.01,
+                         colname_truth_tag = 'is_sig3',
                          gbm_parameters = list(n.trees = 5000,
                                                shrinkage = 0.01,
                                                bag.fraction = 0.2,
                                                n.minobsinnode = 3,
                                                cv.fold = 5)){
- 
+   
   if(is.null(tumor_type) & !run_SigMA){
     if(!grepl('tumor_type', input_file)) stop('tumor_type not provided')
     tumor_type <- unlist(lapply(strsplit(input_file, split = 'tumortype'), 
@@ -61,7 +62,7 @@ tune_new_gbm <- function(input_file,
     output_file <- input_file
   }
 
-  gbm_model <- tune_gbm_model(output_file, snv_cutoff, feature_cutoff, gbm_parameters) 
+  gbm_model <- tune_gbm_model(output_file, snv_cutoff, feature_cutoff, gbm_parameters, colname_truth_tag) 
 
   output_table <- predict_prob(output_file, gbm_model)  
   write.table(output_table, 
@@ -74,9 +75,13 @@ tune_new_gbm <- function(input_file,
   else return(gbm_model)
 }
 
-tune_gbm_model <- function(file, snv_cutoff, feature_cutoff, gbm_parameters){
+tune_gbm_model <- function(file, snv_cutoff, feature_cutoff, gbm_parameters, colname_truth_tag){
   df <- read.csv(file)
   df <- df[df$total_snvs >= snv_cutoff,]
+  df$is_true <- df[, colname_truth_tag]
+  if(sum(!(df$is_true %in% c(0, 1)), na.rm = T) > 0){
+    stop('The column with truth tag should be 0 or 1. Currently binary classification is implemented')
+  }
   features_gbm <- unique(c(features_gbm, colnames(df)[grepl('Signature_', colnames(df)) & grepl('_ml', colnames(df))]))
   features_gbm <- features_gbm[!is.na(match(features_gbm, colnames(df)))]
 
@@ -85,18 +90,18 @@ tune_gbm_model <- function(file, snv_cutoff, feature_cutoff, gbm_parameters){
   bag.fraction = gbm_parameters$bag.fraction
   n.minobsinnode = gbm_parameters$n.minobsinnode
   cv.fold = gbm_parameters$cv.fold
-  gbm_model <- gbm::gbm(formula = is_sig3 ~ .,
+  gbm_model <- gbm::gbm(formula = is_true ~ .,
                    distribution = 'bernoulli',
-                   data = na.omit(df[, c(features_gbm, 'is_sig3')]),
+                   data = na.omit(df[, c(features_gbm, 'is_true')]),
                    n.trees = n.trees, 
                    shrinkage = shrinkage,
                    bag.fraction = bag.fraction, 
                    n.minobsinnode= n.minobsinnode,
                    cv.fold = cv.fold)
   bestTreeForPrediction = gbm::gbm.perf(gbm_model)
-  gbm_model <- gbm::gbm(formula = is_sig3 ~ .,
+  gbm_model <- gbm::gbm(formula = is_true ~ .,
                    distribution = 'bernoulli',
-                   data = na.omit(df[, c(features_gbm, 'is_sig3')]),
+                   data = na.omit(df[, c(features_gbm, 'is_true')]),
                    n.trees = bestTreeForPrediction, 
                    shrinkage = shrinkage,
                    bag.fraction = bag.fraction, 
@@ -104,9 +109,9 @@ tune_gbm_model <- function(file, snv_cutoff, feature_cutoff, gbm_parameters){
   rel_infs <- gbm::relative.influence(gbm_model)
 
   features <- names(rel_infs)[rel_infs/sum(rel_infs) > feature_cutoff]
-  gbm_model <- gbm::gbm(formula = is_sig3 ~ .,
+  gbm_model <- gbm::gbm(formula = is_true ~ .,
                    distribution = 'bernoulli',
-                   data = na.omit(df[, c(features, 'is_sig3')]),
+                   data = na.omit(df[, c(features, 'is_true')]),
                    n.trees = bestTreeForPrediction, 
                    shrinkage = shrinkage,
                    bag.fraction = bag.fraction, 
@@ -170,7 +175,7 @@ remove_gbm_model <- function(name_model,
 
 # calculates sensitivity FPR and FRD based on the parameter
 # provided with the signal setting 
-sen_fpr <- function(df, var, signal = 'is_sig3'){
+sen_fpr <- function(df, var, signal){
 
   df <- df[!is.na(df[, var]),]
   df <- df[order(df[,var]),]
@@ -204,7 +209,7 @@ sen_fpr <- function(df, var, signal = 'is_sig3'){
 get_threshold <- function(df, limits, var = 'prob', 
                           signal = 'is_sig3', cut_var = 'fpr'){
 
-  df_sen_fpr <- sen_fpr(df, var, signal)
+  df_sen_fpr <- sen_fpr(df, var, signal = signal)
   sen_cutoff <- numeric()
   fpr_cutoff <- numeric()
   fdr_cutoff <- numeric()
