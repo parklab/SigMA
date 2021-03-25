@@ -95,7 +95,8 @@ server <- function(input, output, session){
       session$sendCustomMessage(type = 'launch-modal', "modal_inprogress") # launch the modal      
       genomes_matrix <- make_matrix(directory = directory, 
                                     file_type = input$file_type,
-                                    is_list = T)
+                                    is_list = T, 
+                                    ref_genome_name = input$ref_genome)
       genomes <- conv_snv_matrix_to_df(genomes_matrix)
       genomes_file = 'example.csv'
       write.table(genomes,

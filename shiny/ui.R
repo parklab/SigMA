@@ -95,6 +95,11 @@ ui <- fluidPage(
               label = "Select sequencing platform",
               choices = as.character(platform_names)
             ),
+            selectInput(
+              inputId = "ref_genome",
+              label = "Reference Genome",
+              choices = c('hg19','hg38')
+            ),
             checkboxGroupInput("other_settings", "Options:",
                                choiceNames = c("Check for microsattelite instability",
                                                "Run without MVA",
