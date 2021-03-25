@@ -8,7 +8,7 @@
 
 devtools::load_all() #'~/Dropbox/AstraZeneca/MC/master/update_tune/SigMA')
 
-
+df_norm <- read.delim('norm96_SNUH.txt')
 
 tumor_type <- 'breast'
 maf_percent <- 0.001
@@ -23,5 +23,5 @@ output_new_tune <- run(file_name,
                       check_msi = T,
                       custom = T,
                       snv_cutoff = 3,
-                      norm96 = weight_3Nfreq$snuh)
+                      norm96 = df_norm$norm96)
 
