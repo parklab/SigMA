@@ -1,6 +1,8 @@
 library('DT')
 devtools::load_all(path = "../R")
 
+options(shiny.maxRequestSize = 200*1024^2)
+
 myplot <- function(x) {
   plot <- gridExtra::arrangeGrob(x)
   class(plot) <- c("myplot", class(plot))
