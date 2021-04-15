@@ -23,19 +23,26 @@ run_classifier <- function(input_file){
   if(sum(!is.na(match('exp_sig2', colnames(df))), na.rm = T) > 0)
     df$exp_APOBEC <- df$exp_sig2 
   if(sum(!is.na(match('exp_sig13', colnames(df))), na.rm = T) > 0)
-    df$exp_APOBEC <- df$exp_sig13 + df$exp_sig2 
+    df$exp_APOBEC <- df$exp_APOBEC + df$exp_sig2 
   df$rat_APOBEC <- df$exp_APOBEC/df$total_snvs
 
+  df$exp_sig7 <- 0
   if(sum(!is.na(match('exp_sig7a', colnames(df))), na.rm = T) > 0)
     df$exp_sig7 <- df$exp_sig7a 
   if(sum(!is.na(match('exp_sig7b', colnames(df))), na.rm = T) > 0)
-    df$exp_sig7 <- df$exp_sig7a + df$exp_sig7b
+    df$exp_sig7 <- df$exp_sig7 + df$exp_sig7b
   df$rat_sig7 <- df$exp_sig7/df$total_snvs
 
   df$rat_sig11 <- df$exp_sig11/df$total_snvs
 
-  df$exp_pole <- df$exp_sig10a + df$exp_sig10b
+  df$exp_pole <- 0
+  if(sum(!is.na(match('exp_sig10a', colnames(df))), na.rm = T) > 0)
+    df$exp_pole <- df$exp_sig10a 
+  if(sum(!is.na(match('exp_sig10b', colnames(df))), na.rm = T) > 0)
+    df$exp_pole <- df$exp_pole + df$exp_sig10b
   df$rat_pole <- df$exp_pole/df$total_snvs
+    
+  df$rat_sig4 <- df$exp_sig4/df$total_snvs
 
   # get NNLS exposures of maximum cluster
   df_cluster <- get_sig_exps(df, 'cluster_sigs_all', 'cluster_exps_all')  
@@ -54,6 +61,7 @@ run_classifier <- function(input_file){
   if(sum(!is.na(match('clust_exp_sig7b', colnames(df))), na.rm = T) > 0)
     df$clust_exp_UV <- df$clust_exp_UV  + df$clust_exp_sig7b
   
+  df$clust_exp_msi <- 0
   if(sum(!is.na(match(signames_per_tissue[['msi']], colnames(df)))) > 1)
     df$clust_exp_msi <- rowSums(df[, na.omit(match(gsub(signames_per_tissue[['msi']], pattern = 'Signature_', replace ='clust_exp_sig'), colnames(df)))])
   else if(sum(!is.na(match(signames_per_tissue[['msi']], colnames(df)))) == 1)
@@ -61,6 +69,14 @@ run_classifier <- function(input_file){
   else 
     df$clust_exp_msi <- 0 
 
+  df$exp_msi <- 0
+  if(sum(!is.na(match(signames_per_tissue[['msi']], colnames(df)))) > 1)
+    df$exp_msi <- rowSums(df[, na.omit(match(gsub(signames_per_tissue[['msi']], pattern = 'Signature_', replace ='exp_sig'), colnames(df)))])
+  else if(sum(!is.na(match(signames_per_tissue[['msi']], colnames(df)))) == 1)
+    df$exp_msi <- df[, na.omit(match(gsub(signames_per_tissue[['msi']], pattern = 'Signature_', replace ='exp_sig'), colnames(df)))]
+  df$rat_msi <- df$exp_msi/df$total_snvs
+
+  df$clust_exp_pole <- 0
   if(sum(!is.na(match(signames_per_tissue[['pole']], colnames(df)))) > 1)
     df$clust_exp_pole <- rowSums(df[, na.omit(match(gsub(signames_per_tissue[['pole']], pattern = 'Signature_', replace ='clust_exp_sig'), colnames(df)))])
   else if(sum(!is.na(match(signames_per_tissue[['pole']], colnames(df)))) == 1)
