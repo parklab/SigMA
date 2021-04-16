@@ -473,7 +473,7 @@ run <- function(genome_file = NULL,
                          pattern = " ", replace = "")
     }
     else{
-      platform_name = data
+      platform_name = paste0('Custom_', data)
     }
 
     if(is.null(output_file) & !is.null(genome_file)){

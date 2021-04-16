@@ -2,36 +2,57 @@
 #'
 #' @param file the csv file produced by SigMA
 
-plot_summary <- function(file = NULL, do_mva = T){
+plot_summary <- function(file = NULL, do_mva = T, data = NULL, tumor_type = NULL){
   df <- read.csv(file)
 
-  if(do_mva) df$pass <- df$pass_mva
+  if(do_mva) df$pass <- df$pass_mva_strict
   else df$pass <- df$pass_ml
+   
 
   # read SigMA settings from file name
-  msk_string <- gsub(platform_names[['msk']],
-                     pattern = ' ', replace = '')
+  
+  platform_names_collapsed <- lapply(platform_names, function(x){gsub(x, pattern  = " ", replace = "")})
+  if(is.null(tumor_type)){
+    tumor_type <- unlist(strsplit(unlist(strsplit(file, 
+                                                 split = 'tumortype_'))[[2]],
+                          split = '_platform_'))[[1]]
+  }
 
-  exome_string <- gsub(platform_names[['seqcap']],
-                     pattern = ' ', replace = '')
+  if(is.null(data)){
+ 
+    platform <- unlist(strsplit(unlist(strsplit(file, 
+                                                split = 'platform_'))[[2]],
+                       split = '_cf'))[[1]]
 
-  wgs_string <- gsub(platform_names[['wgs']],
-                     pattern = ' ', replace = '')
 
-  tumor_type <- unlist(strsplit(unlist(strsplit(file, 
-                                                split = 'tumortype_'))[[2]],
-                       split = '_platform_'))[[1]]
+    if(platform %in% platform_names_collapsed){
+      data <- names(platform_names)[which(platform_names_collapsed == platform)]
+    }
+    else if(grepl('Custom', platform)){
+      data <- gsub('Custom', platform)
+      custom <- T
+    }
+    else{
+      stop('data setting cannot be extracted from file provide data and tumor_type arguments to plot_summary function')
+    }
+  }
 
-  platform <- unlist(strsplit(unlist(strsplit(file, 
-                                              split = 'platform_'))[[2]],
-                     split = '_cf'))[[1]]
+  if(platform %in% platform_names_collapsed){
+    cutoff_strict <- cutoffs_strict[[data]][[tumor_type]]
+    cutoff <- cutoffs[[data]][[tumor_type]]
+  }
+  else if(custom){
+    file_path <- system.file(paste0("extdata/gbm_models/", data, ".rda"),
+                             package="SigMA")
+    if(!file.exists(file_path)) stop('the provided custom data setting does not exist')
+    if(!(tumor_type %in% names(cutoffs_custom))) stop('tumor_type not available for the data setting')
+    cutoffs_this <- cutoffs_custom[[tumor_type]]
+    cutoffs_strict_this <- cutoffs_strict_custom[[tumor_type]]
+  }else{
+    stop('the data parameter provided does not exist')
+  }
 
-  if(platform == msk_string) data = 'msk'
-  if(platform == exome_string) data = 'seqcap'
-  if(platform == wgs_string) data = 'wgs'
-
-  cutoff_strict <- cutoffs_strict[[data]][[tumor_type]]
-  cutoff <- cutoffs[[data]][[tumor_type]]
+   
 
   text_size = 10
 
@@ -72,15 +93,16 @@ plot_summary <- function(file = NULL, do_mva = T){
     bin_center[[ibin]] <- (cos_bins[[ibin]] + cos_bins[[ibin + 1]])/2
   }
 
-  
-  df_cos <- data.frame(cos = bin_center, count = counts_cos_pos, group = 'Sig3+')
+  df_cos <- data.frame(cos = numeric(), count = integer(), group = character())
+  if(sum(counts_cos_pos) > 0){  
+    df_cos <- rbind(df_cos, data.frame(cos = bin_center, count = counts_cos_pos, group = 'Sig3+'))
+  }
   if(sum(counts_cos_neg) > 0){
     df_cos <- rbind(df_cos, data.frame( cos = bin_center, count = counts_cos_neg, group = 'Sig3-' ))
   }
-  df_cos <- data.frame( cos = bin_center, count = counts_cos_neg, group = 'Sig3-' )
 
   plot_cos <- ggplot2::ggplot(df_cos, ggplot2::aes(x = cos, y = count))
-  plot_cos <- plot_cos + ggplot2::geom_bar(stat = 'identity',# position = 'dodge', 
+  plot_cos <- plot_cos + ggplot2::geom_bar(stat = 'identity', position = 'dodge', 
                                            ggplot2::aes(fill = group))
   plot_cos <- plot_cos + ggplot2::scale_fill_manual(values = colors_cos)
   plot_cos <- plot_cos + ggplot2::theme_bw()
@@ -113,11 +135,13 @@ plot_summary <- function(file = NULL, do_mva = T){
 
   df_ml <- df[, inds]
 
-  inds_3ml <- grep('Signature_3', colnames(df_ml))
-  df_ml <- df_ml[, c(colnames(df_ml), 'tumor')]
+  if(!('Signature_3_ml' %in% colnames(df_ml))){
+    inds_3ml <- grep('Signature_3', colnames(df_ml))
+    df_ml <- df_ml[, c(colnames(df_ml), 'tumor')]
 
-  if(length(inds_3ml) > 1) df_ml$Signature_3_ml <- rowSums(df_ml[,inds_3ml])
-  else if(length(inds_3ml) == 1) colnames(df_ml)[[inds_3ml]] <- 'Signature_3_ml'
+    if(length(inds_3ml) > 1) df_ml$Signature_3_ml <- rowSums(df_ml[,inds_3ml])
+    else if(length(inds_3ml) == 1) colnames(df_ml)[[inds_3ml]] <- 'Signature_3_ml'
+  }
 
   df_ml$tumor <- as.character(df$tumor)
   df_ml$pass <- df$pass
@@ -133,18 +157,21 @@ plot_summary <- function(file = NULL, do_mva = T){
   ml_vals_pos <- df_ml$Signature_3_ml[df_ml$pass]
   ml_vals_neg <- df_ml$Signature_3_ml[!df_ml$pass]
 
-  
   for(ibin in seq_len(length(ml_bins) - 1)){
+    ml_bins[[ibin]]
     counts_ml_pos[[ibin]] <- sum(ml_vals_pos >= ml_bins[[ibin]] & ml_vals_pos < ml_bins[[ibin + 1]]) 
     counts_ml_neg[[ibin]] <- sum(ml_vals_neg >= ml_bins[[ibin]] & ml_vals_neg < ml_bins[[ibin + 1]]) 
-
     bin_center[[ibin]] <- (ml_bins[[ibin]] + ml_bins[[ibin + 1]])/2
   }
-  df_ml_binned <- data.frame(ml = bin_center, count = counts_ml_pos, group = 'Sig3+')
+
+  df_ml_binned <- data.frame(ml = numeric(), count = integer(), group = character())
+  if(sum(counts_ml_pos) > 0){
+    df_ml_binned <- rbind(df_ml_binned, data.frame(ml = bin_center, count = counts_ml_pos, group = 'Sig3+'))
+  }
   if(sum(counts_ml_neg) > 0){
     df_ml_binned <- rbind(df_ml_binned, data.frame( ml = bin_center, count = counts_ml_neg, group = 'Sig3-' ))
   }
-  df_ml_binned <- data.frame( ml = bin_center, count = counts_ml_neg, group = 'Sig3-' )
+
 
   plot_ml <- ggplot2::ggplot(df_ml_binned, ggplot2::aes(x = ml, y = count))
   plot_ml <- plot_ml + ggplot2::geom_bar(stat = 'identity', position = 'dodge', 
