@@ -33,7 +33,9 @@ run_classifier <- function(input_file){
     df$exp_sig7 <- df$exp_sig7 + df$exp_sig7b
   df$rat_sig7 <- df$exp_sig7/df$total_snvs
 
-  df$rat_sig11 <- df$exp_sig11/df$total_snvs
+  df$rat_sig11 <- 0
+  if(sum(!is.na(match('exp_sig11', colnames(df))), na.rm = T) > 0)
+    df$rat_sig11 <- df$exp_sig11/df$total_snvs
 
   df$exp_pole <- 0
   if(sum(!is.na(match('exp_sig10a', colnames(df))), na.rm = T) > 0)
