@@ -36,6 +36,9 @@ run_classifier <- function(input_file){
   df$rat_sig11 <- 0
   if(sum(!is.na(match('exp_sig11', colnames(df))), na.rm = T) > 0)
     df$rat_sig11 <- df$exp_sig11/df$total_snvs
+  else{
+    df$exp_sig11 <- 0
+  }
 
   df$exp_pole <- 0
   if(sum(!is.na(match('exp_sig10a', colnames(df))), na.rm = T) > 0)
@@ -44,7 +47,12 @@ run_classifier <- function(input_file){
     df$exp_pole <- df$exp_pole + df$exp_sig10b
   df$rat_pole <- df$exp_pole/df$total_snvs
     
-  df$rat_sig4 <- df$exp_sig4/df$total_snvs
+  df$rat_sig4 <- 0
+  if(sum(!is.na(match('exp_sig4', colnames(df))), na.rm = T) > 0)
+    df$rat_sig4 <- df$exp_sig4/df$total_snvs
+  else{
+    df$exp_sig4 <- 0
+  }
 
   # get NNLS exposures of maximum cluster
   df_cluster <- get_sig_exps(df, 'cluster_sigs_all', 'cluster_exps_all')  
