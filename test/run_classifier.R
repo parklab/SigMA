@@ -19,11 +19,13 @@ run_classifier <- function(input_file){
   df_exps <- get_sig_exps(df, 'sigs_all_msi', 'exps_all_msi')
   df <- cbind(df, df_exps[,-na.omit(match(colnames(df), colnames(df_exps)))])
 
+  if(dim(df)[[1]] == 0) stop('the matrix is empty')
+
   df$exp_APOBEC <- 0
   if(sum(!is.na(match('exp_sig2', colnames(df))), na.rm = T) > 0)
     df$exp_APOBEC <- df$exp_sig2 
   if(sum(!is.na(match('exp_sig13', colnames(df))), na.rm = T) > 0)
-    df$exp_APOBEC <- df$exp_APOBEC + df$exp_sig2 
+    df$exp_APOBEC <- df$exp_APOBEC + df$exp_sig13 
   df$rat_APOBEC <- df$exp_APOBEC/df$total_snvs
 
   df$exp_sig7 <- 0
