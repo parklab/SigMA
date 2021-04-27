@@ -6,7 +6,7 @@ Copyright (c) 2019 - President and Fellows of Harvard College. All rights reserv
 
 See the [wiki](https://github.com/parklab/SigMA/wiki) page for local installation and usage of the package 
 
-You can also use the web based interface *(Temporarily unavailable due to HMS security updates)*
+You can also use the web based interface
 [http://compbio.med.harvard.edu/sigma/](http://compbio.med.harvard.edu/sigma/)
 
 ## Contact
