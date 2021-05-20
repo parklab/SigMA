@@ -12,8 +12,10 @@ run_classifier <- function(input_file){
 
   # combine likelihood of different clusters with same signatures  
   lite <- lite_df(df)
+
   df <- cbind(df, lite[match(df$tumor, lite$tumor), c('Signature_UV_ml', 'Signature_APOBEC_ml', 'Signature_pole_ml', 'Signature_4_ml', 'Signature_msi_ml')])
-  df$Signature_msi_pole_ml <- df$Signature_msi_Ma_ml + df$Signature_msi_Mb_ml
+
+  df$Signature_msi_pole_ml <- df$Signature_msi_Ma_ml_msi + df$Signature_msi_Mb_ml_msi
 
   # NNLS exposures
   df_exps <- get_sig_exps(df, 'sigs_all_msi', 'exps_all_msi')
@@ -67,26 +69,32 @@ run_classifier <- function(input_file){
   if(sum(!is.na(match('clust_exp_sig13', colnames(df))), na.rm = T) > 0)
     df$clust_exp_APOBEC <- df$clust_exp_APOBEC + df$clust_exp_sig13
 
-  df$clust_exp_UV <- 0
+  df$clust_exp_sig7 <- 0
   if(sum(!is.na(match('clust_exp_sig7a', colnames(df))), na.rm = T) > 0)
-    df$clust_exp_UV <- df$clust_exp_sig7a
+    df$clust_exp_sig7 <- df$clust_exp_sig7a
   if(sum(!is.na(match('clust_exp_sig7b', colnames(df))), na.rm = T) > 0)
-    df$clust_exp_UV <- df$clust_exp_UV  + df$clust_exp_sig7b
+    df$clust_exp_sig7 <- df$clust_exp_sig7  + df$clust_exp_sig7b
   
   df$clust_exp_msi <- 0
-  if(sum(!is.na(match(signames_per_tissue[['msi']], colnames(df)))) > 1)
-    df$clust_exp_msi <- rowSums(df[, na.omit(match(gsub(signames_per_tissue[['msi']], pattern = 'Signature_', replace ='clust_exp_sig'), colnames(df)))])
-  else if(sum(!is.na(match(signames_per_tissue[['msi']], colnames(df)))) == 1)
+  clust_signames_msi <- gsub(signames_per_tissue[['msi']], pattern = 'Signature_', replace ='clust_exp_sig')
+
+  if(sum(!is.na(match(clust_signames_msi, colnames(df)))) > 1){
+    df$clust_exp_msi <- rowSums(df[, na.omit(match(clust_signames_msi, colnames(df)))])
+  }
+  else if(sum(!is.na(match(clust_signames_msi, colnames(df)))) == 1)
     df$clust_exp_msi <- df[, na.omit(match(gsub(signames_per_tissue[['msi']], pattern = 'Signature_', replace ='clust_exp_sig'), colnames(df)))]
   else 
     df$clust_exp_msi <- 0 
 
   df$exp_msi <- 0
-  if(sum(!is.na(match(signames_per_tissue[['msi']], colnames(df)))) > 1)
-    df$exp_msi <- rowSums(df[, na.omit(match(gsub(signames_per_tissue[['msi']], pattern = 'Signature_', replace ='exp_sig'), colnames(df)))])
-  else if(sum(!is.na(match(signames_per_tissue[['msi']], colnames(df)))) == 1)
-    df$exp_msi <- df[, na.omit(match(gsub(signames_per_tissue[['msi']], pattern = 'Signature_', replace ='exp_sig'), colnames(df)))]
+  signames_msi <- gsub(signames_per_tissue[['msi']], pattern = 'Signature_', replace ='exp_sig')
+  if(sum(!is.na(match(signames_msi, colnames(df)))) > 1)
+    df$exp_msi <- rowSums(df[, na.omit(match(signames_msi, colnames(df)))])
+  else if(sum(!is.na(match(signames_msi, colnames(df)))) == 1)
+    df$exp_msi <- df[, na.omit(match(signames_msi, colnames(df)))]
   df$rat_msi <- df$exp_msi/df$total_snvs
+
+  df$Signature_msi_l_rat <- df$Signature_6_l_rat_msi + df$Signature_15_l_rat_msi + df$Signature_20_l_rat_msi + df$Signature_21_l_rat_msi + df$Signature_26_l_rat_msi + df$Signature_14_l_rat_msi + df$Signature_54_l_rat_msi
 
   df$clust_exp_pole <- 0
   if(sum(!is.na(match(signames_per_tissue[['pole']], colnames(df)))) > 1)
@@ -96,19 +104,26 @@ run_classifier <- function(input_file){
   else 
     df$clust_exp_pole <- 0
   
-  prediction = predict(object = gbm_model_OP,
-                       newdata = df,
-                       n.trees = gbm_model_OP$ntrees,
-                       type = "response")
+  sig_groups <- names(gbm_models_OP_per_sig_keep_out)
+  for(sig in sig_groups){
+    gbm_model_OP <- gbm_models_OP_per_sig_keep_out[[sig]]
+    prediction = predict(object = gbm_model_OP,
+                         newdata = df,
+                         n.trees = gbm_models_OP_per_sig_keep_out[[sig]]$ntrees,
+                         type = "response")
+    df_pred <- data.frame(prediction)
+    if(sig != "msi"){
+      colnames(df_pred) <- paste0('prob_is_', sig)
+    }
+    else{
+      colnames(df_pred) <- paste0('prob_is_', c('mmrp', 'pole', 'msi'))
+    }
+    df <- cbind(df, df_pred)
+  }
 
-  df_pred <- data.frame(prediction)
-  num_tree_str <- strsplit(colnames(df_pred)[grepl('is_uv', colnames(df_pred))], split = '\\.')[[1]][[2]]
-  colnames(df_pred) <- paste0('prob_', gsub(colnames(df_pred), pattern = paste0('\\.', num_tree_str), replace = ''))
  
-  df <- cbind(df, df_pred)
   df <- get_classes(df, 
-                    composite_classes = c('is_tobacco.is_apobec', 'is_temozolomide.is_msi','is_pole.is_msi'), 
-                    single_classes = c('is_tobacco', 'is_apobec', 'is_temozolomide','is_msi', 'is_pole', 'is_uva', 'none'),
+                    single_classes = c('is_tobacco', 'is_apobec', 'is_temozolomide','is_msi', 'is_pole', 'is_uva'),
                     thresholds_single = c(0.2, 0.8), composite_thresholds = c(0.2, 0.5),
                     exception_thresh_high = c(0.2, 0.2), exception_class_high = c('is_msi', 'is_pole')) 
 
@@ -116,10 +131,10 @@ run_classifier <- function(input_file){
 }
 
 get_classes <- function(df, 
-                        composite_classes, 
-                        single_classes,
-                        thresholds_single,
-                        composite_thresholds,
+                        composite_classes = NULL, 
+                        single_classes = NULL,
+                        thresholds_single = NULL,
+                        composite_thresholds = NULL,
                         exception_thresh_high = NULL,
                         exception_class_high = NULL,
                         exception_thresh_low = NULL, 
@@ -129,21 +144,23 @@ get_classes <- function(df,
   for(class_this in single_classes){
     df[,paste0(class_this,'_predict')] <- as.integer(df[,paste0('prob_', class_this)] > thresholds_single[[1]]) + as.integer(df[,paste0('prob_', class_this)] > thresholds_single[[2]])
   }
-  for(class_this in composite_classes){
-    class1 <- strsplit(class_this, split = '\\.')[[1]][[1]]
-    class2 <- strsplit(class_this, split = '\\.')[[1]][[2]]
-    inds <- which(df[,paste0('prob_', class1)] + df[,paste0('prob_', class2)] + df[,paste0('prob_', class_this)] > 0.9 & df[,paste0('prob_', class_this)] > composite_thresholds[[1]])
-    inds_zero <- which(df[, paste0(class1, '_predict')] == 0)
-    df[inds[inds %in% inds_zero], paste0(class1, '_predict')] <- 1
-    inds_zero <- which(df[, paste0(class2, '_predict')] == 0)
-    df[inds[inds %in% inds_zero], paste0(class2, '_predict')] <- 1
-    inds <- which(df[,paste0('prob_', class_this)] > composite_thresholds[[2]])
-    df[inds, paste0(class1, '_predict')] <- 2
-    df[inds, paste0(class2, '_predict')] <- 2
-    inds <- which(df[,paste0('prob_', class1)]  < 0.005 & df[,paste0(class1,'_predict')] != 0)
-    df[inds, paste0(class1, '_predict')] <- 0
-    inds <- which(df[,paste0('prob_', class2)]  < 0.005 & df[,paste0(class2,'_predict')] != 0)
-    df[inds, paste0(class2, '_predict')] <- 0
+  if(!is.null(composite_classes)){
+    for(class_this in composite_classes){
+      class1 <- strsplit(class_this, split = '\\.')[[1]][[1]]
+      class2 <- strsplit(class_this, split = '\\.')[[1]][[2]]
+      inds <- which(df[,paste0('prob_', class1)] + df[,paste0('prob_', class2)] + df[,paste0('prob_', class_this)] > 0.9 & df[,paste0('prob_', class_this)] > composite_thresholds[[1]])
+      inds_zero <- which(df[, paste0(class1, '_predict')] == 0)
+      df[inds[inds %in% inds_zero], paste0(class1, '_predict')] <- 1
+      inds_zero <- which(df[, paste0(class2, '_predict')] == 0)
+      df[inds[inds %in% inds_zero], paste0(class2, '_predict')] <- 1
+      inds <- which(df[,paste0('prob_', class_this)] > composite_thresholds[[2]])
+      df[inds, paste0(class1, '_predict')] <- 2
+      df[inds, paste0(class2, '_predict')] <- 2
+      inds <- which(df[,paste0('prob_', class1)]  < 0.005 & df[,paste0(class1,'_predict')] != 0)
+      df[inds, paste0(class1, '_predict')] <- 0
+      inds <- which(df[,paste0('prob_', class2)]  < 0.005 & df[,paste0(class2,'_predict')] != 0)
+      df[inds, paste0(class2, '_predict')] <- 0
+    }
   }
   if(!is.null(exception_class_high)){
     for(i in 1:length(exception_class_high)){
