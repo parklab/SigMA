@@ -107,9 +107,17 @@ run_classifier <- function(input_file){
   sig_groups <- names(gbm_models_OP_per_sig_keep_out)
   for(sig in sig_groups){
     gbm_model_OP <- gbm_models_OP_per_sig_keep_out[[sig]]
+    features <- names(gbm::relative.influence(gbm_model_OP))
+    features_to_add <- features[is.na(match(features, colnames(df)))]
+
+    for(feature in features_to_add){
+      df$new <- 0
+      colnames(df)[colnames(df) == "new"] <- feature
+    }
+
     prediction = predict(object = gbm_model_OP,
                          newdata = df,
-                         n.trees = gbm_models_OP_per_sig_keep_out[[sig]]$ntrees,
+                         n.trees = gbm_model_OP$ntrees,
                          type = "response")
     df_pred <- data.frame(prediction)
     if(sig != "msi"){
