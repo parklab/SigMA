@@ -102,7 +102,6 @@ run_classifier <- function(input_file){
   df$Signature_msi_l_rat <- df$Signature_6_l_rat_msi + df$Signature_15_l_rat_msi + df$Signature_20_l_rat_msi + df$Signature_21_l_rat_msi + df$Signature_26_l_rat_msi + df$Signature_14_l_rat_msi + df$Signature_54_l_rat_msi
 
   df$clust_exp_pole <- 0
-  print(colnames(df)[grep('exp_sig', colnames(df))])
 
   if(sum(!is.na(match(signames_per_tissue[['pole']], colnames(df)))) > 1)
     df$clust_exp_pole <- rowSums(df[, na.omit(match(gsub(signames_per_tissue[['pole']], pattern = 'Signature_', replace ='clust_exp_sig'), colnames(df)))])
@@ -113,11 +112,9 @@ run_classifier <- function(input_file){
   
   sig_groups <- names(gbm_models_OP_per_sig_keep_out)
   for(sig in sig_groups){
-    print(sig)
     gbm_model_OP <- gbm_models_OP_per_sig_keep_out[[sig]]
     features <- names(gbm::relative.influence(gbm_model_OP))
     features_to_add <- features[is.na(match(features, colnames(df)))]
-    print(features_to_add)
     for(feature in features_to_add){
       df$new <- 0
       colnames(df)[colnames(df) == "new"] <- feature
