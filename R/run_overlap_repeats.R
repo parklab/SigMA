@@ -7,7 +7,7 @@
 #' be saved
 #' @param file_type 'maf' or 'vcf'
 
-run_overlap_repeats <- function(input, output_file, file_type){
+run_overlap_repeats <- function(input, output_file, file_type, return_df = NULL){
 
   file_path <- system.file("extdata/repeat_bed_files/",
                            package="SigMA")
@@ -41,6 +41,8 @@ run_overlap_repeats <- function(input, output_file, file_type){
                         nins = c(unlist(nins_counts)), 
                         ndel = c(unlist(ndel_counts)))
 
-  write.table(df_nmsi, file = output_file, row.names = F, sep = ',', quote = F)
+  if(!is.null(return_df)) return(df_nmsi)
+  else
+    write.table(df_nmsi, file = output_file, row.names = F, sep = ',', quote = F)
 }
 
