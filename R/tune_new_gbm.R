@@ -97,7 +97,8 @@ tune_gbm_model <- function(file, snv_cutoff, feature_cutoff, gbm_parameters, col
                    shrinkage = shrinkage,
                    bag.fraction = bag.fraction, 
                    n.minobsinnode= n.minobsinnode,
-                   cv.fold = cv.fold)
+                   cv.fold = cv.fold,
+		   n.cores = 1)
   bestTreeForPrediction = gbm::gbm.perf(gbm_model)
   gbm_model <- gbm::gbm(formula = is_true ~ .,
                    distribution = 'bernoulli',
@@ -105,9 +106,9 @@ tune_gbm_model <- function(file, snv_cutoff, feature_cutoff, gbm_parameters, col
                    n.trees = bestTreeForPrediction, 
                    shrinkage = shrinkage,
                    bag.fraction = bag.fraction, 
-                   n.minobsinnode= n.minobsinnode)
+                   n.minobsinnode= n.minobsinnode,
+		   n.cores = 1)
   rel_infs <- gbm::relative.influence(gbm_model)
-
   features <- names(rel_infs)[rel_infs/sum(rel_infs) > feature_cutoff]
   gbm_model <- gbm::gbm(formula = is_true ~ .,
                    distribution = 'bernoulli',
@@ -115,7 +116,8 @@ tune_gbm_model <- function(file, snv_cutoff, feature_cutoff, gbm_parameters, col
                    n.trees = bestTreeForPrediction, 
                    shrinkage = shrinkage,
                    bag.fraction = bag.fraction, 
-                   n.minobsinnode= n.minobsinnode)
+                   n.minobsinnode= n.minobsinnode,
+		   n.cores = 1)
   return(gbm_model)
 }
 

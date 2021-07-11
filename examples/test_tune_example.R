@@ -20,7 +20,7 @@ write.table(df, file_name, row.names = F, sep = ',', quote = F)
 
 # First run the built in model
 output_file_built_in <- run(file_name,
-                            data = 'tcga_mc3',
+                            data = 'tcga_mc3', # if it is a panel try msk
                             tumor_type = tumor_type, 
                             do_mva = T,
                             do_assign = T,
@@ -35,16 +35,21 @@ output_file_built_in <- run(file_name,
 # First determine the closest 'data' setting, which
 # indicates the sequencing platform, to use 
 
-#remove MSI samples
+# remove MSI samples if you have other sources of hypermutations e.g.
+# temozolomide treated patients etc you want to remove them as well
 m <- read.csv(output_file_built_in)
 lite <- lite_df(m)
 m <- m[!(lite$categ %in% c("Signature_msi", "Signature_pole", 'MMRD', 'POLE')),]
-write.table(m[,1:97], file_name, row.names = F, sep  = ',', quote = F)
+file_name_no_msi <- gsub(file_name, pattern = '.csv', replace = '_nomsi.csv')
+write.table(m[,1:97], file_name_no_msi, row.names = F, sep  = ',', quote = F)
 
-data <- find_data_setting(input_file = file_name, 
+data <- find_data_setting(input_file = file_name_no_msi, 
                           tumor_type = tumor_type,
                           remove_msi_pole = F) # since we removed these samples above otherwise has to be T
 
+
+# if the best data option for a panel turns out to be exome sequencing
+# you may want to check the germline contamination in your mutation calls
 message(paste0('Best data option is ', data))
 
 # Once this is identified it allows us to get an 
@@ -54,8 +59,8 @@ message(paste0('Best data option is ', data))
 # simulate a new dataset from WGS data for which 
 # the sig3 is known from WGS analysis and is more
 # reliable
-simul_file <- quick_simulation(file_name, 
-                               tumor_type = 'breast', 
+simul_file <- quick_simulation(file_name_no_msi, 
+                               tumor_type = tumor_type, 
                                data = data,
                                run_SigMA = T, 
                                remove_msi_pole = F) #since we removed these samples above otherwise has to be T
@@ -95,18 +100,18 @@ add_gbm_model('example_gbm',
               cutoff  = cutoff, 
               cutoff_strict = cutoff_strict)
     
-# example bed file:
-# bed_file <- system.file("extdata/examples/truseq.bed", package="SigMA")
-# norm96 <- get_trinuc_norm(bed_file)
+# test the following command and replace the bed file with that of your libraries:
+bed_file <- system.file("extdata/examples/example_small_bedfile.bed", package="SigMA")
+norm96 <- get_trinuc_norm(bed_file)
 
 # then imagine we received a new dataset which is in our example
 # the same dataset we analyzed earlier with the built in model
-output_new_tune <- run('matrix_96dim_tcga_brca.csv', 
+output_new_tune <- run(file_name, 
                       data = 'example_gbm',
-                      tumor_type = 'breast',
+                      tumor_type = tumor_type,
                       do_mva = T, 
                       do_assign = T, 
                       check_msi = T,
                       custom = T,  
-                      norm96 = weight_3Nfreq$seqcap)
+                      norm96 = norm96) # replace_with norm96 using the bed file that defines the library coverage
 
