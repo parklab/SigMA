@@ -1,3 +1,4 @@
+# gets the clusters with maximum likelihood and decomposes them with NNLS to determine relative exposures of signatures
 llh_max_characteristics <- function(df, tumor_type, cosmic_version){
   # calculate the signature exposures of the cluster with maximum likelihood
 
@@ -38,6 +39,7 @@ llh_max_characteristics <- function(df, tumor_type, cosmic_version){
   return(df)
 }
 
+# converts exps_all, sigs_all or exps_all_msi, sigs_all_msi columns into an exposure table
 get_sig_exps <- function(df, col_sigs, col_exps){
   # returns a data table splitting the exposures and signatures stored in compact columns e.g. sigs_all/exps_all or sigs_all_msi/exps_all_msi
 
@@ -51,4 +53,34 @@ get_sig_exps <- function(df, col_sigs, col_exps){
     df_sigs[i, match(gsub(sigs_this, pattern = 'Signature_', replace = 'exp_sig'), colnames(df_sigs))] <- exps_this
   }
   return(df_sigs)
+}
+
+# returns signature catalogs 
+get_catalog <- function(cosmic_version = 'v3', output_file = NULL){
+  # calculate the signature exposures of the cluster with maximum likelihood
+
+  if(cosmic_version == "v3")
+    cosmic_catalog <- pcawg_catalog
+  if(cosmic_version == "v2")
+    cosmic_catalog <- cosmic_catalog_v2
+  if(!is.null(output_file)){
+    message(paste0('catalog is saved to ', output_file))
+    write.csv(cosmic_catalog, file = output_file, row.names = F, sep = ',', quote = F)
+  }
+  else{
+    return(cosmic_catalog)
+  }
+}
+
+# add mmej and nhej columns that contains counts of indels that correspond to
+# approximate exposures of ID6 and ID8 relatively to the input genome matrix
+# only works for vcf files at the moment
+add_mmej_nhej_id_counts <- function(dir, input_matrix_file){
+  df <- read.csv(input_matrix_file)
+  df_id <- mmej_nhej_ids_from_vcfs(dir, save_file = F)
+  if(sum(!is.na(match(df$tumor, df_id$tumor))) == 0)
+    stop('input file tumor column does not match the file names in the vcf file')
+  df$mmej <- df_id$mmej[match(df$tumor, df_id$tumor)]
+  df$nmej <- df_id$mej[match(df$tumor, df_id$tumor)]
+  write.table(df, file = input_matrix_file, row.names = F, sep = ',', quote = F)
 }
