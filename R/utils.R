@@ -72,15 +72,3 @@ get_catalog <- function(cosmic_version = 'v3', output_file = NULL){
   }
 }
 
-# add mmej and nhej columns that contains counts of indels that correspond to
-# approximate exposures of ID6 and ID8 relatively to the input genome matrix
-# only works for vcf files at the moment
-add_mmej_nhej_id_counts <- function(dir, input_matrix_file){
-  df <- read.csv(input_matrix_file)
-  df_id <- mmej_nhej_ids_from_vcfs(dir, save_file = F)
-  if(sum(!is.na(match(df$tumor, df_id$tumor))) == 0)
-    stop('input file tumor column does not match the file names in the vcf file')
-  df$mmej <- df_id$mmej[match(df$tumor, df_id$tumor)]
-  df$nmej <- df_id$mej[match(df$tumor, df_id$tumor)]
-  write.table(df, file = input_matrix_file, row.names = F, sep = ',', quote = F)
-}
