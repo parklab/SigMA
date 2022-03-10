@@ -340,16 +340,16 @@ simulate_from_wgs <- function(df, tumor_type, data, below_cutoff, maf_percent){
       inds <-m_main$scale > 0 & !m_main$main
       m_main[inds, 1:96] <- (1 + m_main$scale[inds]) * m_main[inds, 1:96]
     }
-
-    if(sum(m_main$scale_id < 0 & !m_main$main) > 0){
-      inds <- which(m_main$scale_id < 0 & !m_main$main)
-      m_main[inds,] <- adjust_snvs(m_main[inds,])
-    } 
-    if(sum(m_main$scale_id > 0 & !m_main$main) > 0){
-      inds <-m_main$scale_id > 0 & !m_main$main
-      m_main[inds, 1:96] <- (1 + m_main$scale_id[inds]) * m_main[inds, 1:96]
+    if(c('mmej','nhej', 'scale_id') %in% colnames(m_main)){
+      if(sum(m_main$scale_id < 0 & !m_main$main) > 0){
+        inds <- which(m_main$scale_id < 0 & !m_main$main)
+        m_main[inds,] <- adjust_ids(m_main[inds,])
+      } 
+      if(sum(m_main$scale_id > 0 & !m_main$main) > 0){
+        inds <-m_main$scale_id > 0 & !m_main$main
+        m_main[inds, 1:96] <- (1 + m_main$scale_id[inds]) * m_main[inds, 1:96]
+      }
     }
-
     return(m_main)
   }
 
