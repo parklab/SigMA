@@ -24,7 +24,8 @@
 quick_simulation <- function(input_file, 
                              output_file = NULL, 
                              tumor_type = NULL,  
-                             data = NULL, 
+                             data = NULL,
+			     catalog_name = NULL,
                              remove_msi_pole = T, 
                              run_SigMA = T,
                              input_df = NULL, 
@@ -34,6 +35,12 @@ quick_simulation <- function(input_file,
                              maf_percent = NULL){
 
   if(run_SigMA){
+    if(is.null(catalog_name))
+      stop('please provide a catalog_name argument options: ',  paste0(names(catalogs), sep = ' '))
+    
+    if(!(catalog_name %in% names(catalogs)))
+      stop(paste0('catalog ', catalog_name, ' does not exist provide one of the following: ', paste0(names(catalogs), sep = ' ')))
+      
     if(!is.null(input_file)) df_in <- read.csv(input_file)
     else df_in <- input_df 
  
@@ -43,7 +50,8 @@ quick_simulation <- function(input_file,
     df <- run(input_file,
               tumor_type = tumor_type,
               data = data_this,
-              check_msi = remove_msi_pole, 
+	      catalog_name = catalog_name,
+              check_msi = remove_msi_pole,
               do_mva = F, #has_model(data, tumor_type),
               do_assign = T, 
               snv_cutoff = snv_cutoff,
@@ -124,21 +132,41 @@ quick_simulation <- function(input_file,
 # adjusts the snv count based on the differences in the
 # median SNV counts in the downsampled simulation and data
 determine_scale <- function(df, m_ref, tumor_type, below_cutoff, scale_separately = F){
+  scale_mmej_nhej <- F
   # calculate the scale to match the data to simulations 
   if(sum(grepl(tumor_type, tumor_types_HRD)) > 0 & sum(df$pass, na.rm = T) > 0){
     scale_plus <- NULL
     scale_neg <- NULL
+    if('mmej' %in% colnames(df) & 'nhej' %in% colnames(df)){
+      scale_mmej_nhej <- T
+      scale_plus_id <- NULL
+      scale_neg_id <- NULL
+    }
     if(sum(m_ref$is_sig3) > 0){
       total_snvs_plus <- median(df$total_snvs[df$pass], na.rm = T)
       median_pos_built_in <- median(rowSums(m_ref[m_ref$is_sig3, 1:96]), na.rm = T)
       scale_plus <- (total_snvs_plus - median_pos_built_in)/median_pos_built_in
+      if(scale_mmej_nhej){
+        total_id_plus <- median(df$mmej[df$pass] + df$nhej[df$pass], na.rm = T)
+        median_id_pos_built_in <- median(m_ref$mmej[m_ref$is_sig3] + m_ref$nhej[m_ref$is_sig3], na.rm = T)
+        scale_plus_id <- (total_id_plus - median_id_pos_built_in)/median_id_pos_built_in
+      }
     }
     if(sum(!m_ref$is_sig3) > 0){      
       total_snvs_neg <- median(df$total_snvs[!df$pass], na.rm = T)
-      if(!is.null(below_cutoff))
-        total_snvs_neg <- median(c(df$total_snvs[!df$pass], rowSums(below_cutoff[,1:96])), na.rm = T)
+      if(!is.null(below_cutoff)){
+        total_id_neg <- median(c(df$mmej[!df$pass] + df$nhej[!df$pass], below_cutoff$mmej + below_cutoff$nhej), na.rm = T)
+      }
       median_neg_built_in <- median(rowSums(m_ref[which(!m_ref$is_sig3), 1:96]), na.rm = T)
       scale_neg <- (total_snvs_neg - median_neg_built_in)/median_neg_built_in
+      if(scale_mmej_nhej){      
+        total_id_neg <- median(df$mmej[!df$pass] + df$nhej[!df$pass], na.rm = T)
+        if(!is.null(below_cutoff)){
+          total_id_neg <- median(c(df$mmej[!df$pass] + df$nhej[!df$pass], below_cutoff$mmej + below_cutoff$nhej), na.rm = T)
+        }
+        median_id_neg_built_in <- median(m_ref$mmej[!m_ref$is_sig3] + m_ref$nhej[!m_ref$is_sig3], na.rm = T)
+        scale_neg_id <- (total_snvs_neg - median_neg_built_in)/median_neg_built_in
+      }
     }
   
     if(!is.null(scale_plus) & !is.null(scale_neg)){      
@@ -161,11 +189,35 @@ determine_scale <- function(df, m_ref, tumor_type, below_cutoff, scale_separatel
       scale_separately <- F
       scale <- scale_neg
     }
+    if(scale_mmej_nhej){
+      if(!is.null(scale_plus_id) & !is.null(scale_neg_id)){      
+        if( abs(2*(scale_plus_id - scale_neg_id)/(scale_plus_id + scale_neg_id)) > 0.5 ){
+          warning('The scales for positive and negative group disagree')
+          match_total_id_combined <- T
+        }
+        else{
+          match_total_snvs_combined <- F
+          scale_id <- (scale_plus_id + scale_neg_id)/2
+        }
+      }
+      if(!is.null(scale_plus_id) & is.null(scale_neg_id)){
+        match_total_id_combined <- F 
+        scale_id_separately <- F
+        scale_id <- scale_plus_id
+      }
+      if(is.null(scale_plus_id) & !is.null(scale_neg_id)){
+        match_total_id_combined <- F
+        scale_id_separately <- F
+        scale_id <- scale_neg_id
+      }
+    }
   }
   else{
     match_total_snvs_combined <- T
-  } 
-
+    if(scale_mmej_nhej)
+      match_total_id_combined <- T
+  }
+  
   if(match_total_snvs_combined){
     total_snvs <- median(rowSums(df[,1:96]), na.rm = T)
     if(!is.null(below_cutoff)){
@@ -173,13 +225,28 @@ determine_scale <- function(df, m_ref, tumor_type, below_cutoff, scale_separatel
     }
 
     median_total_snvs <- median(rowSums(m_ref[,1:96]), na.rm = T) 
-    scale <- (total_snvs - median_total_snvs)/median_total_snvs
+    scale_id <- (total_snvs - median_total_snvs)/median_total_snvs
   }
-  
   m_ref$scale <- scale
   if(scale_separately){
     m_ref$scale[m_ref$is_sig3] <- scale_plus
     m_ref$scale[!m_ref$is_sig3] <- scale_neg
+  }
+  if(scale_mmej_nhej){
+    if(match_total_id_combined){
+      total_ids <- median(df$mmej + df$nhej, na.rm = T)
+      if(!is.null(below_cutoff)){
+        total_snvs <- median(c(df$mmej + df_nhej, below_cutoff$mmej + below_cutoff$nhej), na.rm = T)
+      }
+
+      median_total_ids <- median(m_ref$mmej + m_ref$nhej, na.rm = T) 
+      scale_id <- (total_ids - median_total_ids)/median_total_ids
+    }
+    m_ref$scale_id <- scale_id
+    if(scale_id_separately){
+      m_ref$scale_id[m_ref$is_sig3] <- scale_plus_id
+      m_ref$scale_id[!m_ref$is_sig3] <- scale_neg_id
+    }
   }
   return(m_ref)
 }
@@ -273,6 +340,16 @@ simulate_from_wgs <- function(df, tumor_type, data, below_cutoff, maf_percent){
       inds <-m_main$scale > 0 & !m_main$main
       m_main[inds, 1:96] <- (1 + m_main$scale[inds]) * m_main[inds, 1:96]
     }
+
+    if(sum(m_main$scale_id < 0 & !m_main$main) > 0){
+      inds <- which(m_main$scale_id < 0 & !m_main$main)
+      m_main[inds,] <- adjust_snvs(m_main[inds,])
+    } 
+    if(sum(m_main$scale_id > 0 & !m_main$main) > 0){
+      inds <-m_main$scale_id > 0 & !m_main$main
+      m_main[inds, 1:96] <- (1 + m_main$scale_id[inds]) * m_main[inds, 1:96]
+    }
+
     return(m_main)
   }
 
@@ -288,7 +365,7 @@ simulate_from_wgs <- function(df, tumor_type, data, below_cutoff, maf_percent){
     if(data == "seqcap" | data == "seqcap_probe"){
       m_extra <- get_base_matrix(df = df, tumor_type = tumor_type, data = 'wgs', below_cutoff = below_cutoff, maf_percent = maf_percent)
     }
-    if(data == "msk" | data == "op" | data == "op_test"){ 
+    if(data == "msk" | data == "op" | data == "op_test" | data == "fo"){ 
       m_extra <- get_base_matrix(df = df, tumor_type = tumor_type, data = 'seqcap', below_cutoff = below_cutoff, maf_percent = maf_percent)
     }
 
@@ -296,6 +373,23 @@ simulate_from_wgs <- function(df, tumor_type, data, below_cutoff, maf_percent){
     m_main <- adjust_snvs(m_main[!is.na(match(m_main$tumor, m_extra$tumor)),], 
                           m_extra[na.omit(match(m_main$tumor, m_extra$tumor)),]) 
   }
+  
+  if(max(m_main$scale_id) < 0){
+    m_main <- adjust_ids(m_main)
+  }
+  else{
+    if(data == "seqcap" | data == "seqcap_probe"){
+      m_extra <- get_base_matrix(df = df, tumor_type = tumor_type, data = 'wgs', below_cutoff = below_cutoff, maf_percent = maf_percent)
+    }
+    if(data == "msk" | data == "op" | data == "op_test" | data == "fo"){ 
+      m_extra <- get_base_matrix(df = df, tumor_type = tumor_type, data = 'seqcap', below_cutoff = below_cutoff, maf_percent = maf_percent)
+    }
+
+    message('adjusting SNVs')
+    m_main <- adjust_ids(m_main[!is.na(match(m_main$tumor, m_extra$tumor)),], 
+                          m_extra[na.omit(match(m_main$tumor, m_extra$tumor)),]) 
+  }
+
   return(m_main)
 }
 
@@ -340,3 +434,53 @@ subsample <- function(spec, count){
   }
   return(spec_out)
 }
+
+adjust_ids <- function(m, m_extra = NULL){
+  if(is.null(m_extra)){
+    for(i in 1:dim(m)[[1]]){
+      mmej <- m$mmej[i]
+      nhej <- m$nhej[i]
+      scale <- m$scale_id[[i]]
+      if(abs(scale_id) < 0.5){
+        count <- round(mmej * scale, digit = 0)
+        m$mmej[i] <- mmej - subsample_id(mmej, abs(count))
+      }
+      else{
+        count <- round(nhej * (1 + scale), digit = 0)
+        m$nhej[i] <- subsample_id(nhej, abs(count))
+      }
+    }
+  }
+  else{
+    for(i in 1:dim(m)[[1]]){
+      mmej <- m$mmej[i]
+      nhej <- m$nhej[i]
+      mmej_extra <- m_extra$mmej[i]
+      nhej_extra <- m_extra$nhej[i]
+
+      count <- round(mmej * m$scale_id[[i]], digit = 0)
+      if(count < 0) m$mmej[i] <- mmej - subsample_id(mmej, abs(count))
+      else m$mmej[i] <- mmej + subsample_id(mmej_extra, count)
+      if(m$mmej[i] < 0) m$mmej[i] <- 0
+      
+      count <- round(nhej * m$scale_id[[i]], digit = 0)
+      if(count < 0) m$nhej[i] <- nhej - subsample_id(nhej, abs(count))
+      else m$nhej[i] <- nhej + subsample_id(nhej_extra, count)
+      if(m$nhej[i] < 0) m$nhej[i] <- 0
+    }
+  }
+  return(m)
+}
+
+subsample_id <- function(id_count, count){
+  count <- min(id_count, count)
+  id_out <- 0
+  max_val <- id_count * 1.1
+  while(sum(id_out) < count){
+    val <- runif(1, 0, max_val)
+    if(id_count > val & id_out < id_count)
+      id_out <- id_out + 1
+  }
+  return(id_out)
+}
+

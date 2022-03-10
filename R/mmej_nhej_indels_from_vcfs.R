@@ -64,21 +64,21 @@ mh_from_vcf <- function(vcf_file_path = 'test_vcf/BL-18-F43588_L_2-96252_27-6131
                         min_size_del = 5){
 
   vcf <- VariantAnnotation::readVcf(vcf_file_path)
-
   chrom <- GenomicRanges::seqnames(GenomicRanges::granges(vcf))
   chrom <- gsub(chrom, pattern ='chr', replace = '')
   inds <- which(chrom %in% c(1:22, 'X', 'Y'))
+  vcf <- vcf[inds]
+  inds <- which(unlist(lapply(VariantAnnotation::alt(vcf), function(x){ length(x)})) == 1)
   vcf <- vcf[inds]
   
   chrom <- GenomicRanges::seqnames(GenomicRanges::granges(vcf))
   
   refs <- as.character(VariantAnnotation::ref(vcf))
-  alts <- as.character(unlist(VariantAnnotation::alt(vcf))) 
+  alts <- as.character(unlist(VariantAnnotation::alt(vcf)))
   starts <- GenomicRanges::start(GenomicRanges::ranges(GenomicRanges::granges(vcf)))
   ends <- GenomicRanges::end(GenomicRanges::ranges(GenomicRanges::granges(vcf)))
 
   df_out <- data.frame()
-
   if(sum(alts == '-' & nchar(refs) >= min_size_del, na.rm = T) > 0){
     inds <-  which(alts == '-' & nchar(refs) >= min_size_del)
     vcf_this <- vcf[inds,]
@@ -95,7 +95,6 @@ mh_from_vcf <- function(vcf_file_path = 'test_vcf/BL-18-F43588_L_2-96252_27-6131
   if(sum(alts != '-' & nchar(refs) - nchar(alts) >= min_size_del, na.rm = T) > 0){
     inds <- which(alts != '-' & nchar(refs) - nchar(alts) >= min_size_del & nchar(alts) == 1)
     if(length(inds) == 0) next
-
     ref_first <- unlist(lapply(VariantAnnotation::ref(vcf[inds,]), function(x){substr(as.character(x), start =1 , stop =1)}))
     ref_rest <- unlist(lapply(VariantAnnotation::ref(vcf[inds,]), function(x){substr(as.character(x), start =2 , stop =length(x))}))
 
@@ -151,62 +150,66 @@ mh_from_vcf <- function(vcf_file_path = 'test_vcf/BL-18-F43588_L_2-96252_27-6131
 calculate_mh <- function(start, end, chr, ref, alt, ref_genome){
 
   nmh_vec <- rep(0, length(start))
+  if(length(start) == 0){
+    df_nmh <- data.frame(chrom = character(), start =integer(), end = integer(),
+                         ref = character(), alt = character(), nmh = integer()) # add the tumor and alt
+  }
+  else{
+    for(irow in 1:length(start)){ 
+      start_this <- start[irow]
+      end_this <- end[irow]
+      chr_this <- chr[irow]
+      ref_this <- ref[irow]
 
-  for(irow in 1:length(start)){ 
-    start_this <- start[irow]
-    end_this <- end[irow]
-    chr_this <- chr[irow]
-    ref_this <- ref[irow]
+      l_del <- end_this - start_this + 1
 
-    l_del <- end_this - start_this + 1
+      for(il in 1:l_del){
+        ncontext = il
+        gr_lhs_start <- GenomicRanges::GRanges(chr_this, IRanges::IRanges(start_this - 1, start_this - 1))
+        gr_rhs_start <- GenomicRanges::GRanges(chr_this, IRanges::IRanges(start_this , start_this))
+        gr_lhs_end <- GenomicRanges::GRanges(chr_this, IRanges::IRanges(end_this , end_this))
+        gr_rhs_end <- GenomicRanges::GRanges(chr_this, IRanges::IRanges(end_this + 1, end_this + 1))
 
-    for(il in 1:l_del){
-      ncontext = il
-      gr_lhs_start <- GenomicRanges::GRanges(chr_this, IRanges::IRanges(start_this - 1, start_this - 1))
-      gr_rhs_start <- GenomicRanges::GRanges(chr_this, IRanges::IRanges(start_this , start_this))
-      gr_lhs_end <- GenomicRanges::GRanges(chr_this, IRanges::IRanges(end_this , end_this))
-      gr_rhs_end <- GenomicRanges::GRanges(chr_this, IRanges::IRanges(end_this + 1, end_this + 1))
-
-      context_lhs_start <- GenomicRanges::resize(gr_lhs_start, ncontext, fix = 'end') 
-      context_rhs_start <- GenomicRanges::resize(gr_rhs_start, ncontext, fix = 'start')
-      context_lhs_end <- GenomicRanges::resize(gr_lhs_end, ncontext, fix = 'end')
-      context_rhs_end <- GenomicRanges::resize(gr_rhs_end, ncontext, fix = 'start')
+        context_lhs_start <- GenomicRanges::resize(gr_lhs_start, ncontext, fix = 'end') 
+        context_rhs_start <- GenomicRanges::resize(gr_rhs_start, ncontext, fix = 'start')
+        context_lhs_end <- GenomicRanges::resize(gr_lhs_end, ncontext, fix = 'end')
+        context_rhs_end <- GenomicRanges::resize(gr_rhs_end, ncontext, fix = 'start')
             
-      first_lhs_start <- GenomicRanges::start(context_lhs_start)
-      last_lhs_start <- GenomicRanges::end(context_lhs_start)
-      first_lhs_end <- GenomicRanges::start(context_rhs_end)
-      last_lhs_end <- GenomicRanges::end(context_rhs_end)
+        first_lhs_start <- GenomicRanges::start(context_lhs_start)
+        last_lhs_start <- GenomicRanges::end(context_lhs_start)
+        first_lhs_end <- GenomicRanges::start(context_rhs_end)
+        last_lhs_end <- GenomicRanges::end(context_rhs_end)
 
 
-      chrom_nums_start <- paste0('chr', as.vector(GenomicRanges::seqnames(context_lhs_start)))
-      chrom_nums_end <- paste0('chr', as.vector(GenomicRanges::seqnames(context_lhs_end)))
+        chrom_nums_start <- paste0('chr', as.vector(GenomicRanges::seqnames(context_lhs_start)))
+        chrom_nums_end <- paste0('chr', as.vector(GenomicRanges::seqnames(context_lhs_end)))
 
 
-      context_lhs_start <- VariantAnnotation::getSeq(ref_genome,
-                                               names = chrom_nums_start,
-                                               start = first_lhs_start,
-                                               end = last_lhs_start,
-                                               as.character = TRUE)
+        context_lhs_start <- VariantAnnotation::getSeq(ref_genome,
+                                                 names = chrom_nums_start,
+                                                 start = first_lhs_start,
+                                                 end = last_lhs_start,
+                                                 as.character = TRUE)
 
-      context_lhs_end <- VariantAnnotation::getSeq(ref_genome,
-                                               names = chrom_nums_end,
-                                               start = first_lhs_end,
-                                               end = last_lhs_end,
-                                               as.character = TRUE)
+        context_lhs_end <- VariantAnnotation::getSeq(ref_genome,
+                                                 names = chrom_nums_end,
+                                                 start = first_lhs_end,
+                                                 end = last_lhs_end,
+                                                 as.character = TRUE)
 
 
-      first_rhs_start <- GenomicRanges::start(context_rhs_start)
-      last_rhs_start <- GenomicRanges::end(context_rhs_start)
-      first_rhs_end <- GenomicRanges::start(context_rhs_end)
-      last_rhs_end <- GenomicRanges::end(context_rhs_end)
-      chrom_nums_start <- paste0('chr', as.vector(GenomicRanges::seqnames(context_rhs_start)))
-      chrom_nums_end <- paste0('chr', as.vector(GenomicRanges::seqnames(context_rhs_end)))
+        first_rhs_start <- GenomicRanges::start(context_rhs_start)
+        last_rhs_start <- GenomicRanges::end(context_rhs_start)
+        first_rhs_end <- GenomicRanges::start(context_rhs_end)
+        last_rhs_end <- GenomicRanges::end(context_rhs_end)
+        chrom_nums_start <- paste0('chr', as.vector(GenomicRanges::seqnames(context_rhs_start)))
+        chrom_nums_end <- paste0('chr', as.vector(GenomicRanges::seqnames(context_rhs_end)))
 
-      context_rhs_start <- VariantAnnotation::getSeq(ref_genome,
-                                               names = chrom_nums_start,
-                                               start = first_rhs_start,
-                                               end = last_rhs_start,
-                                               as.character = TRUE)
+        context_rhs_start <- VariantAnnotation::getSeq(ref_genome,
+                                                 names = chrom_nums_start,
+                                                 start = first_rhs_start,
+                                                 end = last_rhs_start,
+                                                 as.character = TRUE)
 
       context_rhs_end <- VariantAnnotation::getSeq(ref_genome,
                                                names = chrom_nums_end,
@@ -216,18 +219,18 @@ calculate_mh <- function(start, end, chr, ref, alt, ref_genome){
 
  
 
-      if(context_lhs_start != context_lhs_end & context_rhs_start != context_rhs_end){
-        nmh <- il - 1
-        break
-      }else{
-        nmh <- il 
+        if(context_lhs_start != context_lhs_end & context_rhs_start != context_rhs_end){
+          nmh <- il - 1
+          break
+        }else{
+          nmh <- il 
+        }
       }
+      nmh_vec[[irow]] <- nmh
     }
-    nmh_vec[[irow]] <- nmh
+    df_nmh <- data.frame(chrom = chr, start =start, end = end, ref = ref, alt = alt, nmh = nmh_vec) # add the tumor and alt
   }
 
-
-  df_nmh <- data.frame(chrom = chr, start =start, end = end, ref = ref, alt = alt, nmh = nmh_vec) # add the tumor and alt
   return(df_nmh)
 }
 
