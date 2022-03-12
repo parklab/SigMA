@@ -34,7 +34,6 @@ quick_simulation <- function(input_file,
                              below_cutoff = NULL,
                              maf_percent = NULL){
 
-  print(input_file)
   if(run_SigMA){
     if(is.null(catalog_name))
       stop('please provide a catalog_name argument options: ',  paste0(names(catalogs), sep = ' '))
