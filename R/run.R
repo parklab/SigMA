@@ -248,6 +248,7 @@ run <- function(genome_file = NULL,
       }else{
         signatures <- cosmic_catalog[, unique(c(signames_per_tissue_per_catalog[[catalog_name]][[tumor_type]],
                                        signames_per_tissue_per_catalog[[catalog_name]][["msi"]],
+                                       signames_per_tissue_per_catalog[[catalog_name]][["msi_extra"]],
                                        signames_per_tissue_per_catalog[[catalog_name]][["pole"]]))]
       }
       if(add_sig3) signatures$Signature_3 <- cosmic_catalog$Signature_3

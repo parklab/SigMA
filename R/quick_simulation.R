@@ -145,6 +145,8 @@ determine_scale <- function(df, m_ref, tumor_type, below_cutoff, scale_separatel
     }
     if(sum(!m_ref$is_sig3) > 0){      
       total_snvs_neg <- median(df$total_snvs[!df$pass], na.rm = T)
+      if(!is.null(below_cutoff))
+        total_snvs_neg <- median(c(df$total_snvs[!df$pass], rowSums(below_cutoff[,1:96])), na.rm = T)
       median_neg_built_in <- median(rowSums(m_ref[which(!m_ref$is_sig3), 1:96]), na.rm = T)
       scale_neg <- (total_snvs_neg - median_neg_built_in + 1*as.integer(median_neg_built_in == 0))/(median_neg_built_in + 1*as.integer(median_neg_built_in == 0))
     }    
