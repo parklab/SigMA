@@ -18,6 +18,7 @@ mmej_nhej_indels_from_vcfs <- function(vcf_dir,
     df_this <- mh_from_vcf(vcf_file_path = paste0(vcf_dir, '/', file),
                            ref_genome = ref_genome,
 			   min_size_del = min_size_del)
+    if(is.null(df_this)) next
     if(exists('df_comb')) df_comb  <- rbind(df_comb, df_this)
     else df_comb <- df_this
   }
@@ -62,15 +63,16 @@ mh_from_vcf <- function(vcf_file_path = 'test_vcf/BL-18-F43588_L_2-96252_27-6131
                         output_file = NULL,
                         ref_genome = BSgenome.Hsapiens.UCSC.hg19::BSgenome.Hsapiens.UCSC.hg19,
                         min_size_del = 5){
-
+  print(vcf_file_path)
   vcf <- VariantAnnotation::readVcf(vcf_file_path)
+  
   chrom <- GenomicRanges::seqnames(GenomicRanges::granges(vcf))
   chrom <- gsub(chrom, pattern ='chr', replace = '')
   inds <- which(chrom %in% c(1:22, 'X', 'Y'))
   vcf <- vcf[inds]
   inds <- which(unlist(lapply(VariantAnnotation::alt(vcf), function(x){ length(x)})) == 1)
   vcf <- vcf[inds]
-  
+  if(dim(vcf) == 0) return(NULL) 
   chrom <- GenomicRanges::seqnames(GenomicRanges::granges(vcf))
   
   refs <- as.character(VariantAnnotation::ref(vcf))

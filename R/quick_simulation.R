@@ -34,6 +34,7 @@ quick_simulation <- function(input_file,
                              below_cutoff = NULL,
                              maf_percent = NULL){
 
+  print(input_file)
   if(run_SigMA){
     if(is.null(catalog_name))
       stop('please provide a catalog_name argument options: ',  paste0(names(catalogs), sep = ' '))
@@ -373,7 +374,7 @@ simulate_from_wgs <- function(df, tumor_type, data, below_cutoff, maf_percent){
       inds <-m_main$scale > 0 & !m_main$main
       m_main[inds, 1:96] <- (1 + m_main$scale[inds]) * m_main[inds, 1:96]
     }
-    if(sum(c('mmej','nhej') %in% colnames(m_main)) == 2){
+    if(sum(c('mmej','nhej') %in% colnames(df)) == 2){
       if(sum(m_main$scale_mmej < 0 & !m_main$main) > 0){
         inds <- which(m_main$scale_mmej < 0 & !m_main$main)
         m_main[inds,] <- adjust_ids(m_main[inds,], type = 'mmej')
@@ -415,7 +416,7 @@ simulate_from_wgs <- function(df, tumor_type, data, below_cutoff, maf_percent){
   }
 
   
-  if(sum(c('mmej','nhej') %in% colnames(m_main)) == 2){    
+  if(sum(c('mmej','nhej') %in% colnames(df)) == 2){    
     if(max(m_main$scale_mmej) < 0){
       m_main <- adjust_ids(m_main, type = 'mmej')
     }
@@ -498,8 +499,7 @@ adjust_ids <- function(m, m_extra = NULL, type = NULL){
     for(i in 1:dim(m)[[1]]){ 
       id_count <- m[i, type]
       scale <- m[i, paste0('scale_', type)]
-      scale <- rpois(lambda = scale, n = 1)
-      
+#      scale <- rpois(lambda = scale, n = 1)
       if(abs(scale) < 0.5){
         count <- round(id_count * scale, digit = 0)
         m[i, type] <- id_count - subsample_id(id_count, abs(count))
@@ -515,7 +515,7 @@ adjust_ids <- function(m, m_extra = NULL, type = NULL){
       id_count <- m[i, type]
       id_count_extra <- m_extra[i, type]
       scale <- m[i, paste0('scale_', type)]
-      scale <- rpois(lambda = scale, n = 1)
+#      scale <- rpois(lambda = scale, n = 1)
       
       count <- round(id_count * scale, digit = 0)
       if(count < 0) m[i, type] <- id_count - subsample_id(id_count, abs(count))
@@ -525,8 +525,6 @@ adjust_ids <- function(m, m_extra = NULL, type = NULL){
   }
   return(m)
 }
-
-
 
 
 subsample_id <- function(id_count, count){

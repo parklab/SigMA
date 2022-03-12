@@ -84,7 +84,7 @@ get_wgs_data_for_llh <- function(tumor_type = NULL, check_msi = F){
   load(data_dir)
   m_wgs <- matrices_96dim[['matched_normal']][['wgs']][[tumor_type]]
   if(check_msi){
-    m_wgs <- cbind(m_wgs,
+    m_wgs <- rbind(m_wgs,
                    matrices_96dim[['matched_normal']][['wgs']][['msi']],
                    matrices_96dim[['matched_normal']][['wgs']][['pole']])
   }
@@ -102,17 +102,22 @@ get_Sig3_llh_from_wgs_data <- function(tumors, tumor_type = NULL, check_msi = F)
   m_wgs <- matrices_96dim[['matched_normal']][['wgs']][[tumor_type]]
   df <- data.frame(tumor = tumors)
   df$is_sig3 <- m_wgs$is_sig3[match(df$tumor, m_wgs$tumor)]
+  df$is_sig3[is.na(df$is_sig3)] <- F
   if(check_msi){
     m_wgs_msi <- matrices_96dim[['matched_normal']][['wgs']][['msi']]
-    df$is_msi <- !is.na(match(df$sig_max_ml, m_wgs_msi$tumor))
+    df$is_msi <- !is.na(match(df$tumor, m_wgs_msi$tumor))
     m_wgs_pole <- matrices_96dim[['matched_normal']][['wgs']][['pole']]
-    df$is_pole <- !is.na(match(df$sig_max_ml, m_wgs_pole$tumor))
+    df$is_pole <- !is.na(match(df$tumor, m_wgs_pole$tumor))
   }
   return(df)
 }
 
 # matches to individual samples and finds the maximum likely sample or calculates an average over likelihoods
-llh_max_characteristics_wgs_data <- function(df, tumor_type, catalog_name = 'cosmic_v2_inhouse', check_msi = F){
+llh_max_characteristics_wgs_data <- function(df,
+                                             tumor_type,
+					     catalog_name = 'cosmic_v2_inhouse',
+					     check_msi = F,
+					     add_average_over_all_samples = F){
   # calculate the signature exposures of the sample with maximum likelihood
   cosmic_catalog <- catalogs[[catalog_name]]
   signatures <- cosmic_catalog[,signames_per_tissue_per_catalog[[catalog_name]][[tumor_type]]]
@@ -121,28 +126,31 @@ llh_max_characteristics_wgs_data <- function(df, tumor_type, catalog_name = 'cos
   
   df_wgs <- get_wgs_data_for_llh(tumor_type = tumor_type, check_msi = check_msi)
   df_wgs_is_sig3 <- get_Sig3_llh_from_wgs_data(colnames(df_wgs), tumor_type = tumor_type, check_msi = check_msi)
-  df_exps_wgs <- data.frame(matrix(0, dim(df_wgs)[[2]], length(colnames(signatures))))
-  colnames(df_exps_wgs) <- colnames(signatures)
-  
-  for(i in 1:dim(df_wgs)[[2]]){
-    signatures_this <- signatures
-    spec <- df_wgs[,i]
-    if(!df_wgs_is_sig3$is_sig3[df_wgs_is_sig3$tumor == colnames(df_wgs)[[i]]])
-      signatures_this <- signatures_this[,colnames(signatures_this) != "Signature_3"]
-    if(check_msi){
-      if(!df_wgs_is_sig3$is_msi[df_wgs_is_sig3$tumor == colnames(df_wgs)[[i]]])
-        signatures_this <- cbind(signatures_this,
-                                 cosmic_catalog[,c(signames_per_tissue_per_catalog[['msi']], signames_per_tissue_per_catalog[['msi_extra']])])
-      if(!df_wgs_is_sig3$is_pole[df_wgs_is_sig3$tumor == colnames(df_wgs)[[i]]])
-        signatures_this <- cbind(signatures_this,
-                                 cosmic_catalog[,c(signames_per_tissue_per_catalog[['msi']], signames_per_tissue_per_catalog[['msi_extra']], signames_per_tissue_per_catalog[['pole']])])
-    }
-    exps <- coefficients(nnls::nnls(as.matrix(signatures_this), spec))
-    df_exps_wgs[i,colnames(signatures_this)] <- exps
-  }
 
-  df_ave <- as.matrix(df[,paste0(colnames(df_wgs), '_ml')]) %*% as.matrix(df_exps_wgs)
-  colnames(df_ave) <- paste0('ave_ml_', gsub(colnames(signatures), pattern = 'Signature_', replace = 'exp_sig'))
+  if(add_average_over_all_samples){
+    df_exps_wgs <- data.frame(matrix(0, dim(df_wgs)[[2]], length(colnames(signatures))))
+    colnames(df_exps_wgs) <- colnames(signatures)
+  
+    for(i in 1:dim(df_wgs)[[2]]){
+      signatures_this <- signatures
+      spec <- df_wgs[,i]
+      if(!df_wgs_is_sig3$is_sig3[which(df_wgs_is_sig3$tumor == colnames(df_wgs)[[i]])])
+        signatures_this <- signatures_this[,colnames(signatures_this) != "Signature_3"]
+      if(check_msi){
+        if(!df_wgs_is_sig3$is_msi[which(df_wgs_is_sig3$tumor == colnames(df_wgs)[[i]])])
+          signatures_this <- cbind(signatures_this,
+                                   cosmic_catalog[,c(signames_per_tissue_per_catalog[['msi']], signames_per_tissue_per_catalog[['msi_extra']])])
+        if(!df_wgs_is_sig3$is_pole[which(df_wgs_is_sig3$tumor == colnames(df_wgs)[[i]])])
+          signatures_this <- cbind(signatures_this,
+                                   cosmic_catalog[,c(signames_per_tissue_per_catalog[['msi']], signames_per_tissue_per_catalog[['msi_extra']], signames_per_tissue_per_catalog[['pole']])])
+      }
+      exps <- coefficients(nnls::nnls(as.matrix(signatures_this), spec))
+      df_exps_wgs[i,colnames(signatures_this)] <- exps
+    }
+
+    df_ave <- as.matrix(df[,paste0(colnames(df_wgs), '_ml')]) %*% as.matrix(df_exps_wgs)
+    colnames(df_ave) <- paste0('ave_ml_', gsub(colnames(signatures), pattern = 'Signature_', replace = 'exp_sig'))
+  }
   
   df$max_ml_sample_sigs_all <- ''
   df$max_ml_sample_exps_all  <- ''
@@ -158,9 +166,9 @@ llh_max_characteristics_wgs_data <- function(df, tumor_type, catalog_name = 'cos
       add_sig3 <- T
       
     if(check_msi){
-      if(df$is_msi_sig_max[i] | sum(df[i, paste0(df_wgs_is_sig3$tumor[df_wgs_is_sig3$is_msi], '_ml')]) > 0.9) 
+      if(df_is_sig3$is_msi[i] | sum(df[i, paste0(df_wgs_is_sig3$tumor[df_wgs_is_sig3$is_msi], '_ml')]) > 0.9) 
         add_msi <- T
-      if(df$is_pole_sig_max[i] | sum(df[i, paste0(df_wgs_is_sig3$tumor[df_wgs_is_sig3$is_pole], '_ml')]) > 0.9)
+      if(df_is_sig3$is_pole[i] | sum(df[i, paste0(df_wgs_is_sig3$tumor[df_wgs_is_sig3$is_pole], '_ml')]) > 0.9)
         add_pole <- T
     }
       
@@ -182,6 +190,7 @@ llh_max_characteristics_wgs_data <- function(df, tumor_type, catalog_name = 'cos
     df$max_ml_sample_sigs_all[i] <- paste0(colnames(signatures_this), collapse = '.')
     df$max_ml_sample_exps_all[i] <- paste0(exps, collapse = '_')
   }
-  df <- cbind(df, df_ave)
+  if(add_average_over_all_samples)
+    df <- cbind(df, df_ave)
   return(df)
 }
