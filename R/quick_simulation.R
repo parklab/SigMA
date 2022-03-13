@@ -199,7 +199,7 @@ determine_scale <- function(df, m_ref, tumor_type, below_cutoff, scale_separatel
       scale_neg_mmej <- NULL
       scale_plus_nhej <- NULL
       scale_neg_nhej <- NULL
-    
+      
       if(sum(m_ref$is_sig3) > 0){
         # below is only used if mmej and nhej counts are provided in the input matrix 
         frac_mmej_nonzero <- sum(df$pass & df$mmej > 0, na.rm = T)/sum(df$pass, na.rm = T)
