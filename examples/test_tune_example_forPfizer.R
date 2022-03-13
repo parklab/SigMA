@@ -3,14 +3,16 @@ devtools::load_all()
 tumor_type <- 'breast'
 data <- 'fo' #replace with msk if you want to use the example dataset below
 # cosmic_v2_inhouse is the catalog used by the initial package
-
 catalog_name  <- 'cosmic_v3p2_inhouse'  
-maf_percent <- NULL # replace with 0.001 for panels without matched normal
+maf_percent <- 0.001 # NULL for panels with matched normal
+check_msi = F
 
 # for using your own dataset remove the 
 # file_name <- PATH_TO_CSV_FILE_OF_SIGMA_INPUT
 
 ########## remove the lines below if you had defined the file_name above
+# note that this example does not have mmej nhej ID counts if your input file
+# contains these they will also be provided
 file_name <- paste0('matrix_96dim_', data , '_',tumor_type,'_', catalog_name,'.csv')
 data_file <- system.file("extdata/examples/msk_impact_2017_clinical_data_selected_Oncotree_Codes.tsv", package="SigMA")
 df_muts <- read.delim(data_file)
@@ -28,7 +30,7 @@ output_file_built_in <- run(file_name,
 			    catalog_name = catalog_name,
                             do_mva = F, # T when data = 'msk'
                             do_assign = F, # T when data = 'msk'
-                            check_msi = T)
+                            check_msi = check_msi)
 
 
 
@@ -94,7 +96,7 @@ cutoff_strict <- thresh$cutoff[[2]]
 # then we add the new gbm model in the system files together with the
 # cutoffs we determined so that these can be used in the future for
 # new data sequenced with the same sequencing platform
-add_gbm_model(paste0('gbm_for_', tumor_type,'_', data, '_', catalog_name, '_maf_percent_', maf_percent_tag),
+add_gbm_model(paste0('gbm_for_', tumor_type,'_', data, '_', catalog_name, '_', maf_percent_tag),
               tumor_type = tumor_type, 
               gbm_model = gbm_model, 
               cutoff  = cutoff, 
@@ -108,12 +110,12 @@ message('new model added')
 # then imagine we received a new dataset which is in our example
 # the same dataset we analyzed earlier with the built in model
 output_new_tune <- run(file_name, 
-                      data = paste0('gbm_for_', tumor_type, '_', data, '_', catalog_name, '_maf_percent_', maf_percent_tag),
+                      data = paste0('gbm_for_', tumor_type, '_', data, '_', catalog_name, '_', maf_percent_tag),
                       tumor_type = tumor_type,
 		      catalog_name = catalog_name,
                       do_mva = T, 
                       do_assign = T, 
-                      check_msi = T,
+                      check_msi = check_msi,
                       custom = T, 
                       norm96 = weight_3Nfreq[[data]]) 
 #                      norm96 = norm96) # you can replace_with norm96 using the bed file that defines the library coverage

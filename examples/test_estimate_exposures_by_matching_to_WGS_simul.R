@@ -8,20 +8,20 @@ devtools::load_all()
 #
 # please run the following script after test_tune_example_forPfizer.R script run use the following
 # which creates the simulated data used below
+
 tumor_type <- 'breast'
 catalog_name <- 'cosmic_v3p2_inhouse'
 check_msi <- F # set T if you might have msi samples
 data <- 'fo'
-maf_percent <- NULL # replace with 0.001 for panels without matched normal
-
-genome_file <- 'matrix_96dim_fo_breast_nomsisimulation.csv'
+maf_percent <- 0.001 # replace with NULL for matched normal panels
+genome_file <- paste0('matrix_96dim_', data, '_', tumor_type, '_', catalog_name, '_nomsisimulation.csv')
 df_genome <- read.csv(genome_file)
 
 ## use the lines below if you have not first tried the test_tune_example_forPfizer.R script
-outfile <- run(genome_file = genome_file, readjust = T,
-               tumor_type = tumor_type, data = data, check_msi = F,
+outfile <- run(genome_file = genome_file, 
+               tumor_type = tumor_type, data = 'msk', check_msi = F,
                catalog_name = catalog_name)
-
+	       
 outfile <- run(genome_file,
                       data = paste0('gbm_for_', tumor_type,'_', data, '_', catalog_name, '_maf_percent_', maf_percent),
                       tumor_type = tumor_type,
@@ -31,6 +31,7 @@ outfile <- run(genome_file,
                       check_msi = check_msi,
                       custom = T,
                       norm96 = weight_3Nfreq$fo)
+print('ran')		      
 df_sigma_out <- read.csv(outfile)
 df_sigma_out <- llh_max_characteristics(df_sigma_out,tumor_type = tumor_type, catalog_name = catalog_name)
 df_sigma_lite <- lite_df(df_sigma_out)
