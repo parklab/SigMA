@@ -49,6 +49,10 @@ mmej_nhej_indels_from_vcfs <- function(vcf_dir,
   if(!is.null(snv_matrix_file)){
     df_snv <- read.csv(snv_matrix_file)
     df_snv$tumor <- unlist(lapply(strsplit(as.character(df_snv$tumor), split = '\\/'), function(x){ x[[length(x)]]}))
+    df_snv$tumor <- gsub(df_snv$tumor, pattern = '.vcf', replace = '')
+
+    df_summary_comb$tumor <- gsub(df_summary_comb$tumor, pattern = '.vcf', replace = '')
+
     df_snv$mmej <- df_summary_comb$mmej[match(df_snv$tumor, df_summary_comb$tumor)]
     df_snv$nhej <- df_summary_comb$nhej[match(df_snv$tumor, df_summary_comb$tumor)]
     write.table(df_snv, file = output_file, row.names = F, sep = ',', quote = F)
@@ -63,7 +67,6 @@ mh_from_vcf <- function(vcf_file_path = 'test_vcf/BL-18-F43588_L_2-96252_27-6131
                         output_file = NULL,
                         ref_genome = BSgenome.Hsapiens.UCSC.hg19::BSgenome.Hsapiens.UCSC.hg19,
                         min_size_del = 5){
-  print(vcf_file_path)
   vcf <- VariantAnnotation::readVcf(vcf_file_path)
   
   chrom <- GenomicRanges::seqnames(GenomicRanges::granges(vcf))
