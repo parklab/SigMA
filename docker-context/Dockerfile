@@ -5,8 +5,10 @@ ENV APP_DIR=/srv/shinyapps/app
 # Install required system libraries
 RUN sudo apt-get update && apt-get install -y \
     libssl-dev \
-    libxml2-dev
-
+    libxml2-dev \
+    libharfbuzz-dev\
+    libfribidi-dev
+    
 # Just copy install.R over to install necessary R packages
 COPY ./install.R /tmp/install.R
 RUN R -f /tmp/install.R
