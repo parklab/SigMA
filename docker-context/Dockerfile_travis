@@ -1,9 +1,11 @@
-FROM rocker/r-base:4.0.0
+FROM ubuntu:20.04
 
 # Install required system libraries
 RUN apt-get update && apt-get install -y \
     libssl-dev \
     libxml2-dev
+
+FROM rocker/r-base:4.0.0
 
 # Just copy install.R over to install necessary R packages
 COPY ./install.R /tmp/install.R
