@@ -15,7 +15,7 @@ RUN sudo apt-get update && apt-get install -y \
     libjpeg-dev\
     build-essential\
     libcurl4-openssl-dev\
-    libfontconfig1-dev\
+    libfontconfig1-dev
 
 # Just copy install.R over to install necessary R packages
 COPY ./install.R /tmp/install.R
