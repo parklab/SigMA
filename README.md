@@ -1,4 +1,4 @@
-# SigMA [![Build Status](https://travis-ci.com/parklab/SigMA.svg?branch=master)](https://travis-ci.com/parklab/SigMA)
+# SigMA [![Build Status](https://app.travis-ci.com/parklab/SigMA.svg?branch=master)](https://app.travis-ci.com/parklab/SigMA)
 Copyright (c) 2019 - President and Fellows of Harvard College. All rights reserved.
 
 ## How to use
