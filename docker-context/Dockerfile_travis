@@ -1,7 +1,7 @@
 FROM rocker/r-base:4.0.0
 
 # Install required system libraries
-RUN sudo apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y \
     libssl-dev \
     libxml2-dev
 
