@@ -323,7 +323,6 @@ get_base_matrix <- function(df, tumor_type, data,  below_cutoff = NULL, main = F
   load(data_dir)
   if(is.null(maf_percent)) matrices_96dim <- matrices_96dim[['matched_normal']]
   else matrices_96dim <- matrices_96dim[[paste0('maf_', maf_percent)]]
-   
   m_out <- matrices_96dim[[data]][[tumor_type]]
   if(main){ 
     m_out <- determine_scale(df, m_out, tumor_type, below_cutoff)

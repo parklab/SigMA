@@ -194,3 +194,5 @@ llh_max_characteristics_wgs_data <- function(df,
     df <- cbind(df, df_ave)
   return(df)
 }
+
+
