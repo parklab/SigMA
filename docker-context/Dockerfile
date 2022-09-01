@@ -1,4 +1,4 @@
-FROM rocker/shiny:3.5.0
+FROM rocker/shiny:4.0.0
 ENV APP_DIR=/srv/shinyapps/app
 
 
