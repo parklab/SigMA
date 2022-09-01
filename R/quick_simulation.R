@@ -323,18 +323,11 @@ get_base_matrix <- function(df, tumor_type, data,  below_cutoff = NULL, main = F
   load(data_dir)
   if(is.null(maf_percent)) matrices_96dim <- matrices_96dim[['matched_normal']]
   else matrices_96dim <- matrices_96dim[[paste0('maf_', maf_percent)]]
-  print(names(matrices_96dim))
-  print(names(matrices_96dim[[data]]))
   m_out <- matrices_96dim[[data]][[tumor_type]]
   if(main){ 
     m_out <- determine_scale(df, m_out, tumor_type, below_cutoff)
   }
-  print('a')
-  print(tumor_type)
-  print(data)
-  print(dim(m_out))
   m_out$main <- T
-  print('aa')
   m_out_suppl <- get_inter_tt_suppl(tumor_type, data, matrices_96dim, maf_percent) 
   if(!is.null(m_out_suppl)){
     m_out_suppl$main <- F
@@ -357,7 +350,6 @@ get_base_matrix <- function(df, tumor_type, data,  below_cutoff = NULL, main = F
         m_out_suppl <- determine_scale(df, m_out_suppl, tumor_type, below_cutoff)
       }
     }
-    print('b')
     if(sum(colnames(m_out_suppl) == tumor_type) > 0){
       m_out_suppl <- m_out_suppl[, -which(colnames(m_out_suppl) == "tumor_type")]
       m_out <- rbind(m_out, m_out_suppl) 
@@ -365,9 +357,7 @@ get_base_matrix <- function(df, tumor_type, data,  below_cutoff = NULL, main = F
     else{
       m_out <- rbind(m_out, m_out_suppl[,na.omit(match(colnames(m_out), colnames(m_out_suppl)))]) 
     }
-    print('c')
   }
-  print('d')
   return(m_out)
 }
 
