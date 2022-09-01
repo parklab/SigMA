@@ -7,8 +7,16 @@ RUN sudo apt-get update && apt-get install -y \
     libssl-dev \
     libxml2-dev \
     libharfbuzz-dev\
-    libfribidi-dev
-    
+    libfribidi-dev \
+    libzmq3-dev \
+    libfreetype6-dev\
+    libpng-dev\
+    libtiff5-dev\
+    libjpeg-dev\
+    build-essential\
+    libcurl4-openssl-dev\
+    libfontconfig1-dev\
+
 # Just copy install.R over to install necessary R packages
 COPY ./install.R /tmp/install.R
 RUN R -f /tmp/install.R
