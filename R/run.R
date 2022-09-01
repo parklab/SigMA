@@ -59,6 +59,7 @@ run <- function(genome_file = NULL,
                 output_file = NULL,
                 data = "msk",
                 tumor_type = "breast",
+		catalog_name = 'cosmic_v2_inhouse',
                 do_assign = T,
                 do_mva = T,
                 check_msi = F, 
@@ -70,13 +71,15 @@ run <- function(genome_file = NULL,
                 readjust = F,
                 return_df = F,
                 input_df = NULL,
-                snv_cutoff = NULL,
-                cosmic_version = "v2"){
+                snv_cutoff = NULL){
 
-  if(cosmic_version == "v3") 
-    cosmic_catalog <- pcawg_catalog
-  if(cosmic_version == "v2")
-    cosmic_catalog <- cosmic_catalog_v2
+  if(is.null(catalog_name))
+    stop('please provide a catalog_name argument options: ',  paste0(names(catalogs), sep = ' '))
+
+  if(!(catalog_name %in% names(catalogs)))
+    stop(paste0('catalog ', catalog_name, ' does not exist provide one of the following: ', paste0(names(catalogs), sep = ' ')))
+
+  cosmic_catalog <- catalogs[[catalog_name]]
 
   # when readjust is set to FALSE the parameters below are not used
 
@@ -123,7 +126,7 @@ run <- function(genome_file = NULL,
           exome sequencing is available for others set do_mva to FALSE')
   }
 
-  if(!add_sig3 & do_assign & ('Signature_3' %in% signames_per_tissue[tumor_type])){
+  if(!add_sig3 & do_assign & ('Signature_3' %in% signames_per_tissue_per_catalog[[catalog_name]][[tumor_type]])){
      add_sig3 <- T
   }
 
@@ -219,7 +222,6 @@ run <- function(genome_file = NULL,
   }
 
   for(imethod in 1:length(methods)){
-    
     sig_catalog <- sig_catalogs[[imethod]]
     method <- methods[[imethod]]
     step <- steps[[imethod]]
@@ -242,11 +244,12 @@ run <- function(genome_file = NULL,
 
     if(sig_catalog == "cosmic_tissue"){
       if(step == "mss" & method != "cosine_simil"){
-        signatures <- cosmic_catalog[, signames_per_tissue[[tumor_type]]]
+        signatures <- cosmic_catalog[, signames_per_tissue_per_catalog[[catalog_name]][[tumor_type]]]
       }else{
-        signatures <- cosmic_catalog[, unique(c(signames_per_tissue[[tumor_type]],
-                                       signames_per_tissue[["msi"]],
-                                       signames_per_tissue[["pole"]]))]
+        signatures <- cosmic_catalog[, unique(c(signames_per_tissue_per_catalog[[catalog_name]][[tumor_type]],
+                                       signames_per_tissue_per_catalog[[catalog_name]][["msi"]],
+                                       signames_per_tissue_per_catalog[[catalog_name]][["msi_extra"]],
+                                       signames_per_tissue_per_catalog[[catalog_name]][["pole"]]))]
       }
       if(add_sig3) signatures$Signature_3 <- cosmic_catalog$Signature_3
     }

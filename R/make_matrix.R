@@ -353,7 +353,7 @@ conv_snv_matrix_to_df <- function(genomes_matrix){
   maf$Tumor_Seq_Allele1[maf$Tumor_Seq_Allele1 == "TRUE"] <- "T"
   maf$Reference_Allele[maf$Reference_Alle == "TRUE"] <- "T"
  
-  nuclear_chroms <- c(as.character(1:23, 'X', 'Y')) # 23 is included to cover some exceptional formats
+  nuclear_chroms <- c(as.character(c(1:23, 'X', 'Y'))) # 23 is included to cover some exceptional formats
   maf <-  maf[maf$Chromosome %in% c(nuclear_chroms, paste0('chr', nuclear_chroms)),]
  
   if(dim(maf)[[1]] == 0) return(rep(0, 96))

@@ -25,18 +25,21 @@
 tune_new_gbm <- function(input_file, 
                          rda_file = NULL, 
                          tumor_type = NULL, 
-                         data = NULL, 
+                         data = NULL,
+			 catalog_name = NULL,
                          norm96 = NULL, 
                          run_SigMA = T,
                          snv_cutoff = 5,
                          feature_cutoff = 0.01,
                          colname_truth_tag = 'is_sig3',
+			 use_indels = F,
                          gbm_parameters = list(n.trees = 5000,
                                                shrinkage = 0.01,
                                                bag.fraction = 0.2,
                                                n.minobsinnode = 3,
                                                cv.fold = 5)){
-   
+
+
   if(is.null(tumor_type) & !run_SigMA){
     if(!grepl('tumor_type', input_file)) stop('tumor_type not provided')
     tumor_type <- unlist(lapply(strsplit(input_file, split = 'tumortype'), 
@@ -49,9 +52,15 @@ tune_new_gbm <- function(input_file,
   }
 
   if(run_SigMA){
+    if(is.null(catalog_name))
+      stop('please provide a catalog_name argument options: ',  paste0(names(catalogs), sep = ' '))
+
+    if(!(catalog_name %in% names(catalogs)))
+      stop(paste0('catalog ', catalog_name, ' does not exist provide one of the following: ', paste0(names(catalogs), sep = ' ')))
     output_file <- run(input_file, 
-                       tumor_type = tumor_type, 
+                       tumor_type = tumor_type,
                        data = data,
+		       catalog_name = catalog_name,
                        norm96 = norm96, 
                        do_assign = F,  
                        check_msi = F,
@@ -62,7 +71,7 @@ tune_new_gbm <- function(input_file,
     output_file <- input_file
   }
 
-  gbm_model <- tune_gbm_model(output_file, snv_cutoff, feature_cutoff, gbm_parameters, colname_truth_tag) 
+  gbm_model <- tune_gbm_model(output_file, snv_cutoff, feature_cutoff, gbm_parameters, colname_truth_tag, use_indels) 
 
   output_table <- predict_prob(output_file, gbm_model)  
   write.table(output_table, 
@@ -75,7 +84,7 @@ tune_new_gbm <- function(input_file,
   else return(gbm_model)
 }
 
-tune_gbm_model <- function(file, snv_cutoff, feature_cutoff, gbm_parameters, colname_truth_tag){
+tune_gbm_model <- function(file, snv_cutoff, feature_cutoff, gbm_parameters, colname_truth_tag, use_indels){
   df <- read.csv(file)
   df <- df[df$total_snvs >= snv_cutoff,]
   df$is_true <- df[, colname_truth_tag]
@@ -83,8 +92,13 @@ tune_gbm_model <- function(file, snv_cutoff, feature_cutoff, gbm_parameters, col
     stop('The column with truth tag should be 0 or 1. Currently binary classification is implemented')
   }
   features_gbm <- unique(c(features_gbm, colnames(df)[grepl('Signature_', colnames(df)) & grepl('_ml', colnames(df))]))
+  if(use_indels)
+    features_gbm <- c(features_gbm, 'mmej', 'nhej')
+  features_gbm <- unique(c(features_gbm, colnames(df)[grepl('_sig3', colnames(df)) & !grepl('is_sig3', colnames(df))]))  
   features_gbm <- features_gbm[!is.na(match(features_gbm, colnames(df)))]
 
+  df[,colname_truth_tag] <- as.factor(df[,colname_truth_tag])
+  
   n.trees = gbm_parameters$n.trees
   shrinkage = gbm_parameters$shrinkage
   bag.fraction = gbm_parameters$bag.fraction
