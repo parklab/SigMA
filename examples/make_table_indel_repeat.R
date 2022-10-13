@@ -7,9 +7,13 @@ df <- unique(df[, 4:6])
 
 t_ins <- table(df$V4[df$V5 == "INS"])
 t_del <- table(df$V4[df$V5 == "DEL"])
+tumors = unique(df$V4)
 
-df_nmsi <- data.frame(nmsi_ins = c(unlist(t_ins)),
-                       nmsi_del = c(unlist(t_del)),
-                       tumor = names(t_ins))
+df_msi <- data.frame(nmsi_ins = c(unlist(t_ins[match(tumors, names(t_ins))])),
+                     nmsi_del = c(unlist(t_del[match(tumors, names(t_del))])),
+                     tumor = tumors)
 
-write.table(df_nmsi, file = output,  row.names = F, sep = ',', quote = F)
+df_msi$nmsi_ins[is.na(df_msi$nmsi_ins)] <- 0
+df_msi$nmsi_del[is.na(df_msi$nmsi_del)] <- 0
+
+write.table(df_msi, file = output,  row.names = F, sep = ',', quote = F)
