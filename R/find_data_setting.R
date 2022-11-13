@@ -73,7 +73,7 @@ find_data_setting <- function(input_file = NULL, tumor_type, best_model = NULL, 
     find_data_setting(input_file, tumor_type, best_model = data1)
   }
   else{
-    if(abs(min(median_diff) - median_this)/median_this > 0.25){
+    if(abs(min(median_diff) - median_this)/median_this > 0.25 & !is.null(best_model)){
       warning(paste0('retuning suggested because the difference in SNV counts between the existing data options and your data is large, see quick_simulation() or contact author. Median from tune:', median_diff, ', median in data:', median_this))
     }
     if(data1 == data2) return(data1)
