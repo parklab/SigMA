@@ -11,10 +11,11 @@
 #' not contain hypermutated samples it can be set to FALSE to speed
 #' up the calculation 
 
-find_data_setting <- function(input_file = NULL, tumor_type, best_model = NULL, remove_msi_pole = T, input_df = NULL){
+find_data_setting <- function(input_file = NULL, tumor_type, best_model = NULL, remove_msi_pole = T, input_df = NULL, catalog_name = 'cosmic_v3p2_inhouse', with_classifier = F){
+
   if(!is.null(input_file) & is.null(input_df)){
     if(!is.null(best_model)){
-      output_file <- run(input_file, tumor_type = tumor_type, data = best_model, do_mva = F, do_assign = F, check_msi = T, input_df = input_df)
+      output_file <- run(input_file, tumor_type = tumor_type, data = best_model, do_mva = F, do_assign = F, check_msi = T, input_df = input_df, catalog_name = catalog_name)
       df <- read.csv(output_file)
       df$Signature_msi_ml <- rowSums(df[,grepl('Signature_msi_c', colnames(df))])
       df <- df[!((df$Signature_pole_c1_ml_msi > 0.999 | df$Signature_msi_ml > 0.99) & df$total_snvs > median(df$total_snvs, na.rm = T)),]
@@ -42,12 +43,24 @@ find_data_setting <- function(input_file = NULL, tumor_type, best_model = NULL, 
   median_this <- median(df$total_snvs, na.rm = T)
 
   stat_this <- snv_counts[snv_counts$tumor_type == tumor_type,]
-
+  if(with_classifier){
+    has_classifier <- unlist(apply(stat_this, 1, function(x, tumor_type){ has_model(data = x['data'], tumor_type = tumor_type)}, tumor_type = tumor_type))
+    if(sum(has_classifier, na.rm = T) == 0) stop('no classifier for Sig3 for this tumor type, data setting can still be helpful for purposes so to find the best data setting without a classifier set parameter with_classifier = T')
+    else
+      stat_this <- stat_this[has_classifier,]
+  }
   mean_diff <- abs(mean_this - stat_this$mean_total_snvs)
   median_diff <- abs(median_this - stat_this$median_total_snvs)
 
   data1 <- stat_this$data[which(mean_diff == min(mean_diff))]
   data2 <- stat_this$data[which(median_diff == min(median_diff))]
+  if(length(data1) == 2){
+    if(sum(!is.na(match(data1, c('msk', 'msk_with_zeros')))) == 2)
+      data1 <- 'msk'
+    if(sum(!is.na(match(data2, c('msk', 'msk_with_zeros')))) == 2)
+      data2 <- 'msk'
+  }
+  
   if(data1 == "msk_with_zeros") data1 <- 'msk'
   if(data2 == "msk_with_zeros") data2 <- 'msk'
  
@@ -60,13 +73,13 @@ find_data_setting <- function(input_file = NULL, tumor_type, best_model = NULL, 
     find_data_setting(input_file, tumor_type, best_model = data1)
   }
   else{
+    if(abs(min(median_diff) - median_this)/median_this > 0.25){
+      warning(paste0('retuning suggested because the difference in SNV counts between the existing data options and your data is large, see quick_simulation() or contact author. Median from tune:', median_diff, ', median in data:', median_this))
+    }
     if(data1 == data2) return(data1)
     else{
       warning(paste0(data1, ' is also feasible'))
       return(data2)
-    }
-    if(abs(min(median_diff) - median_this)/median_this > 0.25){
-      warning('retuning suggested see quick_simulation() or contact author')
     }
   }
 }

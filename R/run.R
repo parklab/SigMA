@@ -59,7 +59,7 @@ run <- function(genome_file = NULL,
                 output_file = NULL,
                 data = "msk",
                 tumor_type = "breast",
-		catalog_name = 'cosmic_v2_inhouse',
+		catalog_name = NULL,
                 do_assign = T,
                 do_mva = T,
                 check_msi = F, 
@@ -71,7 +71,7 @@ run <- function(genome_file = NULL,
                 readjust = F,
                 return_df = F,
                 input_df = NULL,
-                snv_cutoff = NULL){
+                snv_cutoff = 5){
 
   if(is.null(catalog_name))
     stop('please provide a catalog_name argument options: ',  paste0(names(catalogs), sep = ' '))

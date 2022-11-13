@@ -80,8 +80,11 @@ quick_simulation <- function(input_file,
   }
 
   # determine approximate Sig3 estimates to scale mutation counts
-  if(length(grep(paste0(paste0('Signature_3_c', 1:10, '_ml'), collapse = '|'), colnames(df)) == 1)){
+  if(length(grep(paste0(paste0('Signature_3_c', 1:10, '_ml'), collapse = '|'), colnames(df))) == 1){
     df$Signature_3_ml <- df$Signature_3_c1_ml
+  }
+  else if(length(grep(paste0(paste0('Signature_3_c', 1:10, '_ml'), collapse = '|'), colnames(df))) == 0){
+    stop('input data frame does not contain Sig3 likelihood columns set parameter run_SigMA = T')
   }
   else{
     df$Signature_3_ml <- rowSums(df[, grep(paste0(paste0('Signature_3_c', 1:10, '_ml'), collapse = '|'), colnames(df))])
@@ -106,8 +109,15 @@ quick_simulation <- function(input_file,
   else{
     n_pos <- round(Sig3_frac * sens * (dim(df)[[1]] + dim(below_cutoff)[[1]]), digit = 0) 
   }
+
+  if(!(var %in% colnames(df))){
+    stop(paste0(var, ' column is missing in the data frame'))
+  }
   
-  val_cutoff <- sort(df[,var])[dim(df)[[1]] - n_pos]
+  if(dim(df)[[1]] != n_pos)
+    val_cutoff <- sort(df[,var])[dim(df)[[1]] - n_pos]
+  else
+    val_cutoff <- sort(df[,var])[[1]]
   df$pass <- df[,var] > val_cutoff
 
   if(data == "seqcap_probe" | data == "tcga_mc3")
