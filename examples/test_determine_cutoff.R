@@ -4,8 +4,8 @@ load(data_dir)
 
 tumor_type <- 'breast'
 remove_msi_pole <- F
-
-m <- matrices_96dim[['tcga']][[tumor_type]]
+catalog_name <- 'cosmic_v3p2_inhouse'
+m <- matrices_96dim[['matched_normal']][['tcga']][[tumor_type]]
 
 write.table(m, 'tmp.csv', row.names = F, sep = ',', quote = F)
 input_file <- 'tmp.csv'
@@ -35,7 +35,9 @@ data_val <- find_data_setting(input_file,
 simul_file <- quick_simulation(input_file = input_file,
   tumor_type = tumor_type,
   data = data_val,
-  remove_msi_pole = remove_msi_pole)
+  remove_msi_pole = remove_msi_pole,
+  catalog_name = catalog_name)
+
 
 # algorithm is run on simulations
 output_simul <- run(simul_file,
@@ -43,7 +45,8 @@ output_simul <- run(simul_file,
                     tumor_type = tumor_type,
                     do_mva = T,
                     do_assign = T,
-                    check_msi = F)
+                    check_msi = F,
+		    catalog_name = catalog_name)
 
 # using the simulated data the thresholds which correspond to 
 # specific false positive rate or sensitivity values can be 
@@ -68,7 +71,8 @@ output_file <- run('tmp.csv',
                    do_mva = T, 
                    do_assign = F, 
                    check_msi = F, 
-                   weight_cf = T) 
+                   weight_cf = T,
+		   catalog_name = catalog_name) 
 
 df <- read.csv(output_file)
 
@@ -77,15 +81,13 @@ df <- cbind(df, assignment(df,
                           method = 'mva',
                           cut_var = cut_var,
                           cutoffs = cutoffs,
-                          limits = limits))
-
+                          limits = limits,
+			  data = data_val))
 write.table(df, output_file, row.names = F, sep = ',', quote = F)
-
 message(paste0('See pass_mva_', cut_var, '_X.XX columns for predictions with specific FPR thresholds in ', output_file))
 for(i in 1:length(limits)){
   message(paste0('cutoff for ', round(limits[[i]], digit = 2), ' FPR is ', round(fprs[[i]], digit = 3), ' corresponding to sensitivity ', round(sens[[i]], digit = 2)))
 }
-
 if(cut_var == 'fpr' | cut_var == 'fdr'){
   strict_limit <- min(limits)
   loose_limit <- max(limits)
