@@ -42,17 +42,19 @@ paste0('SD total snvs in data:', median_counts)
 # mismatch repair deficient samples.
 best_data_setting <- find_data_setting(input_file = genome_file, 
                   tumor_type = 'breast', 
-                  remove_msi_pole = F)
-
-best_data_setting
+                  remove_msi_pole = F,
+		  catalog_name = 'cosmic_v2_inhouse')
+print(best_data_setting)
 
 # you can check whether and MVA model is available for this
 # tumor type for that particular data setting
-has_model(data = best_data_setting, tumor_type = 'breast')
+has_model <- has_model(data = best_data_setting, tumor_type = 'breast')
+print(has_model)
 
 # then this can be used to run the code
 run(genome_file = genome_file,
-    data = best_data_settting, 
+    data = best_data_setting, 
     readjust = T, # T allows readjustment of the cutoff if the SNV counts are still different
-    tumor_type = 'breast')
+    tumor_type = 'breast',
+    catalog_name = 'cosmic_v2_inhouse')
 

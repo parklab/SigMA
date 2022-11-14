@@ -35,7 +35,8 @@ run(genome_file,
     do_assign = T, 
     do_mva = T, 
     lite_format = T, 
-    check_msi = T)
+    check_msi = T,
+    catalog_name = 'cosmic_v2_inhouse')
 
 # Example 50 MSK-IMPACT (Zehir et al. Nat Med (2017)) breast cancer
 # panels for testing the tool on a single maf file input

@@ -15,6 +15,7 @@ df <- conv_snv_matrix_to_df(m)
 
 file_name <- 'matrix_96dim_tcga_brca.csv'
 tumor_type <- 'breast'
+catalog_name <- 'cosmic_v2_inhouse'
 
 write.table(df, file_name, row.names = F, sep = ',', quote = F)
 
@@ -24,7 +25,8 @@ output_file_built_in <- run(file_name,
                             tumor_type = tumor_type, 
                             do_mva = T,
                             do_assign = T,
-                            check_msi = T)
+                            check_msi = T,
+			    catalog_name = catalog_name)
 
 
 
@@ -45,7 +47,8 @@ write.table(m[,1:97], file_name_no_msi, row.names = F, sep  = ',', quote = F)
 
 data <- find_data_setting(input_file = file_name_no_msi, 
                           tumor_type = tumor_type,
-                          remove_msi_pole = F) # since we removed these samples above otherwise has to be T
+                          remove_msi_pole = F,
+			  catalog_name = catalog_name) # since we removed these samples above otherwise has to be T
 
 
 # if the best data option for a panel turns out to be exome sequencing
@@ -63,7 +66,8 @@ simul_file <- quick_simulation(file_name_no_msi,
                                tumor_type = tumor_type, 
                                data = data,
                                run_SigMA = T, 
-                               remove_msi_pole = F) #since we removed these samples above otherwise has to be T
+                               remove_msi_pole = F,
+			       catalog_name = catalog_name) #since we removed these samples above otherwise has to be T
 
 
 message('tuning')
@@ -73,7 +77,8 @@ tune_new_gbm(simul_file,
              tumor_type = tumor_type, 
              data = data,
              run_SigMA = T, 
-             rda_file = 'test.rda')
+             rda_file = 'test.rda',
+	     catalog_name = catalog_name)
 
 message('tuned')
 load('test.rda')
@@ -109,6 +114,7 @@ norm96 <- get_trinuc_norm(bed_file)
 output_new_tune <- run(file_name, 
                       data = 'example_gbm',
                       tumor_type = tumor_type,
+		      catalog_name = catalog_name,
                       do_mva = T, 
                       do_assign = T, 
                       check_msi = T,

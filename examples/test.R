@@ -26,5 +26,6 @@ run(genome_file,
     do_assign = T, 
     do_mva = F,
     tumor_type = 'breast', 
-    lite_format = F)
+    lite_format = F,
+    catalog_name = 'cosmic_v2_inhouse')
 
