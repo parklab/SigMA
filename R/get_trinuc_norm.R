@@ -11,7 +11,7 @@
 get_trinuc_norm <- function(bed_file, do_MC_sampling = F,
   ref_genome = BSgenome.Hsapiens.UCSC.hg19:: BSgenome.Hsapiens.UCSC.hg19){
   counts <- get_trinuc_counts(bed_file, do_MC_sampling, ref_genome)
-
+  
   counts_expanded <- c(rep(counts[1:16], 3), rep(counts[17:32], 3))
   norm <- counts_expanded/counts_trinuc_genome
   return(norm=100*norm/sum(norm))
@@ -75,7 +75,7 @@ get_trinuc_counts <- function(bed_file, do_MC_sampling = F,
     context_seq_vec <- c(context_seq_vec, context_seq)
     counts_context <- table(context_seq)
     inds <- match(names(counts_context), names(counts_all))
-    counts_all[na.omit(inds)] <- counts_all[na.omit(inds)] + as.numeric(unlist(counts_context))
+    counts_all[na.omit(inds)] <- counts_all[na.omit(inds)] + as.numeric(unlist(counts_context[!is.na(inds)]))
   }
   counts <- c(counts_all[1:16] + counts_all[17:32], 
                   counts_all[33:48] + counts_all[49:64]) 
