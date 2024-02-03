@@ -126,10 +126,10 @@ run <- function(genome_file = NULL,
           exome sequencing is available for others set do_mva to FALSE')
   }
 
-  if(!add_sig3 & do_assign & ('Signature_3' %in% signames_per_tissue_per_catalog[[catalog_name]][[tumor_type]])){
+  if(!add_sig3 & do_assign & ('Signature_3' %in% signames_per_tissue_per_catalog[[catalog_name]][[tumor_type]]) & sum(grepl('Signature_3_',colnames(all_catalogs[[tumor_type]]))) ==0 ){
      add_sig3 <- T
   }
-
+  
   if(is.null(genome_file) & !is.null(input_df)){
     genomes <- input_df
   }
