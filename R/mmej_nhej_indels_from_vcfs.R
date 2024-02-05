@@ -75,7 +75,7 @@ mh_from_vcf <- function(vcf_file_path = 'test_vcf/BL-18-F43588_L_2-96252_27-6131
   vcf <- vcf[inds]
   inds <- which(unlist(lapply(VariantAnnotation::alt(vcf), function(x){ length(x)})) == 1)
   vcf <- vcf[inds]
-  if(dim(vcf) == 0) return(NULL) 
+  if(dim(vcf)[[1]] == 0) return(NULL) 
   chrom <- GenomicRanges::seqnames(GenomicRanges::granges(vcf))
   
   refs <- as.character(VariantAnnotation::ref(vcf))
