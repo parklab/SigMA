@@ -114,6 +114,7 @@ predict_mmrd <- function(data, input_file = NULL, df = NULL){
       row.names = F, 
       sep = ',', 
       quote = F)
+    return(output_file)
   }
   else
     return(df)
