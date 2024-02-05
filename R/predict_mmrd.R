@@ -47,6 +47,8 @@ predict_mmrd <- function(data, input_file = NULL, df = NULL){
   if(sum(colnames(df) == "msisensor") > 0) tag <- 'with_msisensor'
   else tag <- 'without_msisensor'
 
+  if(sum(grepl('msi', colnames(df)) & grepl('Signature_', colnames(df))) == 0)  stop('first run SigMA with check_msi = T parameters')
+
   model <- gbm_models_mmrd[[tag]][[data]]
 
   if(sum(colnames(df) == "Signature_msi_ml") == 0)
@@ -56,7 +58,17 @@ predict_mmrd <- function(data, input_file = NULL, df = NULL){
   if(sum(colnames(df) == "Signature_msi_pole_ml") == 0)
     df$Signature_msi_pole_ml <- rowSums(df[,grepl('Signature_msi_La|Signature_msi_Lb|Signature_msi_Ma|Signature_msi_Mb', colnames(df)) & grepl('_ml', colnames(df))])
 
-  df <- get_exps_mmrd(df)
+  if(sum(colnames(df) %in% c('exp_sig6','exp_sig15','exp_sig20','exp_sig21','exp_sig26')) == 0)
+    df <- get_exps_mmrd(df)
+    
+  terms <- attributes(gbm_models_mmrd$without_msisensor$msk$Terms)$term.labels
+
+  missing_terms <- terms[!(terms %in% colnames(df))]
+  for(col in missing_terms){
+    df$new <- 0
+    colnames(df)[colnames(df) == "new"] <- col
+  }
+  
   predictions = predict(object = model,
                         newdata = df[, names(gbm::relative.influence(model))],
                         n.trees = model$n.trees,
@@ -102,6 +114,7 @@ predict_mmrd <- function(data, input_file = NULL, df = NULL){
       row.names = F, 
       sep = ',', 
       quote = F)
+    return(output_file)
   }
   else
     return(df)
