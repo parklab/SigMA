@@ -227,7 +227,12 @@ run <- function(genome_file = NULL,
     step <- steps[[imethod]]
 
     if(method == "median_catalog"){
-      average_catalog <- all_catalogs[[tumor_type]]
+      if(data == "op_multisig" & tumor_type == "other"){
+        average_catalog <- all_catalogs[['other_multisig']]
+      }
+      else{
+        average_catalog <- all_catalogs[[tumor_type]]
+      }
       if(add_sig3) average_catalog$Signature_3_c1 <- all_catalogs$breast$Signature_3_c1
       message("Calculating likelihoods for each cluster")
     }else if(method == "cosine_simil"){
@@ -243,15 +248,26 @@ run <- function(genome_file = NULL,
     }
 
     if(sig_catalog == "cosmic_tissue"){
-      if(step == "mss" & method != "cosine_simil"){
-        signatures <- cosmic_catalog[, signames_per_tissue_per_catalog[[catalog_name]][[tumor_type]]]
-      }else{
-        signatures <- cosmic_catalog[, unique(c(signames_per_tissue_per_catalog[[catalog_name]][[tumor_type]],
-                                       signames_per_tissue_per_catalog[[catalog_name]][["msi"]],
-                                       signames_per_tissue_per_catalog[[catalog_name]][["msi_extra"]],
-                                       signames_per_tissue_per_catalog[[catalog_name]][["pole"]]))]
+      if(data == 'op_multisig'){
+        if(step == "mss" & method != "cosine_simil"){
+          signatures <- cosmic_catalog[, signames_per_tissue_per_catalog[[catalog_name]][[tumor_type]]]
+        }else{
+          signatures <- cosmic_catalog[, unique(c(signames_per_tissue_per_catalog[[catalog_name]][[tumor_type]],
+                                         signames_per_tissue_per_catalog[[catalog_name]][["msi"]],
+                                         signames_per_tissue_per_catalog[[catalog_name]][["pole"]]))]
+        }						
       }
-      if(add_sig3) signatures$Signature_3 <- cosmic_catalog$Signature_3
+      else{
+        if(step == "mss" & method != "cosine_simil"){
+          signatures <- cosmic_catalog[, signames_per_tissue_per_catalog[[catalog_name]][[tumor_type]]]
+        }else{
+          signatures <- cosmic_catalog[, unique(c(signames_per_tissue_per_catalog[[catalog_name]][[tumor_type]],
+                                         signames_per_tissue_per_catalog[[catalog_name]][["msi_extra"]],
+                                         signames_per_tissue_per_catalog[[catalog_name]][["msi"]],
+                                         signames_per_tissue_per_catalog[[catalog_name]][["pole"]]))]
+        }
+        if(add_sig3) signatures$Signature_3 <- cosmic_catalog$Signature_3
+      }
     }
 
     if(sig_catalog == "average"){
@@ -272,7 +288,10 @@ run <- function(genome_file = NULL,
       else{
         if(data %in% names(weight_3Nfreq)){
           signatures <- unlist(weight_3Nfreq[data]) * signatures
-        }else{
+        }else if(data == "op_multisig"){
+	  data_norm <- 'op'
+	  signatures <- unlist(weight_3Nfreq[data_norm]) * signatures
+	}else{
           stop('choose a built-in model or provide trinucleotide normalization')
         }
       }
@@ -312,7 +331,7 @@ run <- function(genome_file = NULL,
           }
         }else{
           cluster_fractions_this <- NULL
-        }    
+        }
         output <- match_to_catalog(genomes, 
                                    signatures,  
                                    method = method, 

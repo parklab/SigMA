@@ -25,7 +25,7 @@ decompose <- function(spect, signatures, data, nloop_user = NULL, delta=0){
   }
 
   dim2 <- dim(signatures)[[2]]
-  if(dim2 == 2){
+  if(dim2 == 2 | data == 'op_multisig'){
     exps <- coef(nnls::nnls(as.matrix(signatures), spect))
     inds <- which(exps != 0)
     exps <- exps[inds]
