@@ -1,5 +1,5 @@
 # gets the clusters with maximum likelihood and decomposes them with NNLS to determine relative exposures of signatures
-llh_max_characteristics <- function(df, tumor_type, catalog_name = 'cosmic_v2_inhouse'){
+llh_max_characteristics <- function(df, tumor_type, catalog_name = 'cosmic_v2_inhouse', exp_thresh = -1){
   # calculate the signature exposures of the cluster with maximum likelihood
   cosmic_catalog <- catalogs[[catalog_name]]
   
@@ -10,7 +10,7 @@ llh_max_characteristics <- function(df, tumor_type, catalog_name = 'cosmic_v2_in
 
   signatures <- cosmic_catalog[,signames_per_tissue_per_catalog[[catalog_name]][[tumor_type]]]
   if('sig_max_ml_msi' %in% colnames(df))
-    signatures_msi_pole <- cbind(signatures, cosmic_catalog[,c(signames_per_tissue_per_catalog[['msi']], signames_per_tissue_per_catalog[['pole']])])
+    signatures_msi_pole <- cbind(signatures, cosmic_catalog[,c(signames_per_tissue_per_catalog[[catalog_name]][['msi']], signames_per_tissue_per_catalog[[catalog_name]][['pole']])])
   df$cluster_sigs_all <- '' 
   df$cluster_exps_all  <- ''
 
@@ -27,14 +27,16 @@ llh_max_characteristics <- function(df, tumor_type, catalog_name = 'cosmic_v2_in
       median_clust <- all_catalogs[[tumor_type]][,max_clust]
       signatures_this <- signatures
     }
-    
-    if(!grepl('Signature_3_', max_clust))
-      signatures_this <- signatures_this[,colnames(signatures_this) != "Signature_3"]
 
+    if(tumor_type != "other_multisig"){
+      if(!grepl('Signature_3_', max_clust)){
+        signatures_this <- signatures_this[,colnames(signatures_this) != "Signature_3"]
+      }
+    }
+    
     exps <- coefficients(nnls::nnls(as.matrix(signatures_this), median_clust))
-  
-    df$cluster_sigs_all[df$max_clust == max_clust] <- paste0(colnames(signatures_this), collapse = '.')
-    df$cluster_exps_all[df$max_clust == max_clust] <- paste0(exps, collapse = '_')
+    df$cluster_sigs_all[df$max_clust == max_clust] <- paste0(colnames(signatures_this[exps > exp_thresh]), collapse = '.')
+    df$cluster_exps_all[df$max_clust == max_clust] <- paste0(exps[exps > exp_thresh], collapse = '_')
   }
   return(df)
 }
